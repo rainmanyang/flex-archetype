@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" height="100%"
+		 xmlns:grid="com.oasis.component.grid.*"
+		 xmlns:v5="com.oasis.tmsv5.view.report.*"	
+		 addedToStage="init();" xmlns:code="http://code.google.com/p/flexlib/" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.tmsv5.report.OperationStateController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobTimeRecordController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.wolfburg.so.report.OperationStateSO;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSJobTimeRecordSO;
+			
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			import mx.utils.URLUtil;
+			
+			[Bindable]
+			private var pageList:PageList = new PageList();
+			
+			[Bindable]
+			private var so:OperationStateSO = new OperationStateSO();
+			
+			[Inject]
+			public var operationStateController:OperationStateController;
+			
+			public static const millisecondsPerDay:int = 1000 * 60 * 60 * 24;
+			
+			public var host:String;
+			
+			private function init():void{
+				interval();
+				
+				search();
+			}
+			
+			private function interval():void{
+				var start:Date = new Date();
+				start.setTime((new Date()).getTime() - millisecondsPerDay);
+				start.setHours(8,0,0,0);
+				var end:Date = new Date();
+				end.setHours(8,0,0,0);
+				so.beginDate = start;
+				so.endDate = end;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				operationStateController.getPageList(so, pageList);
+			}
+			
+			private function search():void{
+				validate();
+				
+				getPageData(1, so.objectsPerPage);
+			}
+			
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			
+			public function export():void{
+				validate();
+				so.requestUrl = getRequestURL();
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.operationStateSO=so;
+				dialog.reportType=Constants.OperationState;
+				dialog.init();	
+			}
+			
+			public function validate():void{
+				var beginDateNew:Date = new Date(planDateBegin.date);
+				beginDateNew.setSeconds(0,0);
+				so.beginDate = beginDateNew;
+				var endDateNew:Date = new Date(planDateEnd.date);
+				endDateNew.setSeconds(0,0);
+				so.endDate = endDateNew;
+				so.code = code.text;
+				so.routeName = routeName.text;
+				so.licensePlate = licensePlate.text;
+				so.status = status.selectedItem.data;
+			}
+			
+			public function clearSearch():void{
+				so = new OperationStateSO();
+				interval();
+				
+				code.text = null;
+				routeName.text = null;
+				licensePlate.text = null;
+				
+				var beginDateNew:Date = new Date(planDateBegin.date);
+				beginDateNew.setSeconds(0,0);
+				so.beginDate = beginDateNew;
+				var endDateNew:Date = new Date(planDateEnd.date);
+				endDateNew.setSeconds(0,0);
+				so.endDate = endDateNew;
+				
+				status.selectedIndex = 0;
+				
+				search();
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<code:WindowShade id="ws1" styleName="linkButtonWindowShade" width="100%" label="查询" height="23%">
+			<fb:MultiColumnForm height="100%" numColumns="2" width="100%">
+				<fb:MultiColumnFormItem label="任务单名称：">
+					<mx:TextInput id="code" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="线路名称：">
+					<mx:TextInput id="routeName" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="车牌：">
+					<mx:TextInput id="licensePlate" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="状态">
+					<s:DropDownList id="status" dataProvider="{EnumManage.getOperationStateStatus()}" selectedIndex="0" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="线路到达时间：" colspan="2">
+					<mx:HBox>
+						<fb:DateTimeInput allowDatePick="true" id="planDateBegin"  date="{so.beginDate}"/>
+						<mx:Label htmlText="--"/>
+						<fb:DateTimeInput allowDatePick="true" id="planDateEnd"  date="{so.endDate}"/>
+					</mx:HBox>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem colspan="2">
+					<mx:HBox>
+						<PremissionButton:PremissionButton label="查询" click="search()" module="OperateState" premission="search" id="searchBtn"/>
+						<PremissionButton:PremissionButton label="清空查询" click="clearSearch()" module="OperateState" premission="clearSearch"/>
+					</mx:HBox>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</code:WindowShade>
+		<mx:HBox width="100%">
+			<PremissionButton:PremissionButton label="导出" click="export()" module="OperateState" premission="export"/>
+		</mx:HBox>
+		<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+			 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}" 
+			 pageSize="{so.objectsPerPage}" sortableColumns="false"
+			 height="100%" showControlColumn="false" horizontalScrollPolicy="on">
+			<fb:columns >
+				<fb:DataGridColumnNested headerText="任务单名称" dataField="code"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="任务日期" dataField="startDate"  width="80" sortable="false"/>
+				<fb:DataGridColumnNested headerText="状态" dataField="status"  width="40" sortable="false"/>
+				<fb:DataGridColumnNested headerText="车牌" dataField="licensePlate"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="可装容积" dataField="loadVolume"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="线路" dataField="routeName"  width="160" sortable="false"/>
+				<fb:DataGridColumnNested headerText="计划始发时间" dataField="planStartTime"  width="135" sortable="false"/>
+				<fb:DataGridColumnNested headerText="计划到达时间" dataField="planEndTime"  width="135" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发站" dataField="startStop"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达站" dataField="endStop"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发时间" dataField="actualStartTime"  width="135" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达时间" dataField="actualEndTime"  width="135" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发方数" dataField="startVolume"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发吨位" dataField="startWeight"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发封签" dataField="startSealSort"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达方数" dataField="endVolume"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达吨位" dataField="endWeight"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达封签" dataField="endSealSort"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发封签检查" dataField="startSealSortCheck"  width="90" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达封签检查" dataField="endSealSortCheck"  width="90" sortable="false"/>
+				<fb:DataGridColumnNested headerText="封签检查" dataField="sealSortCheck"  width="70" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发备注" dataField="startRemark"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达备注" dataField="endRemark"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发考勤类型" dataField="startScanType"  width="100" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到达考勤类型" dataField="endScanType"  width="100" sortable="false"/>
+			</fb:columns>
+		</fb:PageableDataGrid>
+	</mx:VBox>
+</mx:VBox>

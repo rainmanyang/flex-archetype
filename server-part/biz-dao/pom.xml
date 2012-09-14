@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>oasis.wolfburg</groupId>
+		<version>1.0</version>
+		<artifactId>wolfburg-server</artifactId>
+	</parent>
+
+	<artifactId>wolfburg-dao</artifactId>
+	<packaging>jar</packaging>
+	<name>DAO layer</name>
+
+	<dependencies>
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-utils</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- memcached -->
+		<dependency>
+			<groupId>com.meetup.memcached</groupId>
+			<artifactId>memcached-release</artifactId>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes>
+					<include>**/*.*</include>
+				</includes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>replace-memcachedserver</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>process memcache.properties: set server.url to ${wolfburg.memserver.url}</echo>
+								<replaceregexp file="${basedir}/target/classes/memcache.properties" match="server=172\.18\.9\.171:12111"
+									replace="server=${wolfburg.memserver.url}" byline="true" />
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+
+				<dependencies>
+					<dependency>
+						<groupId>ant</groupId>
+						<artifactId>ant-nodeps</artifactId>
+						<version>1.6.5</version>
+					</dependency>
+					<dependency>
+						<groupId>ant</groupId>
+						<artifactId>ant-apache-regexp</artifactId>
+						<version>1.6.5</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+		</plugins>
+	</build>
+</project>

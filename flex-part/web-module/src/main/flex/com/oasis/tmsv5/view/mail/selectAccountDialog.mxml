@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:fb="http://flexbase.800best.com/mxml" 
+					  layout="absolute" width="900" height="700" 
+					  xmlns:security="com.oasis.tmsv5.view.security.*">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.so.security.AccountSO;
+			import com.oasis.tmsv5.view.security.AccountViewDialog;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.utils.CRUDUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;			
+			
+			[Bindable]
+			private var pageList:PageList = new PageList();
+			
+			[Bindable]
+			private var so:AccountSO = new AccountSO();
+			
+			[Inject]
+			public var accountController:AccountController;
+			[Bindable]
+			public var selectedAccounts:ArrayCollection;
+			[Bindable]
+			public var oldSelectedAccounts:ArrayCollection;
+			
+			public function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				accountController.getPageList(so, pageList);
+			}
+			
+			private function search():void{
+				so=searchForm.so;
+				getPageData(1, so.objectsPerPage);
+			}
+			protected function onOk(event:MouseEvent):void {
+				if(grid.selectedItems.length == 0){
+					Alert.show("请在列表中选择用户信息。");
+					return;
+				}
+				selectedAccounts = new ArrayCollection();
+				if(oldSelectedAccounts != null && oldSelectedAccounts.length >0){
+					for each(var item:Account in oldSelectedAccounts){
+						for each(var account:Account in grid.selectedItems){
+							if(item.id == account.id){
+								Alert.show("用户：" + item.nameCN + "已被添加，请选择其他用户。");
+								return;
+							}
+						}
+					}
+				}
+				for each(var obj:Object in grid.selectedItems){
+					selectedAccounts.addItem(Account(obj));
+				}
+				PopUpManager.removePopUp(this);
+				this.dispatchEvent(new CloseEvent(Event.COMPLETE));
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<security:AccountSearchForm id="searchForm" so="{so}" searchFunction="{search}"/>
+		<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+							 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+							 pageSize="{so.objectsPerPage}"
+							 height="100%" allowMultipleSelection="true">
+			<fb:columns>
+				<fb:DataGridColumnNested headerText="登录名称" dataField="loginName"  width="100" />
+				<fb:DataGridColumnNested headerText="用户名称" dataField="nameCN"  width="100" />
+				<fb:DataGridColumnNested headerText="用户过期时间" dataField="expiredDate" width="100"/>
+				<fb:DataGridColumnNested headerText="密码过期时间" dataField="passwordExpiredDate" width="100"/>
+				<fb:DataGridColumnNested headerText="电子邮件" dataField="email" width="200"/>
+				<fb:DataGridColumnNested headerText="联系电话" dataField="phoneCode" width="200"/>
+			</fb:columns>
+		</fb:PageableDataGrid>
+		<mx:HBox width="100%">
+			<mx:Button label="确定" click="onOk(event)"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+</fb:PopupDialog>

@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties 
+        mainApplicationPath="wolfburg-flex-controller.as" 
+        version="3"
+        >
+
+    <compiler 
+            additionalCompilerArguments="-include-sources D:\works\workspace_flex\flex-archetype\flex-part\web-controller\src\main\flex D:\works\workspace_flex\flex-archetype\flex-part\web-controller\target\generated-sources\flexmojos" 
+            copyDependentFiles="true" 
+            enableModuleDebug="true" 
+            generateAccessible="false" 
+            htmlExpressInstall="true" 
+            htmlGenerate="false" 
+            htmlHistoryManagement="true" 
+            htmlPlayerVersion="10.0.0" 
+            htmlPlayerVersionCheck="true" 
+            outputFolderPath="bin-debug" 
+            sourceFolderPath="src/main/flex" 
+            strict="true" 
+            useApolloConfig="false" 
+            verifyDigests="true" 
+            warn="true"
+            >
+
+        <compilerSourcePath>
+            <compilerSourcePathEntry 
+                    kind="1" 
+                    linkType="1" 
+                    path="target/generated-sources/flexmojos"
+                    />
+            <compilerSourcePathEntry 
+                    kind="1" 
+                    linkType="1" 
+                    path="src/main/flex"
+                    />
+        </compilerSourcePath>
+
+        <libraryPath
+                defaultLinkType="1">
+
+			<!-- artifact: com.adobe:as3corelib:1.0-release -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/as3corelib/1.0-release/as3corelib-1.0-release.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:datavisualization:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/datavisualization/4.0.0.14159/datavisualization-4.0.0.14159.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:flash-integration:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/flash-integration/4.0.0.14159/flash-integration-4.0.0.14159.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:flex:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/flex/4.0.0.14159/flex-4.0.0.14159.swc"
+                    sourcepath="${PROJECT_FRAMEWORKS}/projects/flex/src"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:framework:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/framework/4.0.0.14159/framework-4.0.0.14159.swc"
+                    sourcepath="${PROJECT_FRAMEWORKS}/projects/framework/src"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:osmf:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/osmf/4.0.0.14159/osmf-4.0.0.14159.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:rpc:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/rpc/4.0.0.14159/rpc-4.0.0.14159.swc"
+                    sourcepath="${PROJECT_FRAMEWORKS}/projects/rpc/src"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:spark:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/spark/4.0.0.14159/spark-4.0.0.14159.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:sparkskins:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/sparkskins/4.0.0.14159/sparkskins-4.0.0.14159.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:textLayout:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/textLayout/4.0.0.14159/textLayout-4.0.0.14159.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:utilities:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/utilities/4.0.0.14159/utilities-4.0.0.14159.swc"
+                    sourcepath="${PROJECT_FRAMEWORKS}/projects/utilities/src"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.flexbase:flexbase-component:1.6-20120727.024024-32 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/oasis/flexbase/flexbase-component/1.6-SNAPSHOT/flexbase-component-1.6-SNAPSHOT.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.flexbase:flexbase-lang:1.6-20120727.024024-32 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/oasis/flexbase/flexbase-lang/1.6-SNAPSHOT/flexbase-lang-1.6-SNAPSHOT.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.flexbase:flexbase-common:1.6-20120727.024024-32 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/oasis/flexbase/flexbase-common/1.6-SNAPSHOT/flexbase-common-1.6-SNAPSHOT.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.flexbase:flexbase-util:1.6-20120727.024024-32 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/oasis/flexbase/flexbase-util/1.6-SNAPSHOT/flexbase-util-1.6-SNAPSHOT.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flexbuilder.flexunitframework.common:flexunit:4.0.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flexbuilder/flexunitframework/common/flexunit/4.0.0/flexunit-4.0.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flexbuilder.flexunitframework.common:Hamcrest:4.0.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flexbuilder/flexunitframework/common/Hamcrest/4.0.0/Hamcrest-4.0.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flexbuilder.flexunitframework.FlexProject:FlexUnit:4.0.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flexbuilder/flexunitframework/FlexProject/FlexUnit/4.0.0/FlexUnit-4.0.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flexbuilder.flexunitframework.FlexProject:flexunitextended:4.0.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flexbuilder/flexunitframework/FlexProject/flexunitextended/4.0.0/flexunitextended-4.0.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flexbuilder.flexunitframework.locale:FlexUnitTestRunner_rb:4.0.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flexbuilder/flexunitframework/locale/FlexUnitTestRunner_rb/4.0.0/FlexUnitTestRunner_rb-4.0.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: as3xlsUTF8:as3xlsUTF8:1.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/as3xlsUTF8/as3xlsUTF8/1.0/as3xlsUTF8-1.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: flexlib:flexlib-bin:2.4 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/flexlib/flexlib-bin/2.4/flexlib-bin-2.4.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.wolfburg:wolfburg-flex-base:1.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="/wolfburg-flex-base/bin-debug/wolfburg-flex-base.swc"
+                    sourcepath="/wolfburg-flex-base/src/main/flex"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.com:flexlib:2.5 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/oasis/com/flexlib/2.5/flexlib-2.5.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: org.swizframework:swiz-framework:1.2.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/org/swizframework/swiz-framework/1.2.0/swiz-framework-1.2.0.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: oasis.wolfburg:wolfburg-flex-common:1.0 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="/wolfburg-flex-common/bin-debug/wolfburg-flex-common.swc"
+                    sourcepath="/wolfburg-flex-common/src/main/flex"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:datavisualization:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/datavisualization/4.0.0.14159/datavisualization-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:framework:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/framework/4.0.0.14159/framework-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:osmf:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/osmf/4.0.0.14159/osmf-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:rpc:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/rpc/4.0.0.14159/rpc-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:spark:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/spark/4.0.0.14159/spark-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:textLayout:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/textLayout/4.0.0.14159/textLayout-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+			<!-- artifact: com.adobe.flex.framework:flash-integration:4.0.0.14159 -->
+            <libraryPathEntry 
+                    kind="3" 
+                    linkType="1" 
+                    path="D:/works/repo/com/adobe/flex/framework/flash-integration/4.0.0.14159/flash-integration-4.0.0.14159-en_US.rb.swc"
+                    useDefaultLinkType="false"
+                    />
+
+
+	      <libraryPathEntry kind="4" path="">
+	        <excludedEntries>
+	          <libraryPathEntry kind="1" linkType="1" path="${PROJECT_FRAMEWORKS}/locale/{locale}"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/qtp.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/rpc.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="4" path="${PROJECT_FRAMEWORKS}/libs/framework.swc" useDefaultLinkType="true">
+	            <crossDomainRsls>
+	              <crossDomainRslEntry autoExtract="true" policyFileUrl="" rslUrl="framework_3.1.0.2710.swz"/>
+	              <crossDomainRslEntry autoExtract="true" policyFileUrl="" rslUrl="framework_3.1.0.2710.swf"/>
+	            </crossDomainRsls>
+	          </libraryPathEntry>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/datavisualization.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_dmv.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_flashflexkit.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/utilities.swc" useDefaultLinkType="false"/>
+	          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_agent.swc" useDefaultLinkType="false"/>
+	        </excludedEntries>
+	      </libraryPathEntry>
+
+        </libraryPath>
+
+        <sourceAttachmentPath/>
+
+    </compiler>
+
+    <applications>
+    </applications>
+
+    <modules/>
+
+    <buildCSSFiles>
+    </buildCSSFiles>
+
+</actionScriptProperties>

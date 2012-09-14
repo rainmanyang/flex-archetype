@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>oasis.wolfburg</groupId>
+		<version>1.0</version>
+		<artifactId>wolfburg-flex</artifactId>
+	</parent>
+
+	<artifactId>wolfburg-assembler</artifactId>
+	<packaging>swf</packaging>
+	<name>flex web swf</name>
+
+	<dependencies>
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-flex-module</artifactId>
+			<type>swc</type>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-flex-controller</artifactId>
+			<type>swc</type>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-flex-common</artifactId>
+			<type>swc</type>
+			<version>${project.version}</version>
+		</dependency>
+		<!-- flexbase -->
+
+		<dependency>
+			<groupId>oasis.flexbase</groupId>
+			<artifactId>flexbase-component</artifactId>
+			<type>swc</type>
+		</dependency>
+
+		<!-- flexbase end -->
+
+		<!-- flex sdk -->
+		<!-- -->
+
+
+		<dependency>
+			<groupId>com.adobe.flex.framework</groupId>
+			<artifactId>flex-framework</artifactId>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>com.adobe.flex.framework</groupId>
+			<artifactId>playerglobal</artifactId>
+			<type>swc</type>
+		</dependency>
+		<!-- swiz -->
+		<dependency>
+			<groupId>org.swizframework</groupId>
+			<artifactId>swiz-framework</artifactId>
+			<type>swc</type>
+		</dependency>
+	</dependencies>
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+		<sourceDirectory>src/main/flex</sourceDirectory>
+		<plugins>
+			<plugin><!-- Flex (SWC and SWF) compilation -->
+				<groupId>org.sonatype.flexmojos</groupId>
+				<artifactId>flexmojos-maven-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<contextRoot>/wolfburg-war</contextRoot>
+					<services>${basedir}/../../server-part/war/src/main/webapp/WEB-INF/flex/services-config.xml</services>
+					<debug>true</debug>
+					<themes>
+						<theme>${flex-theme}</theme>
+					</themes>
+					<debug>true</debug>
+					<themes>
+						<theme>${flex-theme}</theme>
+					</themes>
+					<optimize>false</optimize>
+
+					<resourceBundlePath>${basedir}/src/main/resources/locale/{locale}</resourceBundlePath>
+					<compiledLocales>
+					<!--	<locale>en_US</locale> -->
+						<locale>zh_CN</locale>
+					</compiledLocales>
+
+					<locales>
+						<locale>zh_CN</locale>
+					</locales>
+
+					<moduleFiles>
+
+					</moduleFiles>
+					<sourceFile>MainView.mxml</sourceFile>
+					<!-- copy-flex-resources-->
+					<targetPlayer>${flash.version}</targetPlayer>
+				</configuration>
+
+			</plugin>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo message="replace messageChannel.xml with ${message.context}MessageChannel.xml" />
+								<copy overwrite="true" file="${basedir}/src/main/resources/config/${message.context}MessageChannel.xml" tofile="${basedir}/src/main/resources/messageChannel.xml">
+								</copy>
+								<delete dir="${basedir}/target/classes/config" />
+
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>ant</groupId>
+						<artifactId>ant-nodeps</artifactId>
+						<version>1.6.5</version>
+					</dependency>
+					<dependency>
+						<groupId>ant</groupId>
+						<artifactId>ant-apache-regexp</artifactId>
+						<version>1.6.5</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>

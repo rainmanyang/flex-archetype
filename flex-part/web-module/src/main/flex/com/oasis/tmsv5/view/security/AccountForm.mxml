@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" height="100%" 
+	     xmlns:s="library://ns.adobe.com/flex/spark" xmlns:tree="com.oasis.component.tree.*">
+	<fx:Declarations>
+		<mx:StringValidator id="nameCnValidator" source="{loginName}" property="text" required="true"/>
+		<mx:EmailValidator id="mailValidator" source="{email}" property="text" required="false"/>
+		<mx:PhoneNumberValidator id="phoneValidateor" source="{phone}" property="text" required="false"/>
+		<mx:StringValidator id="passworkdValidator" source="{password}" property="text" required="true" />
+		<mx:StringValidator id="repassworkdValidator" source="{rePassword}" property="text" required="true" />
+	</fx:Declarations>
+	<fx:Binding source="loginName.text" destination="tVo.loginName"/>
+	<fx:Binding source="nameCN.text" destination="tVo.nameCN"/>
+	<fx:Binding source="nameEN.text" destination="tVo.nameEn"/>
+	<fx:Binding source="password.text" destination="tVo.password"/>
+	<fx:Binding source="email.text" destination="tVo.email"/>
+	<fx:Binding source="phone.text" destination="tVo.phoneCode"/>
+	<fx:Binding source="expiredDate.selectedDate" destination="tVo.expiredDate"/>
+	<fx:Binding source="passExpriedDate.selectedDate" destination="tVo.passwordExpiredDate"/>
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.tmsv5.vo.security.CheckedOrg;
+			import com.oasis.tmsv5.vo.security.CheckedRole;
+			import com.oasis.utils.BeanUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.validators.Validator;			 
+			
+			[Inject]
+			public var accountControler:AccountController;
+
+			[Bindable]
+			public var vo:Account;
+			
+			[Bindable]
+			public var tVo:Account;
+			
+			[Bindable]
+			public var checkRole:CheckedRole;
+			
+			[Bindable]
+			public var allRoles:ArrayCollection = new ArrayCollection;
+			
+			[Bindable]
+			public var checkedRoles:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var checkedOrg:ArrayCollection = new ArrayCollection();
+			
+			public function init():void{
+				
+				if(vo == null){
+					vo = new Account();
+				}
+				if(vo.id){
+					loginName.editable=false;
+					password.visible=false;
+					rePassword.visible=false;
+				}
+				rePassword.text="";
+				tVo = new Account();
+				BeanUtils.copyProperties(tVo,vo);
+				/**
+				 *初始化角色选择控件 
+				 */
+				accountControler.getCheckedRoles(tVo.id,getCheckedRoleCallBack);
+				accountControler.getCheckedOrgs(tVo.id,getCheckedOrgCallBack);
+				
+			}
+			
+			/**
+			 * 
+			 * 初始化组织选择控件
+			 * 
+			 */
+			public function getCheckedOrgCallBack(_checkOrg:CheckedOrg):void{
+				
+				checkedOrg = new ArrayCollection();
+				if(_checkOrg.checkedOrg != null){
+					for each(var org:Organization in _checkOrg.checkedOrg){
+						checkedOrg.addItem(org.id);
+					}
+				}
+				asocOrg.dataProvider = _checkOrg.orgTree;
+				asocOrg.checkedNodeKeys = checkedOrg;
+				asocOrg.init();
+			}
+			
+			/**
+			 *
+			 * 初始化角色选择控件
+			 */
+			public function getCheckedRoleCallBack(checkedRoleL:CheckedRole):void{
+				/**
+				 * searchablelist有bug，只能这样改变内容
+				 */
+				allRoles.addAll(checkedRoleL.allRoles);
+				checkedRoles.addAll(checkedRoleL.checkedRoles);
+			}
+			
+			public function validate():Boolean{
+				var errors:Array = Validator.validateAll([nameCnValidator,mailValidator,phoneValidateor,passworkdValidator,repassworkdValidator]);
+				
+				if(errors.length > 0 || !validataPassword()){
+					return false;
+				}
+				return true;
+			}
+			
+			private function validataPassword():Boolean{
+				if(password.text != rePassword.text){
+					rePassword.errorString="两次密码输入不同!";
+					return false;
+				}
+				return true;
+			}
+			
+			/**
+			 * 
+			 *父窗口调用 
+			 * 
+			 */
+			public function collectData():void{
+				var _checkedOrg:ArrayCollection = new ArrayCollection();
+				for each(var node:TreeNode in asocOrg.checkedNodes) {
+					var item:Organization = Organization(node.data) ;
+					_checkedOrg.addItem(item);
+				}
+				tVo.orgs = _checkedOrg;
+				tVo.roles = asocRole.selectedItems;
+				BeanUtils.copyProperties(vo,tVo);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:HBox horizontalAlign="right" width="800" height="100%">
+		<fb:MultiColumnForm width="100%" height="100%" numColumns="2">
+			<fb:MultiColumnFormItem label="用户名称："  required="true" colspan="2">
+				<s:TextInput id="loginName" text="{tVo.loginName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="中文名：" >
+				<s:TextInput id="nameCN" text="{tVo.nameCN}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="英文名：" >
+				<s:TextInput id="nameEN" text="{tVo.nameEn}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="密码：" required="true">
+				<s:TextInput id="password" displayAsPassword="true" text="{tVo.password}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="重复密码：" required="true">
+				<s:TextInput id="rePassword" displayAsPassword="true"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="电子邮件：" >
+				<s:TextInput id="email" text="{tVo.email}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系电话：" >
+				<s:TextInput id="phone" text="{tVo.phoneCode}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="用户过期时间：" >
+				<mx:DateField id="expiredDate" selectedDate="@{tVo.expiredDate}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="密码过期时间：" >
+				<mx:DateField id="passExpriedDate" selectedDate="@{tVo.passwordExpiredDate}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="角色：">
+				<fb:SearchableList id="asocRole"
+								   dataProvider="{allRoles}"
+								   searchButtonStyle="searchButton2"
+								   dataField="name"	
+								   selectedItems="{checkedRoles}"
+								   width="240"
+								   height="300"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="组织：">
+				<tree:CheckTree id="asocOrg"
+								   width="240"
+								   height="300"
+								   labelField="value"
+								   checkBoxCascadeOnCheck="false"
+								   >
+				</tree:CheckTree>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+</mx:VBox>

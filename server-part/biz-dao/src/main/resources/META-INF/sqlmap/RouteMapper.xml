@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.route.RouteDAO">
+
+	<resultMap type="Route" id="RouteMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		
+		<result property="startStopName" column="start_stop_name"/>
+		<result property="endStopName" column="end_stop_name"/>
+		<result property="enrouteDays" column="enroute_days"/>
+	</resultMap>
+
+	<select id="find" resultMap="RouteMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="Route">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<insert id="insert" parameterType="Route">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds"/>
+	</delete>
+	
+	
+	<sql id="pageListClause">
+		where t1.ROUTE_ID = t.id
+		<if test="name!=null and name!='' ">
+		and (t.name like '%'||#{name}||'%')
+		</if>
+		<if test="status!=null and status!='' ">
+		and t.status = #{status}
+		</if>
+		<if test="passStop!=null and passStop!='' ">
+		and (t1.start_stop_name like '%'||#{passStop}||'%' or t1.end_stop_name like '%'||#{passStop}||'%' )
+		</if>
+	</sql>
+	
+	<select id="selectPageList" resultMap="RouteMap" parameterType="com.oasis.wolfburg.common.so.route.RouteSO">
+		select distinct t.* from wl_route t,WL_ROUTE_LINE t1 
+		<include refid="pageListClause"/>
+		
+		order by t.id desc
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.route.RouteSO">
+		select count(distinct t.id) from wl_route t,WL_ROUTE_LINE t1 
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="checkDuplicate" parameterType="map" resultType="int">
+		select count(1)
+		  from wl_route t
+		  <where>
+		  	<if test="name!=null and name!=''">
+		  		and t.name = #{name}
+	  		</if>
+	  		<if test="code!=null and code!=''">
+		  		and t.code = #{code}
+	  		</if>
+	  		<if test="id!=null and id!=0">
+				and t.id != #{id}
+			</if>
+			and rownum = 1
+		  </where>
+	</select>
+	
+	
+	<select id="selectByIds" parameterType="map" resultMap="RouteMap">
+		<include refid="sqlmap.common.model.selectListByIds"/>
+	</select>
+	
+</mapper>

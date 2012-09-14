@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.attachment.AttachmentDAO">
+
+	<select id="find" resultType="Attachment">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<select id="selectList" parameterType="map" resultType="Attachment">
+		select * from wl_attachment t where t.fktable = #{fkTable} and t.fkId = #{fkId}
+	</select>
+
+	<delete id="deleteByfkId" parameterType="map">
+		delete from wl_attachment t where t.fktable = #{fkTable} and t.fkId = #{fkId}
+	</delete>
+	
+	<insert id="insert" parameterType="Attachment">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+</mapper>

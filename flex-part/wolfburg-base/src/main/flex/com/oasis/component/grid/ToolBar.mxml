@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox  xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  height="26"  minWidth="50" 
+		 paddingTop="0" verticalAlign="top">
+	<fx:Style>
+		.find {
+			icon:Embed(source="/assets/default/page/find.gif");
+			disabledIcon:Embed(source="/assets/default/page/find.gif");
+		}
+		.filterButton {
+			icon:Embed(source="/assets/default/page/filter.png");
+			disabledIcon:Embed(source="/assets/default/page/filter.png");
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.CheckBox;
+			import com.best.oasis.flexbase.components.grid.find.FindDialog;
+			import mx.managers.PopUpManager;
+			
+			public var grid:SelectableDataGrid;
+			
+			private function onToggleSelectAll(event:MouseEvent):void{
+				var target:CheckBox = event.target as CheckBox;
+				if(grid != null && grid.allowMultipleSelection){
+					if(target.selected){
+						grid.selectAll();
+					}else{
+						grid.unselectAll();
+					}
+				}
+			}
+			/**
+			 * 隐藏全选按钮
+			 */
+			public function hideSelectAllCheckBox():void{
+				selectAllCheckBox.visible = false;
+				selectAllCheckBox.includeInLayout = false;
+			}
+			/**
+			 * 显示全选按钮
+			 */
+			public function showSelectAllCheckBox():void{
+				selectAllCheckBox.visible = true;
+				selectAllCheckBox.includeInLayout = true;
+			}
+			/**
+			 * 查找按钮点击处理函数
+			 */
+//			protected function find():void{
+//				grid.find();
+//			}
+			protected function filter():void{
+				grid.filter();
+			}
+		]]>
+	</fx:Script>
+	<mx:CheckBox id="selectAllCheckBox" click="onToggleSelectAll(event)" label="全选" paddingTop="0" paddingRight="2"/>
+	<!--
+	<mx:LinkButton toolTip="查找" click="find()" 
+				   styleName="find" width="22"/>
+	-->
+	<mx:LinkButton toolTip="过滤列" click="filter()"
+				   styleName="filterButton" width="22"/>
+	
+</mx:HBox>

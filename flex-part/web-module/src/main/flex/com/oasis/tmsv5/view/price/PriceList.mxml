@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	xmlns:grid="com.oasis.component.grid.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:price="com.oasis.tmsv5.view.price.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.event.PriceEvent;
+			import com.oasis.tmsv5.price.PriceController;
+			import com.oasis.tmsv5.so.price.PriceSO;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.tmsv5.view.popup.PriceDelayDialog;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.view.report.ReportDownloadMsgDialog;
+			import com.oasis.tmsv5.view.util.ShowExcelErrorDialog;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.excel.ExcelParsePackageVO;
+			import com.oasis.wolfburg.vo.price.Price;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.URLUtil;
+			
+			import org.hamcrest.mxml.object.InstanceOf;
+			
+			[Inject]
+			public var priceController:PriceController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var priceStatus:ArrayCollection = EnumManage.getPriceStatus();
+			[Bindable]
+			public var level:ArrayCollection = EnumManage.getTruckLevel();
+			[Bindable]
+			public var type:ArrayCollection = EnumManage.getTruckType();
+			[Bindable]
+			public var truckType:ArrayCollection = EnumManage.getTruckType4list();
+			
+			[Bindable]
+			public var so:PriceSO = new PriceSO();
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			/**
+			 * 批量导入文件上传句柄
+			 */
+			private var batchImportFileReference:FileReference=new FileReference();
+			/**
+			 * 文件下载地址前缀
+			 */
+			private var downloadUrlPrefix:String;
+			
+			public var host:String;
+			
+			private function init():void{
+				
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			private function interval(start:Date,end:Date):void{
+				so.periodStart = start;
+				so.periodEnd = end;
+			}
+			
+			private function freshViewForm(price:Price):void{
+				view.vo = price;
+				rightPanel.selectedIndex=0;
+				view.displayText();
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.status = statusId.selectedItem.data;
+				so.truckType = truckTypeDDL.selectedItem.data;;
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				priceController.getPageList(so, pageList,callBack);
+			}
+			
+			[EventHandler( event="PriceEvent.PRICE_LIST_EVENT" )]
+			public function search():void{
+				so.pageNumber=1;
+				priceController.getPageList(so, pageList);
+			}
+			
+			protected function create_clickHandler():void
+			{
+				rightPanel.selectedIndex = 1;
+			}
+			
+			protected function itemClickHandle(event:ListEvent):void{
+				var itemRenderer:CopyableDataGridItemRenderer = event.itemRenderer as CopyableDataGridItemRenderer;
+				var vo:Price = itemRenderer.data as Price;
+				priceController.find(vo,function():void{
+					freshViewForm(vo);
+				});
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,priceStatus);
+			}
+			
+			private function getTruckLevelLabel(item:Object,column:DataGridColumn):String{
+				var truckLevel:String = item.truckLevel as String;
+				return EnumManage.getDisplayText(truckLevel,level);
+			}
+			
+			private function getTruckTypeLabel(item:Object,column:DataGridColumn):String{
+				var truckType:String = item.truckType as String;
+				return EnumManage.getDisplayText(truckType,type);
+			}
+			
+			private function stop_clickHandler():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:Price = Price(o);
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要停用的对象!");
+					return ;
+				}else{
+					var price:Price = grid.selectedItem as Price;
+					if(ids.length == 1 && price.status == 'FAILURE'){
+						Alert.show("此数据已停用!");
+						return;
+					}
+					Alert.show("您确认要停用选中的数据？","确认停用",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								priceController.updateStatus(ids,search);
+							}
+						});
+				}
+			}
+			
+			private function delay_clickHandler():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:Price = Price(o);
+					if(vo.status == 'FAILURE'){
+						Alert.show("已停用的对象,不能延长期限!");
+						return;
+					}
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要延长期限的对象!");
+					return ;
+				}else{
+					var dialog:PriceDelayDialog = PriceDelayDialog(PopUpManager.createPopUp(root, PriceDelayDialog , true));
+					dialog.ids = ids;
+					dialog.passFun = localFun;
+					PopUpManager.centerPopUp(dialog);
+				}
+			}
+			
+			public function localFun(days:Number):void{
+				Alert.show("已成功延长期限"+days+"天");
+				dispatch.dispatchEvent(new PriceEvent(PriceEvent.PRICE_LIST_EVENT));
+			}
+			
+			protected function getRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = routeLocalFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function routeLocalFun(item:Object):void{
+				var route:Route = item as Route;
+				so.routeName = route.name;
+				so.routeId = route.id;
+			}
+			
+			public function chgRoute():void{
+				so.routeId = NaN;
+			}
+			
+			public function clear():void{
+				so = new PriceSO();
+				statusId.selectedIndex = 0;
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			public function clearRoute():void{
+				so.routeName = "";
+				so.routeId = NaN;
+			}
+			
+			public function batchImport():void{
+				batchImportFileReference.browse(getTypeFilter());
+				batchImportFileReference.addEventListener(Event.SELECT, batchImportSelectHandler);
+				batchImportFileReference.addEventListener(Event.COMPLETE, batchImportCompleteHandler);
+			}
+			
+			private function getTypeFilter():Array
+			{
+				var fileFilter:FileFilter=new FileFilter("Excel文件 (*.xls)", "*.xls");
+				return [fileFilter];
+			}
+			
+			/**
+			 * 批量导入文件选择后的处理函数
+			 * 选择文件后，现在本地做读取动作*注意一定要 FLASH PLAYER 10 以上才有load方法
+			 */
+			private function batchImportSelectHandler(event:Event):void {
+				batchImportFileReference.load();
+			}
+			/**
+			 * 批量导入上传文件回调函数
+			 */
+			private function batchImportCompleteHandler(event:Event):void {
+				var data:ByteArray=new ByteArray();
+				batchImportFileReference.data.readBytes(data, 0, batchImportFileReference.data.length);
+				priceController.batchImport(data, batchImportCompleteCallBack, failCallBack);
+			}
+			/**
+			 * 失败回调
+			 */ 
+			private function failCallBack(event:FaultEvent):void{
+				Alert.show(event.fault.faultString);
+			}
+			/**
+			 * 导入数据后的回调函数
+			 */
+			private function batchImportCompleteCallBack(excelParsePackage:ExcelParsePackageVO):void {
+				if (excelParsePackage == null){
+					return;
+				}
+				if (excelParsePackage.errors == null || excelParsePackage.errors.length == 0) {
+					Alert.show("成功批量导入" + excelParsePackage.totalNum + "条费率本!");
+				} else {
+					var dialog:ShowExcelErrorDialog=ShowExcelErrorDialog(PopUpManager.createPopUp(root, ShowExcelErrorDialog, true));
+					PopUpManager.centerPopUp(dialog);
+					dialog.errors=excelParsePackage.errors;
+					dialog.init();
+				}
+				getPageData(1,so.objectsPerPage);
+			}
+			
+			/**
+			 * 导出
+			 */
+			private function export():void{
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				so.requestUrl = getRequestURL();
+				dialog.priceSO=so;
+				dialog.reportType=Constants.Price;
+				dialog.init();	
+			}
+			
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			
+			/**
+			 * 导入模板下载
+			 */
+			private function templateDownload():void{
+				var fileRef:FileReference = new FileReference();  
+				var path:String = "/wolfburg-war/download/template/PriceImport_template.xls";
+				var downloadUrl:String = getRequestURL() + path;
+				var urlReq:URLRequest = new URLRequest(downloadUrl); 
+				fileRef.addEventListener(IOErrorEvent.IO_ERROR, handleError);
+				fileRef.addEventListener(Event.COMPLETE, saveComplete);
+				fileRef.download(urlReq);
+			}
+			public function saveComplete(event:Event):void 
+			{
+				Alert.show("文件保存成功！");
+			}
+			public function handleError(event:IOErrorEvent):void 
+			{
+				Alert.show("模版文件下载失败！模版文件不存在或者有同名文件处于打开状态。");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="55%" height="100%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+					<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="费率状态：">
+							<mx:ComboBox dataProvider="{priceStatus}" id="statusId" selectedIndex="1"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="线路名称：">
+							<fb:SelectableTextInput id="routeName" dataChange="chgRoute()" textInputEditable="true" text="@{so.routeName}" searchButtonClick="getRoute" clearButtonClick="clearRoute"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="启用日期：">
+							<mx:HBox>
+								<mx:DateField selectedDate="@{so.periodStart}"  formatString="YYYY-MM-DD"/>
+								<mx:Label htmlText="--"/>
+								<mx:DateField selectedDate="@{so.periodEnd}" formatString="YYYY-MM-DD"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="车型：">
+							<dropDownList:DropDownList dataProvider="{truckType}" id="truckTypeDDL" width="110" searchKey="data" value="{so.truckType}"/>
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:HBox>
+									<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+									<mx:Button label="清空查询" click="clear()"/>
+								</mx:HBox>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+			</flexlib:WindowShade>
+			<mx:HBox paddingLeft="30" width="100%">
+				<PremissionButton:PremissionButton label="新建" click="create_clickHandler()" module="Price" premission="create"/>
+				<PremissionButton:PremissionButton label="停用" click="stop_clickHandler()" module="Price" premission="disable"/>
+				<PremissionButton:PremissionButton label="导出" click="export()" module="Price" premission="export"/>
+				<PremissionButton:PremissionButton label="批量导入" click="batchImport()" module="Price" premission="batchImport"/>
+				<PremissionButton:PremissionButton label="导入模板下载" click="templateDownload()" module="Price" premission="templateDownload"/>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}"
+								 height="100%" allowMultipleSelection="false" itemClick="itemClickHandle(event)" showControlColumn="false">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="编号" dataField="code" width="80"/>
+					<grid:DataGridColumnNested headerText="线路名称" dataField="routeName"/>
+					<grid:DataGridColumnNested headerText="车型" dataField="truckType" labelFunction="getTruckTypeLabel" width="50"/>
+					<grid:DataGridColumnNested headerText="车辆品牌" dataField="truckLevel" labelFunction="getTruckLevelLabel" width="60"/>
+					<grid:DataGridColumnNested headerText="状态" dataField="status" labelFunction="getStatusLabel" width="40"/>
+					<grid:DataGridColumnNested headerText="启用日期" dataField="periodStart" width="75"/>
+					
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:ViewStack id="rightPanel" selectedIndex="0" width="45%" height="100%" creationPolicy="all">
+			<price:PriceView id="view"/>
+			<price:PriceCreate id="create"/>
+			<price:PriceEdit id="edit"/>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+</mx:VBox>

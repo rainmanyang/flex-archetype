@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>	
+	<groupId>oasis.wolfburg</groupId>
+	<artifactId>wolfburg</artifactId>
+	<packaging>pom</packaging>
+	<name>flex version</name>
+	<version>1.0</version>	
+	 <modules>		
+		<module>flex-part</module>	
+		<module>server-part</module>
+    </modules>
+
+	
+</project>

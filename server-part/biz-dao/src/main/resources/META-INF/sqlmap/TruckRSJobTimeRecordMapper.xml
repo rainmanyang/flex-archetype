@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.truckRSSchedule.TruckRSJobTimeRecordDAO">
+
+	<!-- crud -->
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="TruckRSJob">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<select id="find" resultType="TruckRSJobTimeRecord">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<insert id="insert" parameterType="TruckRSJobTimeRecord">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds" />
+	</delete>
+	<select id="getModelListByPara" resultType="TruckRSJobTimeRecord">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>	
+	
+	<delete id="deleteByFKIds" parameterType="list">
+		delete from wl_trsjob_time_record t where t.trs_job_id in 
+		<foreach collection="list" index="dex" item="item" open="(" close=")" separator=",">
+  			#{item}
+  		</foreach>
+	</delete>
+	
+	<sql id="pageListClause">
+		<if test="truckRSJobName!=null and truckRSJobName!='' ">
+		   and ( t1.code like '%'||#{truckRSJobName}||'%')
+		</if>
+		<if test="licensePlate!=null and licensePlate!='' ">
+		   and ( t1.LICENSE_PLATE like '%'||#{licensePlate}||'%')
+		</if>
+		<if test="routeName!=null and routeName!='' ">
+		   and ( t3.name like '%'||#{routeName}||'%')
+		</if>
+		<if test="beginDate!=null and beginDate!='' ">
+			<![CDATA[
+			and t1.START_DATE >= #{beginDate}
+			]]>
+		</if>
+		<if test="endDate!=null and endDate!='' ">
+			<![CDATA[
+			and t1.START_DATE <= #{endDate}
+			]]>
+		</if>
+		 group by 
+           t1.code,
+           t1.START_DATE ,
+           t1.LICENSE_PLATE,
+           t3.name,
+           t1.id
+	</sql>
+	
+	<select id="selectPageList" resultType="TruckRSJobTimeRecordView" parameterType="com.oasis.wolfburg.common.so.truckRSSchedule.TruckRSJobTimeRecordSO">
+	   select 
+           t1.code truckRSJobName,
+           t1.START_DATE startDate,
+           t1.LICENSE_PLATE licensePlate,
+           t3.name routeName,
+           
+           max(decode(t2.seq_num,1,t2.pos_name)) stopName,
+           max(case when (t2.seq_num=1 and t.scan_type=0) then t.plan_time end) PlanInboundTime,
+           max(case when (t2.seq_num=1 and t.scan_type=1) then t.plan_time end) PlanOutboundTime,
+           max(case when (t2.seq_num=1 and t.scan_type=0 and t.input_type=0) then t.scaned_time end) ScanedInboundTime,
+           max(case when (t2.seq_num=1 and t.scan_type=1 and t.input_type=0) then t.scaned_time end) ScanedOutboundTime,
+           max(case when (t2.seq_num=1 and t.scan_type=0 and t.input_type=1) then t.scaned_time end) ManulInboundTime,
+           max(case when (t2.seq_num=1 and t.scan_type=1 and t.input_type=1) then t.scaned_time end) ManulOutboundTime,
+           max(decode(t2.seq_num,1,t.scanner)) scanner,
+          
+           max(decode(t2.seq_num,2,t2.pos_name)) n1StopName,
+           max(case when (t2.seq_num=2 and t.scan_type=0) then t.plan_time end) n1PlanInboundTime,
+           max(case when (t2.seq_num=2 and t.scan_type=1) then t.plan_time end) n1PlanOutboundTime,
+           max(case when (t2.seq_num=2 and t.scan_type=0 and t.input_type=0) then t.scaned_time end) n1ScanedInboundTime,
+           max(case when (t2.seq_num=2 and t.scan_type=1 and t.input_type=0) then t.scaned_time end) n1ScanedOutboundTime,
+           max(case when (t2.seq_num=2 and t.scan_type=0 and t.input_type=1) then t.scaned_time end) n1ManulInboundTime,
+           max(case when (t2.seq_num=2 and t.scan_type=1 and t.input_type=1) then t.scaned_time end) n1ManulOutboundTime,
+           max(decode(t2.seq_num,2,t.scanner)) n1Scanner,
+           
+           max(decode(t2.seq_num,3,t2.pos_name)) n2StopName,
+           max(case when (t2.seq_num=3 and t.scan_type=0) then t.plan_time end) n2PlanInboundTime,
+           max(case when (t2.seq_num=3 and t.scan_type=1) then t.plan_time end) n2PlanOutboundTime,
+           max(case when (t2.seq_num=3 and t.scan_type=0 and t.input_type=0) then t.scaned_time end) n2ScanedInboundTime,
+           max(case when (t2.seq_num=3 and t.scan_type=1 and t.input_type=0) then t.scaned_time end) n2ScanedOutboundTime,
+           max(case when (t2.seq_num=3 and t.scan_type=0 and t.input_type=1) then t.scaned_time end) n2ManulInboundTime,
+           max(case when (t2.seq_num=3 and t.scan_type=1 and t.input_type=1) then t.scaned_time end) n2ManulOutboundTime,
+           max(decode(t2.seq_num,3,t.scanner)) n2Scanner,
+           
+           max(decode(t2.seq_num,4,t2.pos_name)) n3StopName,
+           max(case when (t2.seq_num=4 and t.scan_type=0) then t.plan_time end) n3PlanInboundTime,
+           max(case when (t2.seq_num=4 and t.scan_type=1) then t.plan_time end) n3PlanOutboundTime,
+           max(case when (t2.seq_num=4 and t.scan_type=0 and t.input_type=0) then t.scaned_time end) n3ScanedInboundTime,
+           max(case when (t2.seq_num=4 and t.scan_type=1 and t.input_type=0) then t.scaned_time end) n3ScanedOutboundTime,
+           max(case when (t2.seq_num=4 and t.scan_type=0 and t.input_type=1) then t.scaned_time end) n3ManulInboundTime,
+           max(case when (t2.seq_num=4 and t.scan_type=1 and t.input_type=1) then t.scaned_time end) n3ManulOutboundTime,
+           max(decode(t2.seq_num,4,t.scanner)) n3Scanner
+       
+      from WL_TRSJOB_TIME_RECORD t, WL_TRUCKRS_JOB t1, WL_STOP t2, WL_ROUTE t3
+      where t.TRS_JOB_ID = t1.id and t.STOP_ID = t2.id and t2.ROUTE_ID = t3.id 
+		<include refid="pageListClause"/>
+		
+		order by t1.id desc
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.truckRSSchedule.TruckRSJobTimeRecordSO">
+		select count(1) from(select distinct t1.id from WL_TRSJOB_TIME_RECORD t, WL_TRUCKRS_JOB t1, WL_STOP t2, WL_ROUTE t3
+      where t.TRS_JOB_ID = t1.id and t.STOP_ID = t2.id and t2.ROUTE_ID = t3.id  
+		<include refid="pageListClause"/>
+		
+		)
+	</select>
+	
+	<select id="getOfficeLineScanJobs" resultType="TruckRSJobTimeRecord" >
+		select distinct t1.* from wl_trsjob_time_record t1,  wl_client_barcode_record t2,wl_truckrs_job t3
+        where  t1.pos_id=t2.pos_id   and t2.processed=0 
+        and t1.trs_job_id=t3.id and t3.status in('PLANED','DISPATCHED','ENROUTE')
+        and t3.rsjob_type in('REGULAR','EMERGENCY')
+        and (t1.scan_code=t2.barcode or t1.pin_code=t2.barcode)     
+        and (trunc(t3.start_date) between trunc(sysdate-5) and trunc(sysdate+6))
+	</select>
+	
+	
+</mapper>

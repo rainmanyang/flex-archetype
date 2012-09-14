@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<!-- ===================================================================== -->
+<!--                                                                       -->
+<!--  Log4j Configuration                                                  -->
+<!--                                                                       -->
+
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">  
+
+   <!-- ============================== -->
+   <!-- Append messages to the console -->
+   <!-- ============================== -->
+
+   <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+	  <layout class="org.apache.log4j.PatternLayout">
+	   <param name="ConversionPattern"
+	    value="%c- %-5p %x - %m%n" />
+	  </layout>
+   </appender>
+   <!--LS Log Appender-->
+	
+	<appender name="ROOT_FILE"
+		class="org.apache.log4j.RollingFileAppender">
+		<param name="File" value="${jboss.server.log.dir}/App_root.log" />
+		<param name="Append" value="true" />
+		<param name="MaxFileSize" value="10240KB" /> 
+		<param name="MaxBackupIndex" value="30" /> 
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%c] %m%n" />
+		</layout>
+		<filter class="org.apache.log4j.varia.LevelRangeFilter">
+         <param name="levelMin" value="INFO" />
+         <param name="levelMax" value="INFO" />      
+         <param name="AcceptOnMatch" value="true" />
+       </filter>
+	</appender>
+	
+
+	<appender name="ROOT_ERROR_FILE"
+		class="org.apache.log4j.RollingFileAppender">
+		<param name="File" value="${jboss.server.log.dir}/App_root_error.log" />
+		<param name="Append" value="true" />
+		<param name="MaxFileSize" value="10240KB" /> 
+		<param name="MaxBackupIndex" value="10" /> 
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%c] %m%n" />
+		</layout>
+		<filter class="org.apache.log4j.varia.LevelRangeFilter">
+         <param name="levelMin" value="INFO" />
+         <param name="levelMax" value="ERROR" />      
+         <param name="AcceptOnMatch" value="true" />
+       </filter>
+	</appender>
+	
+	<appender name="SPRING_DEBUG_FILE"
+		class="org.apache.log4j.RollingFileAppender">
+		<param name="File" value="d:/spring_root.log" />
+		<param name="Append" value="true" />
+		<param name="MaxFileSize" value="10240KB" /> 
+		<param name="MaxBackupIndex" value="30" /> 
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%c] %m%n" />
+		</layout>
+		<filter class="org.apache.log4j.varia.LevelRangeFilter">
+         <param name="levelMin" value="DEBUG" />
+         <param name="levelMax" value="error" />      
+         <param name="AcceptOnMatch" value="true" />
+       </filter>
+	</appender>
+ <!--  
+	<appender name="App_FILE"
+		class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="${jboss.server.log.dir}/App.log" />
+		<param name="Append" value="false" />
+		<param name="DatePattern" value="'.'yyyy-MM-dd" />
+
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%c] %m%n" />
+		</layout>
+	</appender>   
+
+	<appender name="appLog" class="org.apache.log4j.DailyRollingFileAppender">  
+      <errorHandler class="org.jboss.logging.util.OnlyOnceErrorHandler"></errorHandler>  
+      <param name="Append" value="true"/>  
+      <param name="File" value="${jboss.server.log.dir}/app_file.log"/>  
+      <param name="DatePattern" value="'.'yyyy-MM-dd-HH-mm"/>  
+      <layout class="org.apache.log4j.PatternLayout">  
+         <param name="ConversionPattern" value="%d{ABSOLUTE} %-5p [%c{1}] %m%n"/>  
+      </layout>  
+</appender>  
+
+<appender name="IBATIS" class="org.apache.log4j.DailyRollingFileAppender">  
+         <param name="File" value="${jboss.server.log.dir}/ibatis.log" />  
+          <param name="Append" value="false"/>
+        <param name="DatePattern" value="'.'yyyy-MM-dd"/>
+         <layout class="org.apache.log4j.PatternLayout">  
+             <param name="ConversionPattern"  
+                 value="=%d %-5p [%t] %-17c{2} (%13F:%L) %3x - %m%n" />  
+         </layout>  
+     </appender> 
+     
+     <appender name="UU" class="org.apache.log4j.DailyRollingFileAppender">  
+         <param name="File" value="${jboss.server.log.dir}/uu.log" />  
+          <param name="Append" value="false"/>
+        <param name="DatePattern" value="'.'yyyy-MM-dd"/>
+         <layout class="org.apache.log4j.PatternLayout">  
+             <param name="ConversionPattern"  
+                 value="=%d %-5p [%t] %-17c{2} (%13F:%L) %3x - %m%n" />  
+         </layout>  
+     </appender> 
+  
+    <category name="com.best.oasis.genitrans.util">
+     <priority value="DEBUG" />
+     <appender-ref ref="IBATIS"/>
+    </category>
+     
+    <category name="com.best.oasis.genitrans">
+     <priority value="DEBUG" />
+     <appender-ref ref="UU"/>
+    </category>
+
+  <appender name="Soap_FILE"
+		class="org.apache.log4j.RollingFileAppender">
+		<param name="File" value="${jboss.server.log.dir}/Soap.log" />
+		<param name="Append" value="true" />
+		<param name="MaxFileSize" value="10240KB" /> 
+		<param name="MaxBackupIndex" value="30" /> 
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%c] %m%n" />
+		</layout>
+		<filter class="org.apache.log4j.varia.LevelRangeFilter">
+         <param name="levelMin" value="TRACE" />
+         <param name="levelMax" value="TRACE" />      
+         <param name="AcceptOnMatch" value="true" />
+       </filter>
+	</appender>
+  --> 
+   
+   <!--       Project Log Category           --> 
+   
+ 	 <!--category name="com.best" additivity="true">
+		<priority value="INFO"/>
+		<appender-ref ref="App_FILE" />
+	</category-->  
+	
+	<category name="com.oasis.tmsv5">  
+     <priority value="DEBUG"/>  
+     
+	</category>
+	<category name="com.oasis.wolfburg">  
+     <priority value="DEBUG"/>  
+     <appender-ref ref="CONSOLE"/>
+     <appender-ref ref="ROOT_FILE" />  
+	</category>
+
+  <category name="org.springframework">  
+     <priority value="debug"/>  
+     <appender-ref ref="SPRING_DEBUG_FILE" />  
+	</category>
+	
+  <category name="org.apache.cxf">  
+     <priority value="debug"/>  
+     <appender-ref ref="CONSOLE"/>
+	</category>
+ 
+   <root>
+      
+	  <level value ="info"/>
+	  <appender-ref ref="CONSOLE" />
+      <appender-ref ref="ROOT_FILE" />
+      <appender-ref ref="ROOT_ERROR_FILE" />
+   </root>
+
+
+
+</log4j:configuration>

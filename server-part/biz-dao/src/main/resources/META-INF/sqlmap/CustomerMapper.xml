@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.customer.CustomerDAO">
+	<resultMap type="Customer" id="CustomerMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="parentId" column="parent_id"/>
+		<result property="addressId" column="address_id"/>
+		<result property="contactPersonName" column="contact_Person_Name"/>
+		<result property="insuredRate" column="INSURED_RATE"/>
+		<result property="transType" column="PD_TRANS_TYPE"/>
+		<result property="shortName" column="SHORT_NAME"/>
+		<result property="shortCode" column="SHORT_CODE"/>
+		<result property="profileId" column="PROFILE_ID"/>
+		<result property="brevityCode" column="brevity_code"/>
+		<result property="paymentCurrency" column="payment_Currency"/>
+		<result property="quotationType" column="default_quotation_type"/>
+		<result property="accountAmount" column="account_Period_Scale"/>
+		<result property="accountUnitId" column="PD_account_Period_Scale_unit"/>
+		<result property="apAmount" column="ap_Age"/>
+		<result property="apUnitId" column="PD_ap_Age_unit"/>
+	</resultMap>
+
+	<insert id="insert" parameterType="Customer">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<update id="update" parameterType="Customer">
+		<include refid="sqlmap.common.model.update"/>
+	</update>
+	
+	<select id="find" resultMap="CustomerMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<sql id="pageListClause">
+		<where>
+			<if test="codeName!=null and codeName!='' ">
+			and (upper(t.name) like '%'||#{codeName}||'%' or upper(t.code) like '%'||#{codeName}||'%' )
+			</if>
+			<if test="parentCodeName!=null and parentCodeName!='' ">
+			and p.id=t.parent_id 
+			and (upper(p.name) like '%'||#{parentCodeName}||'%' or upper(p.code) like '%'||#{parentCodeName}||'%' )
+			</if>
+			<if test="shortName!=null and shortName!='' ">
+			and t.short_name like '%'||#{shortName}||'%'
+			</if>
+			<if test="shortCode!=null and shortCode!='' ">
+			and t.short_code like '%'||#{shortCode}||'%'
+			</if>
+			<if test="paymentMethod!=null and paymentMethod!='' ">
+			and t.paymentMethod like '%'||#{paymentMethod}||'%'
+			</if>
+			<if test="contracted!=null and contracted!='' ">
+			and t.contracted like '%'||#{contracted}||'%'
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultMap="CustomerMap" parameterType="com.oasis.tmsv5.common.so.customer.CustomerSO">
+		select t.* from gt_customer t
+		<if test="parentCodeName!=null and parentCodeName!='' ">
+			,gt_customer p
+		</if>
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.tmsv5.common.so.customer.CustomerSO">
+		select count(1) from gt_customer t
+		<if test="parentCodeName!=null and parentCodeName!='' ">
+			,gt_customer p
+		</if>
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="getCustomersByOrgId" parameterType="long" resultMap="CustomerMap">
+		select t.* from gt_customer t,gt_org_customer_assoc a 
+		where a.customer_id=t.id and a.organization_id = #{orgId}
+	</select>
+</mapper>

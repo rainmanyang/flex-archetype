@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				width="100%" height="500" creationComplete="init()"
+				title="查找组织"   >
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.security.OrganizationController;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			
+			import mx.controls.Alert;
+			import mx.controls.treeClasses.TreeItemRenderer;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var orgController:OrganizationController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			public var closeCallBack:Function;
+			
+			public function init():void{
+				orgController.getOrgTree("",getOrgTreeCallBack);
+			}
+			
+			private function getOrgTreeCallBack(treeNode:TreeNode):void{
+				orgTree.dataProvider = treeNode;
+			}
+			
+			protected function searchBtn_clickHandler(event:MouseEvent):void
+			{
+				orgController.getOrgTree(cusName.text,getOrgTreeCallBack);
+			}
+			
+			protected function clearBtn_clickHandler(event:MouseEvent):void
+			{
+				cusName.text="";
+				orgController.getOrgTree(cusName.text,getOrgTreeCallBack);
+			}
+			
+			protected function sure():void{
+				var vo:Organization = orgTree.selectedItem.data as Organization;
+				dispatchAndClose(vo);
+			}
+			
+			protected function itemClick(event:ListEvent):void{
+				var target:TreeItemRenderer = TreeItemRenderer(event.itemRenderer);
+				var vo:Organization = target.data.data as Organization;
+				dispatchAndClose(vo);
+			}
+				
+			private function dispatchAndClose(vo:Organization):void {
+				closeCallBack(vo);
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="90%">
+		<s:HGroup>
+			<fb:MultiColumnForm numColumns="3" defaultButton="{searchBtn}">
+				<fb:MultiColumnFormItem label="组织名称">
+					<s:TextInput id="cusName" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem >
+					<mx:Button label="查询" id="searchBtn" click="searchBtn_clickHandler(event)"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem >
+					<mx:Button label="重置" id="reset" click="clearBtn_clickHandler(event)"/>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</s:HGroup>
+		<mx:Tree id="orgTree" width="100%" height="100%" labelField="value" 
+				 showRoot="true" itemDoubleClick="itemClick(event)" doubleClickEnabled="true" dataChange="new function():void{Alert.show('过哦')}"
+ 				 />
+	</mx:VBox>
+	<mx:HBox horizontalAlign="right" width="100%">
+		<mx:Button id="ok" click="sure();" label="确定"/>
+		<mx:Button id="no" click="PopUpManager.removePopUp(this);" label="取消"/>
+	</mx:HBox>
+	
+</fb:PopupDialog>

@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		  xmlns:fb="http://flexbase.800best.com/mxml"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:upload="com.oasis.tmsv5.view.util.*"
+		  width="100%" height="100%" title="详细信息" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.insure.Insure;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.resources.ResourceManager;
+			
+			[Bindable]
+			public var insureVO1:Insure= new Insure();
+			[Bindable]
+			public var insureVO2:Insure= new Insure();
+			
+			[Bindable]
+			public var truckVO:Truck = new Truck();
+			
+			[Bindable]
+			public var certType:ArrayCollection = EnumManage.getTruckCertType();
+			
+			[Bindable]
+			public var resourceTypeStatus:ArrayCollection = EnumManage.getTruckResourceType();
+			
+			[Bindable]
+			public var depositTypeTypeList:ArrayCollection = EnumManage.getDepositType();
+			
+			public function setId(id:Number):void {
+				truckVO.id=id;
+			}
+			
+			protected function toEdit():void
+			{
+				/**
+				 * 跳转到edit页面
+				 */ 
+				var edit:TruckEdit = parent.getChildByName("edit") as TruckEdit;
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=2;
+				edit.setId(truckVO.id);
+				if (truckVO.resourceType == "OUT") {
+					edit.changeResourceType.visible = true;
+					edit.insureVO1 = new Insure();
+					edit.insureVO2 = new Insure();
+					edit.depositType.selectedIndex=0;
+					
+					edit.ws1.opened=true;
+					edit.ws3.opened=true;
+					
+					edit.ws2.opened=false;
+					edit.ws5.opened=false;
+					edit.ws6.opened=false;
+					edit.ws7.opened=false;
+				} else {
+					edit.changeResourceType.visible = false;
+					
+					edit.ws1.opened=true;
+					edit.ws3.opened=true;
+					
+					edit.ws2.opened=true;
+					edit.ws5.opened=true;
+					edit.ws6.opened=true;
+					edit.ws7.opened=true;
+				}
+				edit.freshForm();
+			}
+			
+			public function displayText():void{
+				if(this.initialized){
+					resourceType.text = EnumManage.getDisplayText(truckVO.resourceType,resourceTypeStatus);
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox paddingLeft="30" width="100%" paddingBottom="10" paddingRight="10" paddingTop="10" borderStyle="solid">
+			<PremissionButton:PremissionButton label="编辑" id="edit" click="toEdit()" enabled="{truckVO.status=='ENABLE' || truckVO.status=='PONISHED'|| truckVO.status=='BREAK_DOWN'}" module="Truck" premission="edit"/>
+		</mx:HBox>
+		<fb:MultiColumnForm numColumns="3" width="100%" height="100%">
+			<mx:Label  text="基本信息"/>
+			<fb:MultiColumnFormItem label="车牌号：" >
+				<mx:Text  id="licensePlate" text="@{truckVO.licensePlate}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车型：" >
+				<s:Label text="{resourceManager.getString('normalResource',truckVO.truckType)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车辆品牌：" >
+				<s:Label text="{truckVO.truckLevel}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="联系人：" >
+				<mx:Text  id="contactPerson" text="@{truckVO.contactPerson}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="联系电话1：" >
+				<mx:Text id="contactPhone1" text="@{truckVO.contactPhone1}" width="100"/>
+			</fb:MultiColumnFormItem>
+				
+			<fb:MultiColumnFormItem label="联系电话2：" >
+				<mx:Text id="contactPhone2" text="@{truckVO.contactPhone2}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="运输性质：" >
+				<s:Label text="{EnumManage.getDisplayText(truckVO.truckPro,EnumManage.getTruckPro())}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="GPS号：" >
+				<mx:Text  id="gps" text="@{truckVO.gps}" width="100"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="卡号：" >
+				<mx:Text  id="cardCode" text="@{truckVO.cardCode}" width="100"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="资源类型：" colspan="3">
+				<mx:Text  id="resourceType"  text="{EnumManage.getDisplayText(truckVO.resourceType,resourceTypeStatus)}" width="100"/>
+			</fb:MultiColumnFormItem>
+				
+		</fb:MultiColumnForm>
+		
+		<fb:MultiColumnForm numColumns="3" width="100%" height="100%">
+			<mx:Label  text="合约信息"/>
+			<fb:MultiColumnFormItem label="所属承运商：" >
+				<mx:Text id="ownerName"  text="@{truckVO.ownerName}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车主联系电话：" >
+				<mx:Text id="ownerPhone" text="@{truckVO.ownerPhone}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="合同号：" >
+				<mx:Text id="contractNumber" text="@{truckVO.contractNumber}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="签署时间：" >
+				<mx:Text id="contractDate" text="{DateFormatterUtil.format1(truckVO.contractDate)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="合同时间起：" >
+				<mx:Text id="contractDateFrom" text="{DateFormatterUtil.format1(truckVO.contractDateFrom)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="合同时间止：" >
+				<mx:Text id="contractDateTo" text="{DateFormatterUtil.format1(truckVO.contractDateTo)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="安全保证金（元）："  >
+				<mx:Text id="guarantee"  text="{truckVO.guarantee}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="合同押金（元）：" >
+				<mx:Text id="deposit"  text="{truckVO.deposit}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="押金类型：" >
+				<mx:Text id="depositType" text="{EnumManage.getDisplayText(truckVO.depositType,depositTypeTypeList)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车主住址：" colspan="3">
+				<mx:Text id="ownerAddress"  text="@{truckVO.ownerAddress}" maxWidth="100"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<fb:MultiColumnForm numColumns="3" width="100%" height="100%">
+			
+			<mx:Label  text="车辆信息"/>
+			<fb:MultiColumnFormItem label="品牌型号：" >
+				<mx:Text id="brand" text="@{truckVO.brand}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车辆识别代号（VIN）：" >
+				<mx:Text id="vin" text="@{truckVO.vin}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车架号：" >
+				<mx:Text id="truckCode" text="@{truckVO.truckCode}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="发动机号：" >
+				<mx:Text id="engineCode" text="@{truckVO.engineCode}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="挂车车架号：" >
+				<mx:Text id="trailerCode" text="@{truckVO.trailerCode}" width="100"/>
+			</fb:MultiColumnFormItem>
+				
+			<fb:MultiColumnFormItem label="车长：" >
+				<mx:Text  id="truckLength" text="@{truckVO.truckLength}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车宽：" >
+				<mx:Text  id="truckWidth" text="@{truckVO.truckWidth}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车高：" >
+				<mx:Text  id="truckHeight" text="@{truckVO.truckHeight}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="可装容积：" >
+				<mx:Text  id="loadVolume" text="@{truckVO.loadVolume}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="载重量：" >
+				<mx:Text  id="loadWeight" text="@{truckVO.loadWeight}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="核定载质量：" >
+				<mx:Text id="maxWeight" text="@{truckVO.maxWeight}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="整备质量：" >
+				<mx:Text id="emptyWeight" text="@{truckVO.emptyWeight}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="总质量：" >
+				<mx:Text id="totalWeight" text="@{truckVO.totalWeight}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="发证机关：" >
+				<mx:Text id="permissionOrg" text="@{truckVO.permissionOrg}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="上牌日期：" >
+				<mx:Text id="licenseDate" text="{DateFormatterUtil.format1(truckVO.licenseDate)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="最近年检日期：" >
+				<mx:Text id="inspectionDate" text="{DateFormatterUtil.format1(truckVO.inspectionDate)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="年检有效期限：" >
+				<mx:Text id="inspectionDur" text="{truckVO.inspectionDur.toString()}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="报废日期：" >
+				<mx:Text id="discardDate" text="{DateFormatterUtil.format1(truckVO.discardDate)}" width="100"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<fb:MultiColumnForm numColumns="3" width="100%" height="100%">
+			<mx:Label  text="保险信息"/>
+			<fb:MultiColumnFormItem label="保险公司：" colspan="3">
+				<s:Label text="{insureVO1.insurer}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="保险单号1：" >
+				<s:Label text="{insureVO1.insureCode}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="保险生效时间：" >
+				<s:Label text="{DateFormatterUtil.format1(insureVO1.insureFrom)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="保险截止时间：" >
+				<s:Label text="{DateFormatterUtil.format1(insureVO1.insureTo)}" width="100"/>
+			</fb:MultiColumnFormItem>	
+			
+			<fb:MultiColumnFormItem label="保险单号2：" >
+				<s:Label text="{insureVO2.insureCode}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="保险生效时间：" >
+				<s:Label text="{DateFormatterUtil.format1(insureVO2.insureFrom)}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="保险截止时间：" >
+				<s:Label text="{DateFormatterUtil.format1(insureVO2.insureTo)}" width="100"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+			<fb:MultiColumnForm width="100%" height="100%">	
+				<mx:Label  text="合同线路"/>
+				<mx:DataGrid dataProvider="{truckVO.contractRouteList}" height="70" width="100%">
+					<mx:columns>
+						<mx:DataGridColumn headerText="线路名称" dataField="name" />
+					</mx:columns>
+				</mx:DataGrid>
+			</fb:MultiColumnForm>
+		
+		
+
+		<fb:MultiColumnForm numColumns="2" width="100%" height="100%">
+			
+			<fb:MultiColumnFormItem label="司机1：">
+				<mx:Text id="driver1Name" text="@{truckVO.driver1Name}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="司机1电话：" >
+				<mx:Text id="driver1Phone" text="@{truckVO.driver1Phone}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="司机2：" >
+				<mx:Text id="driver2" text="@{truckVO.driver2Name}" width="100"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="司机2电话：" >
+				<mx:Text id="driver2Phone" text="@{truckVO.driver2Phone}" width="100"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		
+	       <mx:VBox>
+			<mx:Label  text="资质文件"/>
+		    <upload:uploadView attachments="{truckVO.attachmentList}" attachmentType="{certType}"/>
+          </mx:VBox>
+		</mx:VBox>
+	</mx:Panel>
+

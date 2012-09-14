@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml" width="100%" height="100%"
+	xmlns:security="com.oasis.tmsv5.view.security.*" xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.event.OrgReloadEvent;
+			import com.oasis.tmsv5.security.OrganizationController;
+			import com.oasis.tmsv5.vo.address.Address;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			
+			[Inject]
+			public var orgController:OrganizationController;
+			
+			[Bindable]
+			public var organization:Organization = new Organization();
+			
+			[Dispatcher]
+			public var dispatcher:IEventDispatcher;
+			
+			public var create:Function;
+			
+			public var update:Function;
+			
+			public function init():void{
+				
+			}
+			
+			private function clear():void{
+				organization = new Organization();
+				dispatcher.dispatchEvent(new OrgReloadEvent(OrgReloadEvent.REOLAD_ORG_EVENT));
+			}
+			
+			private function removedFun():void{
+				orgController.remove(organization.id,clear);
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox horizontalAlign="right" width="70%" height="100%">
+		<fb:MultiColumnForm width="100%" height="100%" numColumns="2">
+			<fb:MultiColumnFormItem label="组织编号：">
+				<s:Label text="{organization.code}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="组织名称：">
+				<s:Label text="{organization.name}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="邮政编码：" colspan="2">
+				<s:Label text="{organization.contactPhone}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="详细描述：" colspan="2">
+				<s:Label text="{organization.desc}" />
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		<s:HGroup>
+			<mx:Button label="新增" click="create()"/>
+			<mx:Button label="修改" click="update()"/>	
+		</s:HGroup>
+	</mx:VBox>
+	
+</mx:VBox>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration 
+    PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<typeAliases>
+		<typeAlias type="com.oasis.tmsv5.model.security.Role" alias="Role"/>
+		<typeAlias type="com.oasis.tmsv5.model.base.Domain" alias="Domain"/>
+		<typeAlias type="com.oasis.tmsv5.model.security.Account" alias="Account"/>
+		<typeAlias type="com.oasis.tmsv5.model.organization.Organization" alias="Organization"/>
+		<typeAlias type="com.oasis.tmsv5.model.customer.Customer" alias="Customer"/>
+		<typeAlias type="com.oasis.tmsv5.model.naturalzone.NaturalZone" alias="NaturalZone"/>
+		<typeAlias type="com.oasis.tmsv5.model.address.Address" alias="Address"/>
+		<typeAlias type="com.oasis.tmsv5.model.base.PredefinedCode" alias="PredefinedCode"/>
+		
+		<!-- wolfburg -->
+		<typeAlias type="com.oasis.wolfburg.model.driver.Driver" alias="Driver"/>
+		<typeAlias type="com.oasis.wolfburg.model.price.Price" alias="Price"/>
+		<typeAlias type="com.oasis.wolfburg.model.route.Route" alias="Route"/>
+		<typeAlias type="com.oasis.wolfburg.model.route.RouteLine" alias="RouteLine"/>
+		<typeAlias type="com.oasis.wolfburg.model.route.Stop" alias="Stop"/>
+		<typeAlias type="com.oasis.wolfburg.model.route.POS" alias="Pos"/>
+		<typeAlias type="com.oasis.wolfburg.common.vo.route.PosViewVO" alias="PosView"/>
+		<typeAlias type="com.oasis.wolfburg.model.truck.Truck" alias="Truck"/>
+        <typeAlias type="com.oasis.wolfburg.model.carrier.Carrier" alias="Carrier"/>
+        <typeAlias type="com.oasis.wolfburg.model.truck.ContractRoute" alias="ContractRoute"/>
+        <typeAlias type="com.oasis.wolfburg.model.truck.TruckStatusRecord" alias="TruckStatusRecord"/>
+        <typeAlias type="com.oasis.wolfburg.model.insure.Insure" alias="Insure"/>
+        
+        <typeAlias type="com.oasis.wolfburg.model.carrier.ParentCompany" alias="ParentCompany"/>
+        <typeAlias type="com.oasis.wolfburg.model.bank.Bank" alias="Bank"/>
+        <typeAlias type="com.oasis.wolfburg.model.attachment.Attachment" alias="Attachment"/>
+        <typeAlias type="com.oasis.wolfburg.model.truckRSSchedule.ClientBarcodeRecord" alias="ClientBarcodeRecord"/>
+		<typeAlias type="com.oasis.wolfburg.model.truckRSSchedule.TruckRSJob" alias="TruckRSJob"/>	
+		<typeAlias type="com.oasis.wolfburg.model.truckRSSchedule.TruckRSJobTimeRecord" alias="TruckRSJobTimeRecord"/>
+		<typeAlias type="com.oasis.wolfburg.model.truckRSSchedule.TruckRSSchedule" alias="TruckRSSchedule"/>
+		<typeAlias type="com.oasis.wolfburg.model.trackRecord.TrackRecord" alias="TrackRecord"/>
+		<typeAlias type="com.oasis.wolfburg.common.vo.trackRecord.TrackRecordViewVO" alias="TrackRecordView"/>	
+		<typeAlias type="com.oasis.wolfburg.common.vo.truckRSSchedule.TruckRSJobTimeRecordVO" alias="TruckRSJobTimeRecordView"/>
+		<typeAlias type="com.oasis.wolfburg.model.bill.PaymentItem" alias="PaymentItem"/>
+		<typeAlias type="com.oasis.wolfburg.common.vo.bill.PaymentItemReportVO" alias="PaymentItemReportVO"/>
+		<typeAlias type="com.oasis.wolfburg.common.so.truckRSSchedule.POSRSJobView" alias="POSRSJobView"/>
+		<typeAlias type="com.oasis.tmsv5.model.base.DownloadInfo" alias="DownloadInfo"/>
+		
+		<typeAlias type="com.oasis.wolfburg.model.track.ExpTrack" alias="ExpTrack"/>
+	</typeAliases>
+	
+	<plugins>
+		<plugin interceptor="com.oasis.tmsv5.util.query.SQLMapDialectInterceptor">
+			<property name="dialectClass" value="com.oasis.tmsv5.util.query.OracleDialect" />
+		</plugin>
+		<plugin interceptor="com.oasis.tmsv5.util.query.SQLUpdateInterceptor">
+		</plugin>
+	</plugins>
+
+	<environments default="TMSV5TEST">
+		<environment id="TMSV5TEST">
+            <transactionManager type="JDBC">
+            </transactionManager>
+            <dataSource type="UNPOOLED">
+                <property name="driver" value="oracle.jdbc.driver.OracleDriver" />
+                <property name="url" value="jdbc:oracle:thin:@oratest1.800best.com:1521:ORATEST1" />
+                <property name="username" value="bl00718" />
+                <property name="password" value="orabl00718" />
+            </dataSource>
+        </environment>
+	</environments>
+
+	<mappers>
+	    <mapper resource="META-INF/sqlmap/CommonModelMapper.xml" />	
+		<mapper resource="META-INF/sqlmap/AccountMapper.xml" />
+		<mapper resource="META-INF/sqlmap/MenuItemMapper.xml" />
+		<mapper resource="META-INF/sqlmap/RoleMapper.xml" />
+		<mapper resource="META-INF/sqlmap/DomainMapper.xml" />
+		<mapper resource="META-INF/sqlmap/Associate.xml" />
+		<mapper resource="META-INF/sqlmap/TestModel.xml" />
+		<mapper resource="META-INF/sqlmap/OrganizationMapper.xml" />
+		<mapper resource="META-INF/sqlmap/CustomerMapper.xml" />
+		<mapper resource="META-INF/sqlmap/NaturalZoneMapper.xml" />
+		<mapper resource="META-INF/sqlmap/AddressMapper.xml" />
+		<mapper resource="META-INF/sqlmap/PredefinedCodeMapper.xml" />
+		
+		<!-- wolfburg -->
+		<mapper resource="META-INF/sqlmap/DriverMapper.xml" />
+		<mapper resource="META-INF/sqlmap/PriceMapper.xml" />
+		<mapper resource="META-INF/sqlmap/RouteMapper.xml" />
+		<mapper resource="META-INF/sqlmap/RouteLineMapper.xml" />
+		<mapper resource="META-INF/sqlmap/StopMapper.xml" />
+		<mapper resource="META-INF/sqlmap/PosMapper.xml" />
+		
+		<mapper resource="META-INF/sqlmap/CarrierMapper.xml" />
+        <mapper resource="META-INF/sqlmap/TruckMapper.xml" />
+        <mapper resource="META-INF/sqlmap/ContractRouteMapper.xml" />
+        <mapper resource="META-INF/sqlmap/TruckStatusRecordMapper.xml" />
+        <mapper resource="META-INF/sqlmap/InsureMapper.xml" />
+        
+        <mapper resource="META-INF/sqlmap/ParentCompanyMapper.xml" />
+        <mapper resource="META-INF/sqlmap/BankMapper.xml" />
+
+		<mapper resource="META-INF/sqlmap/AttachmentMapper.xml" />
+		<mapper resource="META-INF/sqlmap/TruckRSJobMapper.xml" />
+		<mapper resource="META-INF/sqlmap/ClientBarcodeRecordMapper.xml" />
+		<mapper resource="META-INF/sqlmap/TruckRSJobTimeRecordMapper.xml" />
+		<mapper resource="META-INF/sqlmap/TruckRSScheduleMapper.xml" />
+		<mapper resource="META-INF/sqlmap/TrackRecordMapper.xml" />
+		<mapper resource="META-INF/sqlmap/PaymentItemMapper.xml" />
+		<mapper resource="META-INF/sqlmap/DownloadInfoMapper.xml" />
+		
+		<mapper resource="META-INF/sqlmap/ExpTrackMapper.xml" />
+	</mappers>
+</configuration>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<services-config>
+	<services>
+		<!-- remoting-service responsble for java s/ds-->
+		<service id="remoting-service" class="flex.messaging.services.RemotingService">
+			<adapters>
+				<adapter-definition id="java-object" class="com.oasis.tmsv5.facade.interceptor.V5JavaAdapter" default="true" />
+			</adapters>
+			<default-channels>
+				<channel ref="my-amf" />
+			</default-channels>
+		</service>
+		<!-- message-service responsble for messaging-->
+		<service id="message-service" class="flex.messaging.services.MessageService">
+			<adapters>
+				<adapter-definition id="actionscript" class="flex.messaging.services.messaging.adapters.ActionScriptAdapter"
+					default="true" />
+				<adapter-definition id="jms" class="flex.messaging.services.messaging.adapters.JMSAdapter" />
+			</adapters>
+			<default-channels>
+				<channel ref="my-streaming-amf" />
+				<channel ref="my-amf" />
+			</default-channels>
+		</service>
+
+		<default-channels>
+			<channel ref="my-amf" />
+			<channel ref="my-streaming-amf" />
+			<channel ref="my-polling-amf" />
+		</default-channels>
+	</services>
+
+
+
+	<channels>
+
+		<channel-definition id="my-amf" class="mx.messaging.channels.AMFChannel">
+			<endpoint url="http://{server.name}:{server.port}/{context.root}/messagebroker/amf" class="flex.messaging.endpoints.AMFEndpoint" />
+			<properties>
+				<polling-enabled>true</polling-enabled>	
+				<polling-interval-seconds>4</polling-interval-seconds>			
+			</properties>
+		</channel-definition>
+		<channel-definition id="my-amfx" class="mx.messaging.channels.HTTPChannel">
+			<endpoint url="http://{server.name}:{server.port}/{context.root}/messagebroker/amfx" class="flex.messaging.endpoints.HTTPEndpoint" />
+		</channel-definition>
+		<channel-definition id="my-secure-amf" class="mx.messaging.channels.SecureAMFChannel">
+			<endpoint url="https://{server.name}:{server.port}/{context.root}/messagebroker/amfsecure" class="flex.messaging.endpoints.SecureAMFEndpoint" />
+			<properties>
+				<add-no-cache-headers>false</add-no-cache-headers>
+			</properties>
+		</channel-definition>
+
+		<channel-definition id="my-polling-amf" class="mx.messaging.channels.AMFChannel">
+			<endpoint url="http://{server.name}:{server.port}/{context.root}/messagebroker/amfpolling" class="flex.messaging.endpoints.AMFEndpoint" />
+			<properties>
+				<polling-enabled>true</polling-enabled>
+				<polling-interval-seconds>4</polling-interval-seconds>
+			</properties>
+		</channel-definition>
+
+		<channel-definition id="my-longpolling-amf" class="mx.messaging.channels.AMFChannel">
+			<endpoint url="http://{server.name}:{server.port}/{context.root}/messagebroker/amflongpolling" class="flex.messaging.endpoints.AMFEndpoint" />
+			<properties>
+				<polling-enabled>true</polling-enabled>
+				<polling-interval-seconds>5</polling-interval-seconds>
+				<wait-interval-millis>60000</wait-interval-millis>
+				<client-wait-interval-millis>1</client-wait-interval-millis>
+				<max-waiting-poll-requests>200</max-waiting-poll-requests>
+			</properties>
+		</channel-definition>
+
+		<channel-definition id="my-streaming-amf" class="mx.messaging.channels.StreamingAMFChannel">
+			<endpoint url="http://{server.name}:{server.port}/{context.root}/messagebroker/streamingamf" class="flex.messaging.endpoints.StreamingAMFEndpoint" />
+		</channel-definition>
+
+	</channels>
+
+	<logging>
+		<target class="flex.messaging.log.ConsoleTarget" level="info">
+			<properties>
+				<prefix>[BlazeDS] </prefix>
+				<includeDate>false</includeDate>
+				<includeTime>true</includeTime>
+				<includeLevel>true</includeLevel>
+				<includeCategory>true</includeCategory>
+			</properties>
+			<filters>
+				<pattern>Endpoint.*</pattern>
+				<pattern>Service.*</pattern>
+				<pattern>Configuration</pattern>
+			</filters>
+		</target>
+	</logging>
+
+	<system>
+		<redeploy>
+			<enabled>false</enabled>
+		</redeploy>
+	</system>
+
+</services-config>

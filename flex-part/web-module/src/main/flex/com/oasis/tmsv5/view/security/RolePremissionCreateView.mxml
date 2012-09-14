@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml" width="100%" height="100%"
+	xmlns:security="com.oasis.tmsv5.view.security.*">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.RoleListEvent;
+			import com.oasis.tmsv5.security.RoleController;
+			import com.oasis.tmsv5.vo.security.RolePremission;
+			
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+			
+			[Inject]
+			public var roleController:RoleController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			public function submit():void{
+				if(!form.validate()){
+					return;
+				}
+				form.collectData();
+				roleController.createRole(form.vo,successCallBack,failCallback);
+				
+			}
+			
+			public function successCallBack():void {
+				form.vo =new RolePremission();
+				form.init();
+				Alert.show("创建成功!");
+				dispatch.dispatchEvent(new RoleListEvent(RoleListEvent.ROLE_LIST_EVENT));
+			}
+			
+			public function failCallback(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,form,true);
+			}
+		]]>
+	</fx:Script>
+	
+	<security:RolePremissionForm id="form" width="100%" height="600"/>
+	<mx:HBox horizontalAlign="right" width="146">
+		<mx:Button label="提交" click="submit();" />
+	</mx:HBox>
+</mx:VBox>

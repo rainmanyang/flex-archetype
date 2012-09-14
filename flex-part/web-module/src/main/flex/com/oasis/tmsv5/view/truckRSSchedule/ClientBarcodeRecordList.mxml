@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:paymentItem="com.oasis.tmsv5.view.bill.*" xmlns:grid="com.oasis.component.grid.*" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	<fx:Declarations>
+		<mx:WipeDown id="myWD" duration="200" />
+		<mx:WipeUp id="myWU" duration="200" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.truckRSSchedule.ClientBarcodeRecordController;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.so.truckRSSchedule.ClientBarcodeRecordSO;
+			import com.oasis.wolfburg.vo.truckRSSchedule.ClientBarcodeRecord;
+			
+			import mx.controls.dataGridClasses.DataGridColumn;
+			
+			[Inject]
+			public var clientBarcodeRecordController:ClientBarcodeRecordController;
+			
+			[Bindable]  
+			public var so:ClientBarcodeRecordSO = new ClientBarcodeRecordSO();	
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			public function init():void{
+				//DateSearchUtils.initDateInterval(interval);
+				interval();
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			private function interval():void{
+				var current:Date = new Date();
+				so.scanTimeBegin =new Date(current.time-DateSearchUtils.millisecondsPerDay*30);
+				so.scanTimeEnd = new Date(current.time+DateSearchUtils.millisecondsPerDay);
+			}
+			
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				clientBarcodeRecordController.getPageList(so, pageList,callBack);
+			}
+			
+			public function search():void{
+				so.pageNumber=1;
+				clientBarcodeRecordController.getPageList(so, pageList);
+			}
+			
+			public function clear():void{
+				so = new ClientBarcodeRecordSO();
+				interval();
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			private function getDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as ClientBarcodeRecord).scanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getDateString4OfflineUploadTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as ClientBarcodeRecord).offlineUploadTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getDateString4ServerTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as ClientBarcodeRecord).serverTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getProcessedTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as ClientBarcodeRecord).processedTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			
+			
+			private function getInputType(item:Object,column:DataGridColumn):String{
+				var inputType:Number= (item as ClientBarcodeRecord).inputType;
+				if(inputType == 0){
+					return "扫描";
+				}else if(inputType == 1){
+					return "手工";
+				}else {
+					return "";
+				}
+			}
+			private function getScanType(item:Object,column:DataGridColumn):String{
+				var scanType:Number= (item as ClientBarcodeRecord).scanType;
+				if(scanType == 0){
+					return "进港";
+				}else if(scanType == 1){
+					return "出港";
+				}else {
+					return "";
+				}
+			}
+			private function getProcessed(item:Object,column:DataGridColumn):String{
+				var processed:Boolean= (item as ClientBarcodeRecord).processed;
+				return getLabel4YesAndNo(processed);
+			}
+			private function getOnline(item:Object,column:DataGridColumn):String{
+				var onlined:Boolean= (item as ClientBarcodeRecord).onlined;
+				return getLabel4YesAndNo(onlined);
+			}
+			
+			
+			private function getLabel4YesAndNo(flag:Boolean):String{
+				if(flag == true){
+					return "是";
+				}else if(flag == false){
+					return "否";
+				}else {
+					return "";
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="30%" height="95%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<mx:VBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="站点名称" >
+							<mx:TextInput text="@{so.posName}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="扫描码" >
+							<mx:TextInput text="@{so.barcode}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="扫描时间：">
+							<mx:HBox>
+								<mx:DateField selectedDate="@{so.scanTimeBegin}"  formatString="YYYY-MM-DD"/>
+								<mx:Label htmlText="--"/>
+								<mx:DateField selectedDate="@{so.scanTimeEnd}" formatString="YYYY-MM-DD"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:HBox>
+									<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+									<mx:Button label="清空查询" click="clear()"/>
+								</mx:HBox>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+				</mx:VBox>
+			</flexlib:WindowShade>
+			<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}"
+								 height="100%" allowMultipleSelection="false"  showControlColumn="false">
+				<fb:columns>
+					<fb:DataGridColumnNested headerText="考勤站点" dataField="posName" width="150"/>
+					<fb:DataGridColumnNested headerText="扫描码" dataField="barcode" width="100"/>
+					<fb:DataGridColumnNested headerText="扫描人" dataField="scanner" width="100"/>
+					<fb:DataGridColumnNested headerText="扫描时间"  labelFunction="getDateString" width="200"/>
+					<fb:DataGridColumnNested headerText="是否处理" labelFunction="getProcessed" width="80"/>
+					<fb:DataGridColumnNested headerText="是否连网提交" labelFunction="getOnline" width="120"/>
+					<fb:DataGridColumnNested headerText="离线上传客户端时间" labelFunction="getDateString4OfflineUploadTime" width="200"/>
+					<fb:DataGridColumnNested headerText="离线上传服务器时间" labelFunction="getDateString4ServerTime" width="200"/>
+					<fb:DataGridColumnNested headerText="处理时间" labelFunction="getProcessedTime" width="200"/>
+					<fb:DataGridColumnNested headerText="处理结果" dataField="precessedResult" />
+					
+				</fb:columns>
+			</fb:PageableDataGrid>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>

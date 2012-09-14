@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"  width="100%" height="100%"
+	 xmlns:layout="com.oasis.tmsv5.layout.*"
+	 xmlns:fb="http://flexbase.800best.com/mxml" creationComplete="resetStaticLayout()" xmlns:configurePage="com.oasis.tmsv5.view.configurePage.*">
+	 
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.BeanUtils;
+			
+			import mx.messaging.ChannelSet;
+			
+			import com.best.oasis.flexbase.util.StringUtils;
+			import com.flexspy.FlexSpy;
+			import com.oasis.layout.ModuleManager;
+			import com.oasis.layout.StaticModuleManager;
+			import com.oasis.security.ClientContext;
+			import com.oasis.security.ModelLocator;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.utils.message.MessageConfig;
+			import com.oasis.tmsv5.view.popup.MsgDialog;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.wolfburg.vo.notification.NotifyMessage;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			import mx.messaging.events.MessageEvent;
+			import mx.messaging.events.MessageFaultEvent;
+			
+			[Inject]
+			public var accountControl:AccountController;
+			
+			[Bindable]
+			public var menuItems:ArrayCollection;
+			[Bindable]
+			public var callBackFunction:Function;
+			
+			[Inject]
+			public var staticModuleManager:StaticModuleManager;
+			
+			[Inject]
+			public var moduleManager:ModuleManager;
+			
+			[EventHandler( event="LogOutEvent.LOG_OUT" )]
+			public function logout():void{
+				accountControl.logout(callBackFunction);
+			}
+			
+			public function init():void{
+				initMessageBoard();
+			}
+			
+			public function resetStaticLayout():void{								
+				rightContent.closeAll();			
+				leftMenu.init();			
+				StaticModuleManager.getInstance().content = viewStack;
+				ModuleManager.getInstance().content = viewStack;
+				setLoginUserInfo();
+				if(configurePageManageView != null){
+					configurePageManageView.init();
+				}
+			}
+			
+			private function setLoginUserInfo():void{
+			    var context:ClientContext = ModelLocator.getInstance().getContext();
+				var userInfo:String;
+				if(StringUtils.isNotEmpty(context.loginName)){
+					userInfo=context.loginName;
+				}
+				
+				loginUserInfo.text=userInfo;
+				welcome.visible=true;
+				message.visible=true;				
+				
+			}		
+			
+			public function showHide():void{
+				if(leftWindow.includeInLayout == false){
+					
+					leftWindow.visible = true;
+					
+					leftWindow.includeInLayout = true;
+					viewStack.x = 200;
+					leftSplitBar.x=186;
+					controlBtn.styleName = "leftButtonHide";
+				}else{
+					
+					leftWindow.visible = false;
+					
+					leftWindow.includeInLayout = false;
+					viewStack.x = 12;
+					leftSplitBar.x=0;
+					controlBtn.styleName = "leftButtonShow";
+				}
+			}
+			
+			private function initMessageBoard():void{
+				//var channelSet:ChannelSet = MessageConfig.getChannelSet();
+				//consumer.subscribe();			
+			
+			}
+			
+			private function homePage():void{
+				rightContent.closeAll();
+				StaticModuleManager.getInstance().content = viewStack;
+				ModuleManager.getInstance().content = viewStack;
+				viewStack.selectedIndex = 0;
+			}
+			
+			private function sendMsg():void{
+				var dialog:MsgDialog = MsgDialog(PopUpManager.createPopUp(root, MsgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			/**
+			 * Queue
+			 * */ 
+			private function messageHandler(event:MessageEvent):void {
+				if(group.getChildIndex(imgLogo) == 0){
+					group.setElementIndex(group.getElementAt(1),group.numElements-1);
+				}
+				
+				if(event.message.body is String){
+					moveText.text=String(event.message.body);
+					initMove();
+					return;
+				}
+				var  notifyMessage:NotifyMessage=new NotifyMessage();
+				BeanUtils.copyProperties(notifyMessage,event.message.body);
+				moveText.text = notifyMessage.topic; 
+				
+				initMove();
+			} 
+			private function faultHandler(event:MessageFaultEvent):void { 
+				moveText.text = String(event.message.body.toString()); 
+				
+				initMove();
+			} 	
+			
+			private function initMove():void{
+				move_up.xFrom = moveHBox.width;  
+				move_up.xTo = imgLogo.width-moveHBox.width;  
+				move_up.repeatCount = 10; //loop
+				move_up.repeatDelay = 0; //loop time
+				move_up.duration = 50000; //the time of scroll once
+				move_up.play();
+			}
+			
+			private function move_pause():void
+			{
+				move_up.pause();  //pause
+			}
+			
+			private function move_resume():void
+			{
+				move_up.resume(); //start from the pause position
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>	
+		<!--
+		<mx:Consumer id="consumer" 
+					 destination="msgQueue" 					 
+					 message="messageHandler(event);" 
+					 fault="faultHandler(event);"/> -->	
+		<mx:Move id="move_up" target="{moveText}" />
+	</fx:Declarations>
+	<s:Group height="50" width="100%" id="group">
+		<s:Rect height="100%" width="100%">
+			<s:fill>
+				<s:BitmapFill source="@Embed('/assets/style/default/images/header_bg.png')"/>
+			</s:fill>
+		</s:Rect>
+		<mx:Image x="0" y="0" source="@Embed('/assets/style/default/images/viewLogo.png')"  
+				  ioError="imgLogo.errorString = '无法加载图片';"
+				  scaleContent="true" autoLoad="true" id="imgLogo" />		
+		<mx:HBox right="10" verticalAlign="middle" horizontalGap="0" horizontalAlign="right" width="100%" id="hBox">
+			<mx:VBox id="moveHBox" width="100%" height="50" verticalScrollPolicy="off" verticalAlign="middle" 
+					 mouseOver="move_pause()" mouseOut="move_resume()" paddingLeft="{imgLogo.width}" bottom="10">
+				<mx:Text id="moveText" width="100%" horizontalCenter="0"
+						 verticalCenter="0" fontSize="13" color="red">
+				</mx:Text>
+			</mx:VBox>
+			<mx:LinkButton label="消息" click="sendMsg()" styleName="topMenuButton"/>
+			<mx:LinkButton label="首页" click="homePage()" styleName="topMenuButton"/>
+			<mx:Label id="message" text="" visible="false" color="red"/>
+			<mx:Label id="welcome" text="欢迎：" visible="false" color="#66CBFF"/>
+			<mx:Label id="loginUserInfo" color="#66CBFF"/>
+			<mx:LinkButton label="注销" click="logout();" styleName="topMenuButton"/>
+			<!--<mx:Button id="btnFlexSpy" label="FlexSpy" click="FlexSpy.show()" />-->
+		</mx:HBox>
+	</s:Group>
+	<mx:HDividedBox width="100%" height="100%" paddingTop="0">
+            <mx:Canvas label="left" width="100%" height="100%" color="0x323232" top="70" >
+            	<mx:Box id="leftWindow" width="200" height="100%" left="0" styleName="accordionBox">
+               	 	<layout:LeftMenu id="leftMenu" width="195" y="0" x="0"/>
+                </mx:Box>
+				<mx:VBox id="leftSplitBar" x="185"  width="15" height="100%" verticalGap="0" horizontalAlign="center" verticalAlign="middle"  doubleClick="showHide()">
+					<mx:Button id="controlBtn" click="showHide();" styleName="leftButtonHide" useHandCursor="true" buttonMode="true" mouseChildren="true"/>
+				</mx:VBox>
+				<mx:ViewStack id="viewStack" resizeToContent="true"  x="200" y="0" selectedIndex="0" width="100%" height="100%" >
+					<configurePage:ConfigurePageManageView id="configurePageManageView" />
+	                <fb:BestSuperTabNavigator id="rightContent" x="200" y="0" width="100%" height="100%" backgroundColor="#FFFFFF"
+											   paddingBottom="5"  paddingTop="5" paddingLeft="10" paddingRight="10" closePolicy="SuperTab.CLOSE_ROLLOVER|SuperTab.CLOSE_ALWAYS|SuperTab.CLOSE_SELECTED|SuperTab.CLOSE_NEVER">
+	                </fb:BestSuperTabNavigator>
+				</mx:ViewStack>
+				<!--<fb:BestSuperTabNavigator id="rightContent" x="200" y="0" width="100%" height="100%" backgroundColor="#FFFFFF"
+										  paddingBottom="5"  paddingTop="5" paddingLeft="10" paddingRight="10" closePolicy="SuperTab.CLOSE_ROLLOVER|SuperTab.CLOSE_ALWAYS|SuperTab.CLOSE_SELECTED|SuperTab.CLOSE_NEVER">
+				</fb:BestSuperTabNavigator>-->
+            </mx:Canvas>
+     </mx:HDividedBox>
+</mx:VBox>

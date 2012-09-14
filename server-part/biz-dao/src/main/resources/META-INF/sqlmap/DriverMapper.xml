@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.driver.DriverDAO">
+
+	<select id="find" resultType="Driver">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="Driver">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+	   <insert id="insert" parameterType="Driver">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            <include refid="sqlmap.common.model.getSequence" />
+        </selectKey>
+        <include refid="sqlmap.common.model.insert" />
+    </insert>
+
+	<select id="selectByIds" parameterType="map" resultType="Driver">
+        <include refid="sqlmap.common.model.selectListByIds"/>
+    </select>
+	
+	<sql id="pageListClause">
+		where 1=1
+		<if test="name!=null and name!='' ">
+		and (t.name like '%'||#{name}||'%' or t.code like '%'||#{name}||'%')
+		</if>
+		<if test="license!=null and license!='' ">
+		and t.license like '%'||#{license}||'%'
+		</if>
+		<if test="status!=null and status!='' ">
+		and t.status = #{status}
+		</if>
+		<if test="periodStart!=null and periodStart!='' ">
+		<![CDATA[
+		and t.period_end >= #{periodStart}
+		]]>
+		</if>
+		<if test="periodEnd!=null and periodEnd!='' ">
+		<![CDATA[
+		and t.period_start <= #{periodEnd}
+		]]>
+		</if>
+	</sql>
+	
+	<select id="selectPageList" resultType="Driver" parameterType="com.oasis.wolfburg.common.so.driver.DriverSO">
+		select * from wl_driver t
+		<include refid="pageListClause"/>
+		order by t.id
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.driver.DriverSO">
+		select count(1) from wl_driver t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<update id="updateStatus" parameterType="map">
+		update wl_driver t set t.status=#{status} where t.id in
+		<foreach collection="ids" index="dex" item="item" open="(" close=")" separator=",">
+  			#{item}
+  		</foreach>
+	</update>
+	
+</mapper>

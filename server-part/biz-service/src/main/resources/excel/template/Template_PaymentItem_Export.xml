@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template version="Template_Fee" type="singleSheet" exportVersion="false">
+    <sheet name="PaymentItem" bean="com.oasis.wolfburg.common.vo.bill.PaymentItemVO"  nameCN="费用">
+        <meta>
+        	<column property="licensePlate" dataType="string" excelTitleName="车牌" />
+        	<column property="itemTypeCN" dataType="string" excelTitleName="费用类型" />
+        	<column property="amount" dataType="string" excelTitleName="金额" />
+        	<column property="carrierName" dataType="string" excelTitleName="车主" />
+        	<column property="billDate" dataType="string" excelTitleName="费用发生日期" />
+        	<column property="trsJobCode" dataType="string" excelTitleName="任务单名称" />
+        	
+        	<column property="reason" dataType="string" excelTitleName="备注" />
+        	<column property="strStatus" dataType="string" excelTitleName="状态" />
+        </meta>
+        <header>
+        </header>
+    </sheet>
+</template>

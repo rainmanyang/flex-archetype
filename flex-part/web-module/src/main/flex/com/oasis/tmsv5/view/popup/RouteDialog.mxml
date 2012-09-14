@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				width="700" height="400"
+				creationComplete="init()"
+				title="选择线路" xmlns:grid="com.oasis.component.grid.*">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.component.grid.SelectableDataGrid;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var routeController:RouteController;
+			[Bindable]
+			public var so:RouteSO = new RouteSO();
+			[Bindable]
+			public var item:Route = new Route();
+			[Bindable]
+			public var items:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			public var passFun:Function;
+			
+			[Bindable]
+			public var allowMultiple:Boolean = false;
+			
+			protected function btnOK(event:MouseEvent=null):void{
+				var arrs:Array = grid.selectedItems;
+				if(arrs.length == 0){
+					Alert.show("请选择线路!");
+				}else{
+					if(allowMultiple){//多选
+						for each(var obj:Object in arrs){
+							items.addItem(obj as Route);
+						}
+						if(passFun!=null)
+							passFun(items);
+					}else{//单选
+						item = Route(arrs[0]);
+						if(passFun!=null)
+							passFun(item);
+					}
+					PopUpManager.removePopUp(this);
+				}
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				if(status == 'NEW'){
+					return '新建';
+				}else if(status == 'ACTIVE'){
+					return '启用';
+				}else{
+					return '停用';
+				}
+			}
+			
+			public function search():void{
+				so.name = strName.text;
+				getPageData(1,so.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.status = 'ACTIVE';
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				routeController.getPageList(so, pageList,callBack);
+			}
+			
+			public function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox  width="100%" borderStyle="solid">
+				<fb:MultiColumnForm  numColumns="3" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="线路名称" >
+						<mx:TextInput id="strName"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem>
+						<mx:Button label="查询" click="search();" id="searchBtn"/>
+					</fb:MultiColumnFormItem>
+				</fb:MultiColumnForm>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid"  horizontalScrollPolicy="auto"
+								 width="100%" height="100%" allowMultipleSelection="{allowMultiple}" dataProvider="{pageList.list}"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}" showControlColumn="false" 
+								 doubleClickEnabled="true" doubleClick="btnOK(event)">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="线路名称" dataField="name" width="100"/>
+					<grid:DataGridColumnNested headerText="状态" dataField="status" width="50" labelFunction="getStatusLabel"/>
+					<grid:DataGridColumnNested headerText="所经站点" width="200" dataField="posNames"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="btnOK()"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

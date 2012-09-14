@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"      
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+	 	 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 width="100%" height="100%" xmlns:feeItem="feeItem.*" title="编辑" creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*" xmlns:validator="com.oasis.wolfburg.validator.*" >
+	
+	<fx:Declarations>
+		<mx:StringValidator id="licensePlateValidator" source="{licensePlate}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="cardCodeValidator" source="{cardCode}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="carrierNameValidator" source="{carrierName}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:NumberValidator  id="amountValidator" source="{amount}" property="text" requiredFieldError="{resourceManager.getString('errorResource','requireMoney')}" precision="2" precisionError="{resourceManager.getString('errorResource','moneyPrecision')}"/>
+		<mx:StringValidator id="billDateValidator" source="{billDate}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<validator:SelectValidator id="feeTypeElementValidator" source="{feeTypeElement}" property="selectedIndex" required="true" fieldError="{resourceManager.getString('errorResource','requireSelect')}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.base.PredefinedCodeController;
+			import com.oasis.tmsv5.bill.PaymentItemController;
+			import com.oasis.tmsv5.event.FeeItemEvent;
+			import com.oasis.tmsv5.view.popup.TruckDialog;
+			import com.oasis.tmsv5.view.popup.TruckRSJobDialog;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.vo.bill.PaymentItem;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var paymentItemController:PaymentItemController;
+			
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:PaymentItem= new PaymentItem();
+			
+			[Bindable]
+			public var feeType:ArrayCollection = new ArrayCollection();
+			
+			[Inject]
+			public var predefinedCodeController:PredefinedCodeController;
+			
+			public function init():void{
+				predefinedCodeController.findByType4ExceptionReceivableBill(feeType);
+			}
+			//bl00718 reviewer
+			//同create方法
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new PaymentItem();
+				ViewUtils.clearFrom(form);
+				feeTypeElement.selectedIndex = -1;
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				Alert.show("修改成功!");
+				paymentItemController.find(vo);
+				freshViewForm(vo);
+			}
+			private function freshViewForm(feeItem:PaymentItem):void{
+				var view:FeeItemView = parent.getChildByName("view") as FeeItemView;
+				view.vo = feeItem;
+				(this.parent as ViewStack).selectedIndex=0;
+			}
+			
+			protected function cleaeTrsJobCode():void {
+				trsJobCode.text = null;
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见FeeItemComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([licensePlateValidator,cardCodeValidator,carrierNameValidator,amountValidator,billDateValidator,feeTypeElementValidator]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			
+			private function update():void{
+				if(!validate()){
+					return;
+				}
+				collectData();
+				//创建方法需要传两个回调函数
+				paymentItemController.update(vo,successCallBack,validationCallBack);
+			}
+			
+			
+			public function freshForm():void{
+				paymentItemController.find(vo,openEdit);
+			}
+			
+			public function setId(id:Number):void {
+				this.vo.id = id
+			}
+			
+			private function openEdit():void{
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=2;
+			}
+			/**
+			 * 设置非绑定属性
+			 */ 
+			private function collectData():void {
+				vo.itemType = feeTypeElement.selectedItem.code;
+			}
+			
+			protected function addTruck():void
+			{
+				var dialog:TruckDialog = TruckDialog(PopUpManager.createPopUp(root, TruckDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.getTruckCallBack = truckCallBack;
+			}
+			private function truckCallBack(item:Object):void{
+				var truck:Truck = item as Truck;
+				licensePlate.text = truck.licensePlate;
+				cardCode.text = truck.cardCode;
+				carrierName.text = truck.ownerName;
+				vo.truckId = truck.id;
+				vo.truckType=truck.truckType;
+			}
+			
+			protected function cleanTruck():void {
+				licensePlate.text = "";
+				cardCode.text = "";
+				carrierName.text = "";
+			}
+			
+			protected function getTrsJob():void {
+				var dialog:TruckRSJobDialog = 
+					TruckRSJobDialog(PopUpManager.createPopUp(root, TruckRSJobDialog , true));
+				dialog.passFun = localFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFun(item:Object):void{
+				var truckRSJob:TruckRSJob = item as TruckRSJob;
+				vo.trsJobCode = truckRSJob.code;
+				trsJobCode.text = truckRSJob.code;
+				vo.rsJobId = truckRSJob.id;
+				vo.payType = truckRSJob.payMethod;
+				vo.rsJobType = truckRSJob.rsJobType;
+				vo.routeName = truckRSJob.routeName;
+			}
+			protected function cleaeTrsJob():void {
+				vo.trsJobCode = "";
+				trsJobCode.text = null;
+				vo.routeName = "";
+				vo.payType = "";
+				vo.rsJobType = "";
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<fb:MultiColumnForm id="form" width="90%" label="基本信息">
+			<fb:MultiColumnFormItem label="车牌号："  required="true">
+				<fb:SelectableTextInput searchButtonClick="addTruck" id="licensePlate"
+										text="@{vo.licensePlate}" width="180" clearButtonClick="cleanTruck" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车辆卡号：" required="true" enabled="false">
+				<s:TextInput id="cardCode" text="@{vo.cardCode}" editable="false" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车主名字：" required="true"  enabled="false">
+				<s:TextInput id="carrierName" text="@{vo.carrierName}" editable="false"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="金额：" required="true" >
+				<s:TextInput id="amount"  text="@{vo.payAmount}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费用发生日期：" required="true" >
+				<mx:DateField id="billDate" selectedDate="@{vo.billDate}" formatString="YYYY-MM-DD"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费用类型：" required="true">
+				<dropDownList:DropDownList dataProvider="{feeType}" labelField="value" id="feeTypeElement" searchKey="code"  value="{vo.itemType}" prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="任务单名称："  >
+				<fb:SelectableTextInput id="trsJobCode" textInputEditable="false"   text="@{vo.trsJobCode}" enabled="false"
+										searchButtonClick="getTrsJob" clearButtonClick="cleaeTrsJob" clearButtonVisible="false" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="备注："  >
+				<s:TextInput id="reason" text="@{vo.reason}" />
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="update()"/>
+		<mx:Button label="取消" id="cancel" click="cancel_clickHandler(event)"/>
+	</mx:HBox>
+</mx:Panel>

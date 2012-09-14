@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.carrier.CarrierDAO">
+	
+	<resultMap type="Carrier" id="CarrierMap">
+        <result property="carrierCode" column="carrier_code"/>
+        <result property="carrierName" column="carrier_name"/>
+        <result property="carrierShortName" column="carrier_Short_Name"/>
+        <result property="carrierType" column="carrier_type"/>
+        <result property="licenseType" column="license_type"/>
+        <result property="licenseCode" column="license_code"/>
+        <result property="contactPerson" column="contact_person"/>
+        <result property="contactAddress" column="contact_address"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="contactMobile" column="contact_mobile"/>
+        <result property="contactFX" column="contact_fx"/>
+        <result property="contactEmail" column="contact_email"/>
+        <result property="contactQQ" column="contact_qq"/>
+        <result property="apAge" column="ap_age"/>
+        <result property="bankAccount" column="bank_account"/>
+        <result property="payWay" column="pay_way"/>
+        <result property="parentCompanyId" column="parent_company_id"/>
+        <result property="parentCompanyName" column="parent_company_name"/>
+        <result property="domainId" column="domain_id"/>
+        <result property="creatorId" column="CREATOR_ID"/>
+        <result property="updatorId" column="UPDATOR_ID"/>
+    </resultMap> 
+
+	<sql id="pageListClause">
+		where 1=1
+		<if test="carrierName!=null and carrierName!='' ">
+		and t.carrier_name like '%'||#{carrierName}||'%'
+		</if>
+		<if test="carrierCode!=null and carrierCode!='' ">
+		and t.carrier_code like '%'||#{carrierCode}||'%'
+		</if>
+		
+		<if test="status!=null and status!='' ">
+        and t.status like '%'||#{status}||'%'
+        </if>
+        
+        <if test="carrierType!=null and carrierType!='' ">
+        and t.carrier_type like '%'||#{carrierType}||'%'
+        </if>
+		
+		 <if test="carrierIdList!=null and carrierIdList.size() > 0">
+                and t.id in
+                <foreach collection="carrierIdList" index="dex" item="item" open="(" close=")" separator=",">
+		  			#{item}
+		  		</foreach>
+        </if>
+	</sql>
+	
+	<select id="selectPageList" resultMap="CarrierMap" parameterType="com.oasis.wolfburg.common.so.carrier.CarrierSO">
+		select * from wl_carrier t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.carrier.CarrierSO">
+		select count(1) from wl_carrier t
+		<include refid="pageListClause"/>
+	</select>
+	
+    <delete id="delete">
+        <include refid="sqlmap.common.model.delete" />
+    </delete>
+
+    <select id="find" resultMap="CarrierMap">
+        <include refid="sqlmap.common.model.find" />
+    </select>
+    
+    <insert id="insert" parameterType="Carrier">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            <include refid="sqlmap.common.model.getSequence" />
+        </selectKey>
+        <include refid="sqlmap.common.model.insert" />
+    </insert>
+
+    <update id="update" statementType="PREPARED" timeout="20000" parameterType="Carrier">
+        <include refid="sqlmap.common.model.update" />
+    </update>
+    
+    <select id="checkDuplication" resultMap="CarrierMap" parameterType="com.oasis.wolfburg.common.so.carrier.CarrierSO">
+        select * from wl_carrier cr where cr.carrier_name = #{carrierName} or cr.carrier_code = #{carrierCode}
+    </select>
+    
+    <delete id="deleteByIds" parameterType="map">
+        <include refid="sqlmap.common.model.deleteByIds"/>
+    </delete>
+
+</mapper>

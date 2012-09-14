@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.carrier.ParentCompanyDAO">
+
+    <resultMap type="ParentCompany" id="ParentCompanyMap">
+    	<result property="companyName" column="company_name"/>
+    </resultMap> 
+
+	<insert id="insert" parameterType="ParentCompany">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<select id="find" resultMap="ParentCompanyMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<sql id="pageListClause">
+		where 1=1
+		<if test="companyName!=null and companyName!='' ">
+		and t.company_name like '%'||#{companyName}||'%'
+		</if>
+	</sql>
+	
+	<select id="selectPageList" resultMap="ParentCompanyMap" parameterType="com.oasis.wolfburg.common.so.carrier.ParentCompanySO">
+        select * from wl_parent_company t
+        <include refid="pageListClause"/>
+    </select>
+    
+    <select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.carrier.ParentCompanySO">
+        select count(1) from wl_parent_company t
+        <include refid="pageListClause"/>
+    </select>
+	
+    <delete id="delete">
+        <include refid="sqlmap.common.model.delete" />
+    </delete>
+
+    <update id="update" statementType="PREPARED" timeout="20000" parameterType="ParentCompany">
+        <include refid="sqlmap.common.model.update" />
+    </update>
+    
+     <select id="checkDuplication" resultMap="ParentCompanyMap" parameterType="com.oasis.wolfburg.common.so.carrier.ParentCompanySO">
+        select * from wl_parent_company t where t.company_name = #{companyName}
+    </select>
+    
+    <delete id="deleteByIds" parameterType="map">
+        <include refid="sqlmap.common.model.deleteByIds"/>
+    </delete>
+
+</mapper>

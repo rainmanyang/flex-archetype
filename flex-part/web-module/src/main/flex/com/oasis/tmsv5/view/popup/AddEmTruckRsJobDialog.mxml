@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				width="100%" height="250" title="创建紧急任务单" creationComplete="init()" >
+	<fx:Declarations>
+		<mx:NumberValidator id="validator4" source="{price}" minValue="0" required="false" precision="2" property="text" />
+		<mx:StringValidator id="nameValidation" source="{rsName}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="dateValidation" source="{startDate}" property="date" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="addressValidation" source="{address}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="truckValidation" source="{truck}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.security.OrganizationController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSScheduleController;
+			import com.oasis.tmsv5.view.popup.calendar.TruckRSJob4Calendar;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJob;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSSchedule;
+			
+			import mx.controls.treeClasses.TreeItemRenderer;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.validators.Validator;
+
+			
+			[Inject]
+			public var truckRSJobController:TruckRSJobController;
+			
+			[Inject]
+			public var truckRSScheduleController:TruckRSScheduleController;
+			
+			public var closeCallBack:Function;
+			
+			[Bindable]
+			public var vo:TruckRSJob = new TruckRSJob();
+			
+			[Bindable]
+			public var rs:TruckRSSchedule = new TruckRSSchedule();
+			
+			protected function selectTruck():void {
+				var dialog:TruckDialog4Dispatch = TruckDialog4Dispatch(PopUpManager.createPopUp(root, TruckDialog4Dispatch , true));
+				dialog.allMultiSelected = false;
+				dialog.showOtherTruck = true;
+				dialog.routeId = vo.routeId;
+				dialog.getTruckCallBack = changeTruckCallBack;
+				PopUpManager.centerPopUp(dialog);
+			}
+				
+			private function changeTruckCallBack(item:Object):void {
+				var seltruck:Truck = item as Truck;
+				truck.text = seltruck.licensePlate;
+				vo.truckId = seltruck.id;
+				vo.identityCard = seltruck.cardCode;
+				vo.licensePlate = seltruck.licensePlate;
+				vo.driver = seltruck.driver1Name;
+				
+//				if(seltruck.resourceType == null){//临时车辆
+//					BeanUtils.copyProperties(payMethod.dataProvider,EnumManage.getCashPayTypes());
+//				}else{
+//					BeanUtils.copyProperties(payMethod.dataProvider,EnumManage.getPayTypes());
+//				}
+//				payMethod.selectedIndex = 0;
+			}
+			
+
+			protected function ok_clickHandler():void
+			{
+				var errors:Array = Validator.validateAll([nameValidation,dateValidation,addressValidation,truckValidation,validator4]);
+				if(errors.length>0)
+					return;
+				vo.payMethod = payMethod.selectedItem.data;
+				vo.startDate = startDate.date;
+				ok.enabled = false;
+				truckRSJobController.addEmTruckRsJob(vo,closeCallBackAndCloseWin,validationCallBack);
+			}
+			
+			public function closeCallBackAndCloseWin(event:TruckRSJob):void{
+				ok.enabled = true;
+				PopUpManager.removePopUp(this);
+				closeCallBack(event);
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				ok.enabled = true;
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			
+			protected function createJobCallBack():void 
+			{
+				if(closeCallBack != null) {
+					closeCallBack(vo);
+				}
+			}
+			
+			public function init():void{
+				vo.startDate =  new Date();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="90%">
+		<mx:Form>
+			<mx:FormItem label="任务单号:" required="true">
+				<mx:TextInput id="rsName" text="@{vo.code}"/>
+			</mx:FormItem>
+			<mx:FormItem label="故障地点:" required="true">
+				<s:TextInput id="address" text="@{vo.routeName}"/>
+			</mx:FormItem>
+			<mx:FormItem label="发班时间:" required="true" >
+				<fb:DateTimeInput id="startDate" date="{vo.startDate}" allowDatePick="false" />
+			</mx:FormItem>
+			<mx:FormItem label="车辆:" required="true">
+				<fb:SelectableTextInput id="truck" searchButtonClick="selectTruck" />
+			</mx:FormItem>
+			<mx:FormItem label="费用:">
+				<mx:HBox>
+					<mx:TextInput id="price" text="@{vo.contrackPrice}" />
+					<s:DropDownList id="payMethod" dataProvider="{EnumManage.getPayTypes()} " selectedIndex="1" enabled="true"/>
+				</mx:HBox>
+			</mx:FormItem>
+			<mx:FormItem label="备注:"  >
+				<s:TextInput id="remark" text="@{vo.remark}" />
+			</mx:FormItem>
+		</mx:Form>
+		<mx:HBox horizontalAlign="right">
+			<mx:Button id="ok" click="ok_clickHandler()" label="确定"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

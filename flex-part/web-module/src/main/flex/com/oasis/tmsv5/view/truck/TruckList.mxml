@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 xmlns:grid="com.oasis.component.grid.*"
+		 width="100%" height="100%"  creationComplete="init()" xmlns:controls="flexlib.controls.*" xmlns:truck="com.oasis.tmsv5.view.truck.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*"  >
+	<mx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			
+			import mx.utils.URLUtil;
+			
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.popup.CarrierDialog;
+			import com.oasis.tmsv5.view.report.ReportDownloadMsgDialog;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.wolfburg.vo.insure.Insure;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var truckTypeList:ArrayCollection = EnumManage.getTruckType4list();
+			
+			[Bindable]
+			public var statusList:ArrayCollection = EnumManage.getTruckStatus4list();
+			
+			[Bindable]
+			public var resourceTypeList:ArrayCollection = EnumManage.getTruckResourceType4List();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var truckSO:TruckSO = new TruckSO();
+			
+			public var host:String;
+			
+			private function init():void{
+				getPageData(truckSO.pageNumber, truckSO.objectsPerPage);
+				grid.dataProvider = dataProvider;
+			}
+			
+			private function freshViewForm(truck:Truck):void{
+				view.truckVO = truck;
+				view.insureVO1 = new Insure();
+				view.insureVO2 = new Insure();
+				var arrs:ArrayCollection = view.truckVO.insureList;
+				for(var i:int=0;i<2&&i<arrs.length;i++){
+					if(i == 0){
+						view.insureVO1 = arrs[0] as Insure;
+					}else{
+						view.insureVO2 = arrs[1] as Insure;
+					}
+				}
+				rightPanel.selectedIndex=1;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				if(typeId.selectedIndex != -1){
+					truckSO.truckType = typeId.selectedItem.data;
+				}
+				if(statusId.selectedIndex != -1){
+					truckSO.status = statusId.selectedItem.data;
+				}
+				if(resourceTypeId.selectedIndex != -1){
+					truckSO.truckResourceType = resourceTypeId.selectedItem.data;
+				}
+				if(truckPro.selectedIndex != -1){
+					truckSO.truckPro = truckPro.selectedItem.data;
+				}
+				truckSO.pageNumber = pageNum;
+				truckSO.objectsPerPage = pageSize;
+				truckController.getPageList(truckSO, pageList,callBack);
+			}
+			
+			[EventHandler( event="TruckEvent.TRUCK_LIST_EVENT" )]
+			public function search():void{
+				truckSO.pageNumber=1;
+				truckController.getPageList(truckSO, pageList);
+			}
+			
+			protected function create_clickHandler():void
+			{
+				rightPanel.selectedIndex = 0;
+			}
+			protected function tempCreate_clickHandler():void
+			{
+				rightPanel.selectedIndex = 3;
+			}
+			
+			protected function itemClickHandle(event:ListEvent):void{
+				var itemRenderer:CopyableDataGridItemRenderer = event.itemRenderer as CopyableDataGridItemRenderer;
+				var truckVO:Truck = itemRenderer.data as Truck;
+				truckController.findTruck(truckVO,function():void{
+					freshViewForm(truckVO);
+				});
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumnNested):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,statusList);
+			}
+			
+			private function getTruckTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var truckType:String = item.truckType as String;
+				return EnumManage.getDisplayText(truckType,truckTypeList);
+			}
+			
+			private function getResouceTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var resourceType:String = item.resourceType as String;
+				return EnumManage.getDisplayText(resourceType,resourceTypeList);
+			}
+			
+			protected function remove(event:MouseEvent):void
+			{
+				dataProvider = grid.dataProvider as ArrayCollection;
+				var arrs:Array = grid.selectedIndices;
+				arrs = arrs.sort(Array.DESCENDING);
+				for each(var index:int in arrs){
+					dataProvider.removeItemAt(index);
+				}
+			}
+			
+			protected function change2Disabled(event:MouseEvent):void
+			{
+				if (grid.selectedItems.length<1) {
+					Alert.show("请选择要操作的对象!");
+					return ;
+				} else {
+					Alert.show("您确认要车辆退网？","确认退网",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								var idList:ArrayCollection = new ArrayCollection();
+								for each(var o:Truck in grid.selectedItems){
+									var truckVO:Truck = o;
+									if(truckVO.status == 'CLOSED') {
+										idList.addItem(truckVO.id);
+									} else {
+										Alert.show("只有状态为下线的车辆才能退网!");
+									}
+								}
+								truckController.batchUpdateTruckStatus(idList,"DISABLED",search);
+							}
+						});
+				}
+				
+			}
+			
+			protected function addCarrier():void
+			{
+				var dialog:CarrierDialog = CarrierDialog(PopUpManager.createPopUp(root, CarrierDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.passFun = getCarrierCallBack;
+			}
+			
+			public function getCarrierCallBack(item:Object):void{
+				var carrier:Carrier = Carrier(item);
+				truckSO.carrierName = carrier.carrierName;;
+  				truckSO.carrierId = carrier.id;
+			}
+			
+			public function chgCarrier():void{
+				truckSO.carrierId = NaN;
+			}
+			
+			public function clearTruck():void{
+				truckSO.carrierName = "";
+				truckSO.carrierId = NaN;
+			}
+			
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			
+			private function export():void{
+				truckSO.pageNumber = 1;
+				truckSO.objectsPerPage = int.MAX_VALUE;
+				if(typeId.selectedIndex != -1){
+					truckSO.truckType = typeId.selectedItem.data;
+				}
+				if(statusId.selectedIndex != -1){
+					truckSO.status = statusId.selectedItem.data;
+				}
+				if(resourceTypeId.selectedIndex != -1){
+					truckSO.truckResourceType = resourceTypeId.selectedItem.data;
+				}
+				if(truckPro.selectedIndex != -1){
+					truckSO.truckPro = truckPro.selectedItem.data;
+				}
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root, ReportDownloadMsgDialog, true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.truckSO = truckSO;
+				truckSO.requestUrl = getRequestURL();
+				dialog.reportType=Constants.TRUCK;
+				dialog.init();
+			}
+		]]>
+	</mx:Script>
+	<mx:HDividedBox width="100%" height="100%">
+		<mx:VBox width="26%" height="100%">
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%">
+			<mx:HBox  width="100%" >
+				<fb:MultiColumnForm  numColumns="1" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="车牌号：" >
+						<mx:TextInput id="licensePlate" text="@{truckSO.licensePlate}" width="100"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="卡号：" >
+						<mx:TextInput id="cardCode" text="@{truckSO.cardCode}" width="100"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="车型：" >
+						<fb:AdvancedComboBox dataProvider="{truckTypeList}" labelField="label" id="typeId" width="100"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="所属承运商："  >
+						<fb:SelectableTextInput searchButtonClick="addCarrier" id="truckCarrierName" textInputEditable="true"
+												text="@{truckSO.carrierName}" width="150" dataChange="chgCarrier()" clearButtonClick="clearTruck"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="驾驶员姓名：" >
+						<mx:TextInput id="driverName" text="@{truckSO.driverName}" width="100"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="状态：" >
+						<fb:AdvancedComboBox dataProvider="{statusList}" labelField="label" id="statusId" width="100"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="资源类型：" >
+						<fb:AdvancedComboBox dataProvider="{resourceTypeList}" labelField="label" id="resourceTypeId" width="100"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="运输性质：" >
+						<fb:AdvancedComboBox dataProvider="{EnumManage.getTruckPro()}" labelField="label" id="truckPro" width="100"/>
+					</fb:MultiColumnFormItem>
+					<mx:HBox width="100%">  
+						<mx:Spacer width="100%"/>
+						<fb:MultiColumnFormItem>
+							<mx:Button label="查询" click="getPageData(1, truckSO.objectsPerPage)" id="searchBtn"/>
+						</fb:MultiColumnFormItem>
+					</mx:HBox>
+				</fb:MultiColumnForm>
+			</mx:HBox>
+				</flexlib:WindowShade>
+			<mx:HBox paddingLeft="30">
+				<PremissionButton:PremissionButton label="新建" click="create_clickHandler()" module="Truck" premission="create"/>
+				<PremissionButton:PremissionButton label="新建临时车" click="tempCreate_clickHandler()" module="Truck" premission="create"/>
+				<PremissionButton:PremissionButton label="导出" click="export()" module="Truck" premission="export"/>
+			</mx:HBox>
+			<grid:PageableDataGrid  id="grid" dataProvider="{pageList.list}" width="100%"
+								  getPageData="getPageData"  currentPageNum="{truckSO.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								  pageSize="{truckSO.objectsPerPage}"
+								  height="100%" allowMultipleSelection="false" itemClick="itemClickHandle(event)" showControlColumn="false">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="车牌号" dataField="licensePlate" width="100"/>
+					<grid:DataGridColumnNested headerText="联系电话" dataField="contactPhone1" width="100"/>
+					<grid:DataGridColumnNested headerText="车主" dataField="ownerName" width="100"/>
+					<grid:DataGridColumnNested headerText="状态" dataField="truckType" width="50"  labelFunction="getStatusLabel"/>
+					<grid:DataGridColumnNested headerText="资源类型" dataField="resouceType" width="50"  labelFunction="getResouceTypeLabel"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:ViewStack id="rightPanel" selectedIndex="1" width="70%" height="100%" creationPolicy="all">
+			<truck:TruckCreate id="create" height="100%" width="100%"/>
+			<truck:TruckView id="view" height="100%" width="100%"/>
+			<truck:TruckEdit id="edit" height="100%" width="100%"/>
+			<truck:TempTruckCreate id="createOut" height="100%" width="100%"/>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+</mx:VBox>

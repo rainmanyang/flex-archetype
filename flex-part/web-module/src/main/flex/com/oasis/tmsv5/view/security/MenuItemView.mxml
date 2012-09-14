@@ -1,0 +1,75 @@
+<mx:VBox   textAlign="center" horizontalAlign="left" 
+		  xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:dropDownList="com.oasis.component.dropDownList.*" width="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.menu.MenuItem;
+			import com.oasis.tmsv5.security.MenuItemController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			
+			import org.osmf.traits.ViewableTrait;
+			
+			[Bindable]
+			private var _vo:MenuItem;
+			
+			[Bindable]
+			private var _parentMenuitem:MenuItem;
+			
+			[Inject]
+			public var menuItemController:MenuItemController;
+			
+			public function set vo(menuItem:MenuItem):void {
+				_vo = menuItem;
+			} 
+			
+			public function get vo():MenuItem{
+				return _vo;
+			}
+			
+			public function init():void{
+				_parentMenuitem.id = _vo.parentId;
+				menuItemController.find(_parentMenuitem);
+			}
+			
+			public function edit():void {
+				var viewStack:ViewStack = this.parent as ViewStack;
+				var edit:MenuItemEdit = viewStack.getChildAt(1) as MenuItemEdit;
+				edit.vo = _vo;
+				viewStack.selectedIndex = 1;
+				edit.togglePre();
+			}
+			
+			public function create():void {
+				if(_vo.type == EnumManage.menuItemType2.data){
+					Alert.show("权限菜单不能增加子菜单!");
+				}
+				var viewStack:ViewStack = this.parent as ViewStack;
+				var create:MenuItemCreate = viewStack.getChildAt(0) as MenuItemCreate;
+				create.vo.parentId = _vo.id;
+				viewStack.selectedIndex = 0;
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox horizontalAlign="left" width="100%">
+		<mx:Button label="新建" click="create()"/>
+		<mx:Button label="编辑" click="edit()"/>
+	</mx:HBox>
+	<mx:Form>
+		<mx:FormItem label="菜单名称:">
+			<mx:Label text="{_vo.name}"/>
+		</mx:FormItem>
+		<mx:FormItem label="{_vo.type == 'NORMAL'?'模块名称:':'权限名称:'}">
+			<mx:Label text="{_vo.type == 'NORMAL'?_vo.location:_vo.action}"/>
+		</mx:FormItem>
+		<mx:FormItem label="菜单类型:">
+			<dropDownList:DropDownList dataProvider="{EnumManage.getMenuItemTypeList()}" selectedIndex="0" value="{_vo.type}" searchKey="data" enabled="false"/>
+		</mx:FormItem>
+		<mx:FormItem label="网络访问权限:">
+			<mx:Label text="{_vo.netAuthority}"/>
+		</mx:FormItem>
+	</mx:Form>
+</mx:VBox>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml" 
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="450" height="300"
+				title="EXCEL格式错误信息提示">
+	<fx:Script>		
+		<![CDATA[
+			import com.best.oasis.flexbase.util.StringUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.excel.ExcelRowErrorVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			[Bindable]
+			public var errors:ArrayCollection = new ArrayCollection();
+			public var errorMsg:String = "";
+			
+			public function init():void{
+				if(errors==null){
+					errors = new ArrayCollection();
+				}
+				if(errors.length > 0 && StringUtils.isNotEmpty(errorMsg)){
+					msg.text = errorMsg;
+				}
+				errorsGrid.dataProvider=errors;
+			}
+			/**
+			 *	错误内容
+			 */
+			private function getExcelError(item:ExcelRowErrorVO,column:DataGridColumn):String{
+				if(item.errorType != "" && item.errorType != null){
+					return EnumManage.getDisplayText(item.errorType, EnumManage.getExcelErrorList());
+				}else{
+					return item.error;
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<mx:HBox horizontalAlign="center" width="100%">
+			<mx:Label id="msg" text="上传失败，请检查数据内容！" color="red"/>
+		</mx:HBox>
+		<mx:DataGrid height="100%" width="100%" id="errorsGrid">
+			<mx:columns>
+				<mx:DataGridColumn dataField="rowIndex" headerText="错误所在行" width="80" itemRenderer="mx.controls.Text"/>
+				<mx:DataGridColumn dataField="errorType" headerText="错误内容" labelFunction="getExcelError" itemRenderer="mx.controls.Text"/>
+			</mx:columns>
+		</mx:DataGrid>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button  label="关闭" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+</fb:PopupDialog>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				width="700" height="400"
+				xmlns:grid="com.oasis.component.grid.*"
+				creationComplete="init()"
+				title="选择承运商">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.carrier.CarrierController;
+			import com.oasis.wolfburg.so.carrier.CarrierSO;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			import com.oasis.wolfburg.enum.EnumManage;
+			
+			[Inject]
+			public var carrierController:CarrierController;
+			[Bindable]
+			public var so:CarrierSO = new CarrierSO();
+			[Bindable]
+			public var item:Carrier = new Carrier();
+			[Bindable]
+			public var items:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var dp:ArrayCollection;
+			[Bindable]
+			public var allowMultiple:Boolean = false;
+			
+			
+			[Bindable]
+			public var type:ArrayCollection = EnumManage.getCarrierType4list();
+			
+			[Bindable]
+			public var st:ArrayCollection = EnumManage.getCarrierStatus();
+			
+			public var passFun:Function;
+			
+			protected function btnOK(event:MouseEvent=null):void{
+				var arrs:Array = grid.selectedItems;
+				if(arrs.length == 0){
+					Alert.show("请选择承运商!");
+				}else{
+					if(allowMultiple){
+						for each(var obj:Object in arrs){
+							items.addItem(obj as Carrier);
+						}
+						if(passFun!=null)
+							passFun(items);
+					}else{
+						item = Carrier(grid.selectedItem);
+						if(passFun!=null)
+							passFun(item);
+					}
+					PopUpManager.removePopUp(this);
+				}
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,st);
+			}
+			
+			public function search():void{
+				if(carrierType.selectedIndex != -1){
+					so.carrierType = carrierType.selectedItem.data;
+				}
+				
+				getPageData(1,so.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.status = 'ACTIVED';
+				so.carrierType = carrierType.selectedItem.data;
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				carrierController.getPageList(so, pageList,callBack);
+			}
+			
+			public function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			};
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox  width="100%" borderStyle="solid">
+				<fb:MultiColumnForm  numColumns="2" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="编码：" >
+						<mx:TextInput id="carrierCode" text="@{so.carrierCode}"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="名称：" >
+						<mx:TextInput id="carrierName" text="@{so.carrierName}"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="承运商类型：" colspan="2">
+						<mx:ComboBox dataProvider="{type}" id="carrierType"/>
+					</fb:MultiColumnFormItem>
+					
+					<fb:MultiColumnFormItem>
+						<mx:Button label="查询" click="search();" id="searchBtn"/>
+					</fb:MultiColumnFormItem>
+				</fb:MultiColumnForm>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid"  horizontalScrollPolicy="auto"
+								 width="100%" height="100%" allowMultipleSelection="{allowMultiple}" dataProvider="{pageList.list}"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}" showControlColumn="false"
+								 doubleClickEnabled="true" doubleClick="btnOK(event)">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="编码" dataField="carrierCode"/>
+					<grid:DataGridColumnNested headerText="承运商名称" dataField="carrierName" width="210" />
+					<grid:DataGridColumnNested headerText="状态" dataField="status" labelFunction="getStatusLabel"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="btnOK()"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>
+

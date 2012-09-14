@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:grid="com.oasis.component.grid.*"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 width="100%" height="100%" xmlns:price="price.*" title="详细信息" xmlns:PremissionButton="com.oasis.component.PremissionButton.*">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.price.Price;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			[Bindable]
+			public var priceStatus:ArrayCollection = EnumManage.getPriceStatus();
+			[Bindable]
+			public var level:ArrayCollection = EnumManage.getTruckLevel();
+			[Bindable]
+			public var type:ArrayCollection = EnumManage.getTruckType();
+			
+			[Bindable]
+			public var vo:Price = new Price();
+			
+			protected function toEdit():void
+			{
+				var id:Number = vo.id;
+				if(isNaN(id)){
+					Alert.show("请选择数据后,再编辑!");
+				}else{
+					if(vo.status == 'FAILURE'){
+						Alert.show("失效的数据不能进行编辑!");
+						return;
+					}
+					/**
+					 * 跳转到edit页面
+					 */ 
+					var edit:PriceEdit = parent.getChildByName("edit") as PriceEdit;
+					edit.setId(vo.id);
+					edit.freshForm();
+				}
+			}
+			
+			protected function copyPrice():void{
+				var id:Number = vo.id;
+				if(isNaN(id)){
+					Alert.show("请选择数据后,再复制功能!");
+				}else{
+					if (vo.periodEnd != null){
+						Alert.show("不能复制!");
+					} else {
+						var cp:PriceCreate = parent.getChildByName("create") as PriceCreate;
+						cp.setId(vo.id);
+						cp.freshForm();
+					}
+				}
+			}
+			
+			public function displayText():void{
+				st.text = EnumManage.getDisplayText(vo.status,priceStatus);
+				//truckLevel.text = EnumManage.getDisplayText(vo.truckLevel,level);
+				truckType.text = EnumManage.getDisplayText(vo.truckType,type);
+			}
+			
+			private function getTruckTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var truckType:String = item.truckType as String;
+				return EnumManage.getDisplayText(truckType,type);
+			}
+			private function getPeriodStart(item:Object,column:DataGridColumnNested):String{
+				var date:Date = item.periodStart as Date;
+				return DateFormatterUtil.format1(date);
+			}
+			private function getPeriodEnd(item:Object,column:DataGridColumnNested):String{
+				var date:Date = item.periodEnd as Date;
+				return DateFormatterUtil.format1(date);
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		
+		<mx:HBox paddingLeft="30" width="100%" paddingBottom="10" paddingRight="10" paddingTop="10" borderStyle="solid">
+			<PremissionButton:PremissionButton label="复制" id="copy" click="copyPrice()" module="Price" premission="copy"/>
+			<PremissionButton:PremissionButton label="编辑" id="edit" click="toEdit()" enabled="{vo.status == 'EFFECTIVE'}" module="Price" premission="edit"/>
+		</mx:HBox>
+		<fb:MultiColumnForm  width="100%" label="基本信息">
+			<fb:MultiColumnFormItem label="编号：">
+				<s:Label text="{vo.code}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="启用日期：">
+				<s:Label text="{DateFormatterUtil.format1(vo.periodStart)}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="停用日期：">
+				<s:Label text="{DateFormatterUtil.format1(vo.periodEnd)}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费率状态：">
+				<s:Label id="st"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="线路名称：">
+				<s:Label text="{vo.routeName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车型：">
+				<s:Label id="truckType"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车辆品牌：">
+				<s:Label id="truckLevel" text="{vo.truckLevel}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="正常结算价格：">
+				<s:Label text="{vo.price}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="放空结算价格：">
+				<s:Label text="{vo.ventingPrice}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="加班车结算价格：">
+				<s:Label text="{vo.overtimePrice}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="备注：">
+				<s:Label text="{vo.remark}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<flexlib:WindowShade id="ws"
+							 tabChildren="{ws.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="历史记录"
+							 width="99%" >	
+			<grid:SelectableDataGrid id="grid" width="100%" dataProvider="{vo.historyList}" allowMultipleSelection="false" height="100%" showControlColumn="false">
+				<grid:columns>
+					<grid:DataGridColumnNested headerText="编号" dataField="code" width="60"/>
+					<grid:DataGridColumnNested headerText="版本" dataField="version" width="60"/>
+					<grid:DataGridColumnNested headerText="正常价格" dataField="price" width="50"/>
+					<grid:DataGridColumnNested headerText="放空价格" dataField="ventingPrice" width="50"/>
+					<grid:DataGridColumnNested headerText="加班价格" dataField="overtimePrice" width="40"/>
+					<grid:DataGridColumnNested headerText="启用日期" width="75" dataField="periodStart" labelFunction="getPeriodStart"/>
+					<grid:DataGridColumnNested headerText="停用日期" width="75" dataField="periodEnd" labelFunction="getPeriodEnd"/>
+				</grid:columns>
+			</grid:SelectableDataGrid>
+		</flexlib:WindowShade>
+	</mx:VBox>
+</mx:Panel>

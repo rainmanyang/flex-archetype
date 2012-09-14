@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 initialize="init(event)"
+		 creationComplete="creationCompleteHandler(event)"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.LangUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.scrollClasses.ScrollBar;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import spark.components.Label;
+			
+			/**
+			 * 外界提供给SearchableList控件的数据源
+			 */
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+			
+			/**
+			 * SearchableList控件用于显示的数据源
+			 */
+			[Bindable]
+			private var dataProviderCopy:ArrayCollection;
+			
+			/**
+			 * dataProviderCopy的备份
+			 */
+			[Bindable]
+			private var dataProviderCopyBackUp:ArrayCollection;
+			
+			/**
+			 * 初始化选中的items
+			 */
+			[Bindable]
+			private var _selectedItems:ArrayCollection;
+			
+			/**
+			 * 用于返回选中的items
+			 */
+			[Bindable]
+			private var backSelectedItems:ArrayCollection;
+			
+			/**
+			 * 在dataProvider数据源对象中，用于在标签中显示的属性名称
+			 */
+			[Bindable]
+			public var dataField:String="";
+			
+			/**
+			 * 搜索button的样式, 可以设置
+			 */
+			[Bindable]
+			public var searchButtonStyle:String="";	
+			
+			/**
+			 * 延迟从dataprovider取数据的timer
+			 */
+			private var timer:Timer;
+			
+			public function init(evt:Event):void{
+				searchButton.setStyle("styleName",searchButtonStyle);
+				//给list控件添加keydown处理事件,空格或回车可以选中list中checkbox
+				lst.addEventListener(KeyboardEvent.KEY_DOWN,lstKeyDownHandler);
+				//鼠标点击list中的行时 会选中checkbox
+				lst.addEventListener(MouseEvent.MOUSE_DOWN,lstMouseDownHandler);
+			}
+			
+			private function lstKeyDownHandler(evt:KeyboardEvent):void{
+				if(lst.selectedItems!=null){
+					//当选中一条 而且按下的键是空格时
+					if(lst.selectedItems.length==1&&(evt.keyCode==32||evt.keyCode==13)){
+						var obj:LstRendererVO = lst.selectedItem as LstRendererVO;
+						obj.selected = !(obj.selected);
+						setAllCheckboxStatus();
+					}
+				}
+			}	
+			
+			private function lstMouseDownHandler(evt:MouseEvent):void{
+				if((evt.target as ListItemRenderer)||(evt.target as Label)){
+					if(lst.selectedItem!=null){
+							var obj:LstRendererVO = lst.selectedItem as LstRendererVO;
+							obj.selected = !(obj.selected);
+							setAllCheckboxStatus();
+						}
+				}
+			}
+
+			
+			public function get selectedItems():ArrayCollection
+			{
+				backSelectedItems =new ArrayCollection();
+				var str:String;
+				var str1:String;
+				//通过伪造对象的selected属性 去判断原始对象 哪些是选中的
+				for each(var obj:Object in dataProviderCopyBackUp){
+					str = obj.label.toString();
+					if(obj.selected){
+						for each(var obj1:Object in dataProvider){
+							if(dataField.length>1){
+								str1 = LangUtil.getNestedFieldValue(obj1, dataField).toString();
+							}else{
+								str1 = obj1.label.toString();
+							}
+							if(str1==str){
+								backSelectedItems.addItem(obj1);
+								break;
+							}
+						}
+					}
+				}
+				return backSelectedItems;
+			}
+			
+			public function set selectedItems(items:ArrayCollection):void
+			{
+				_selectedItems = items;
+			}
+			
+			/**
+			 * 在dataProvider发生改变的时候，把dataProvider中的数据转换成用于显示的对象后放进dataProviderCopy。
+			 * 在dataProvider延迟加载的时候调用
+			 */
+			public function dataProviderChangeHandler(evt:Event):void{
+				if(dataProviderCopy==null){
+					dataProviderCopy = new ArrayCollection();
+				}
+				if( timer == null ){
+					timer = new Timer(100,1);
+					timer.addEventListener("timer", timeUp);
+					timer.start();
+				}else{
+					timer.reset();
+					timer.start();
+				}
+				
+			}
+			
+			public function timeUp(event:TimerEvent):void{
+				copyFakeObjectsAndBackupDataTo();
+			}
+			
+			/**
+			 * 新增一个方法，根据textinput文本框的内容过滤dataprovider的内容
+			 * 在文本框内容change时调用
+			 */
+			private function filterDp():void{
+				dataProviderCopy.removeAll();
+				if(filterText.text=="")
+					dataProviderCopy.addAll(dataProviderCopyBackUp);
+				else{			
+					for each(var obj:Object in dataProviderCopyBackUp){
+						if(obj.label.toString().toLocaleLowerCase().indexOf(filterText.text.toLocaleLowerCase())!=-1){
+							dataProviderCopy.addItem(obj);
+						}
+					}
+				}	
+				setAllCheckboxStatus();
+				
+			}
+			
+			/**
+			 * 设置全选按钮的状态
+			 */
+			private function setAllCheckboxStatus():void{
+				if(dataProviderCopy.length<1){
+					allck.selected =  false;
+				}else{
+					var i:int=0;
+					for each(var obj2:Object in dataProviderCopy){
+						if(obj2.selected)i++;
+					}
+					if(i<dataProviderCopy.length){
+						allck.selected = false;
+					}else{
+						allck.selected = true;
+					}
+				}
+			}
+			
+			protected function creationCompleteHandler(evt:Event):void
+			{
+				if(dataProviderCopy==null){
+					dataProviderCopy = new ArrayCollection();
+				}
+				copyFakeObjectsAndBackupDataTo();
+				dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE,dataProviderChangeHandler);
+				
+			}
+			
+			/**
+			 * 把dataProvider中的对象转换成用于显示的对象LstRendererVO，然后放到dataProviderCopy中，并备份dataProviderCopy。
+			 */
+			private function copyFakeObjectsAndBackupDataTo():void{
+				dataProviderCopy = new ArrayCollection();
+				for each(var obj:Object in dataProvider){
+					var destObj:LstRendererVO = new LstRendererVO();
+					if(dataField.length>1){
+						destObj.label = LangUtil.getNestedFieldValue(obj, dataField).toString();
+					}else{
+						destObj.label = obj.label.toString();
+					}
+					dataProviderCopy.addItem(destObj);
+				}
+				dataProviderCopyBackUp = new ArrayCollection();
+				dataProviderCopyBackUp.addAll(dataProviderCopy);
+				//遍历dataProviderCopy中的对象，根据_selectedItems来初始化选中对象。
+				setSelectedItems(dataProviderCopyBackUp);
+			}
+			
+			/**
+			 * 把dp中标签和_selectedItems中对象的标签相等的对象设为选中
+			 */
+			private function setSelectedItems(dp:ArrayCollection):void{
+				for each(var selectedObj:Object in _selectedItems){
+					var label:String;
+					if(dataField.length>1){
+						label = LangUtil.getNestedFieldValue(selectedObj, dataField).toString();
+					}else{
+						label = selectedObj.label;
+					}
+					for each(var obj1:Object in dp){
+						if(obj1.label.toString()==label){
+							obj1.selected = true;
+						}
+					}
+				}
+			}
+			
+			/**
+			 * 点击全选按钮时 全选或取消全选数据源中的所有对象
+			 */
+			protected function onAllCheckChange(event:Event):void
+			{
+				var select:Boolean = allck.selected;
+				for each(var obj:Object in dataProviderCopy){
+					obj.selected = select;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalGap="0">
+		<mx:HBox id="hb" borderStyle="none" height="30" width="100%" verticalAlign="middle" horizontalGap="4">
+			<mx:TextInput id="filterText" change="filterDp()" width="100%"/>	
+			<mx:Button id="searchButton" width="15" />
+		</mx:HBox>
+		<mx:VBox  id="lstVB"
+				  horizontalScrollPolicy="auto"
+				  verticalScrollPolicy="auto"
+				  width="100%" height="100%">
+			<s:List id="lst" 
+					dataProvider="{dataProviderCopy}"
+					lineHeight="25"
+					itemRenderer="com.oasis.component.searchableList.ListItemRenderer"
+					width="100%"
+					height="100%"
+					>
+			</s:List>
+		</mx:VBox>
+		<mx:HBox height="20" width="100%">
+			<mx:CheckBox label="全选" id="allck" change="onAllCheckChange(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:VBox>

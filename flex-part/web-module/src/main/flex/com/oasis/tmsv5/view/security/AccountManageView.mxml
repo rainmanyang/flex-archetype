@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" height="100%"
+		 xmlns:v5="com.oasis.tmsv5.view.security.*"	
+		 addedToStage="init();">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.so.security.AccountSO;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.utils.CRUDUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;			
+			
+			[Bindable]
+			private var pageList:PageList = new PageList();
+			
+			[Bindable]
+			private var so:AccountSO = new AccountSO();
+			
+			[Inject]
+			public var accountController:AccountController;
+			
+			private function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				accountController.getPageList(so, pageList);
+			}
+			
+			private function view():void{
+				if(!CRUDUtil.checkIfDoView(grid)){
+					return;
+				}
+				var vo:Account = Account(grid.selectedItem);
+				if(vo == null){
+					return ;
+				}
+				var dialog:AccountViewDialog = 
+					AccountViewDialog(PopUpManager.createPopUp(root, AccountViewDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.tVo = vo;
+				dialog.init();
+			}
+			
+			
+			private function edit():void{
+				if(!CRUDUtil.checkIfDoEdit(grid)){
+					return;
+				}
+				var vo:Account = Account(grid.selectedItem);
+				if(vo == null){
+					return ;
+				}
+				var dialog:AccountEditDialog = 
+					AccountEditDialog(PopUpManager.createPopUp(root,
+						AccountEditDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.vo = BeanUtils.clone(vo) as Account;
+				dialog.init();
+			}
+			
+			[EventHandler( event="AccountEvent.ACCOUNT_LIST_EVENT" )]
+			public function editDialogOnComplete(event:Event):void{
+				search();
+			}
+			
+			private function remove():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:Account = Account(o);
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要删除的帐号!");
+					return ;
+				}else{
+					Alert.show("您确认要删除选中的数据？","确认删除",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								accountController.remove(ids,search);
+							}
+					});
+				}
+			}
+			
+			private function search():void{
+				so=searchForm.so;
+				getPageData(1, so.objectsPerPage);
+			}
+			
+			private function create():void {
+				var dialog:AccountCreateView = 
+					AccountCreateView(PopUpManager.createPopUp(root,
+						AccountCreateView , true));
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			private function resetPass():void {
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:Account = Account(o);
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要重置密码的帐号!");
+					return ;
+				}else{
+					Alert.show("您确认要重置选中的帐号？","确认",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								accountController.resetPassword(ids,search);
+							}
+						});
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<v5:AccountSearchForm id="searchForm" so="{so}" searchFunction="{search}"/>
+		<mx:HBox>
+			<mx:Button label="新增" click="create();"/>
+			<mx:Button label="查看" click="view();"/>
+			<mx:Button label="编辑" click="edit();"/>
+			<mx:Button label="删除" click="remove();"/>
+			<mx:Button label="重置密码" click="resetPass();"/>
+		</mx:HBox>
+		<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="800"
+			 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+			 pageSize="{so.objectsPerPage}"
+			 height="100%" allowMultipleSelection="true">
+			<fb:columns>
+				<fb:DataGridColumnNested headerText="登录名称" dataField="loginName"  width="100" />
+				<fb:DataGridColumnNested headerText="用户名称" dataField="nameCN"  width="100" />
+				<fb:DataGridColumnNested headerText="用户过期时间" dataField="expiredDate" width="100"/>
+				<fb:DataGridColumnNested headerText="密码过期时间" dataField="passwordExpiredDate" width="100"/>
+				<fb:DataGridColumnNested headerText="电子邮件" dataField="email" width="200"/>
+				<fb:DataGridColumnNested headerText="联系电话" dataField="phoneCode" width="200"/>
+				<fb:DataGridColumnNested headerText="网络访问权限" dataField="netAuthority" width="100"/>
+			</fb:columns>
+		</fb:PageableDataGrid>
+	</mx:VBox>
+</mx:VBox>

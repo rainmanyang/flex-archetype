@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	width="100%" height="100%" xmlns:feeItem="feeItem.*"  
+	creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*" 
+	xmlns:validator="com.oasis.wolfburg.validator.*" xmlns:grid="com.oasis.component.grid.*" >
+	
+	<fx:Declarations>
+		<mx:StringValidator id="licensePlateValidator" source="{licensePlate}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="cardCodeValidator" source="{cardCode}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="carrierNameValidator" source="{carrierName}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:NumberValidator  id="amountValidator" source="{amount}" property="text" requiredFieldError="必须为数字"/>  
+		<mx:StringValidator id="billDateValidator" source="{billDate}" property="text" required="true" requiredFieldError="必填"/>
+		<validator:SelectValidator id="feeTypeElementValidator" source="{feeTypeElement}" property="selectedIndex" required="true" fieldError="{resourceManager.getString('errorResource','requireSelect')}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.base.PredefinedCodeController;
+			import com.oasis.tmsv5.bill.FeeItemController;
+			import com.oasis.tmsv5.event.FeeItemEvent;
+			import com.oasis.tmsv5.event.PriceEvent;
+			import com.oasis.tmsv5.price.PriceController;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.so.price.PriceSO;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.view.popup.TruckDialog;
+			import com.oasis.tmsv5.view.popup.TruckRSJobDialog;
+			import com.oasis.tmsv5.vo.base.PredefinedCode;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.vo.bill.FeeItem;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var feeItemController:FeeItemController;
+			
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:FeeItem= new FeeItem();
+			
+			[Bindable]
+			public var predefinedCode:PredefinedCode= new PredefinedCode();
+			
+			[Bindable]
+			public var feeType:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var feeStatusList:ArrayCollection = EnumManage.getFeeItemStatusType();
+			
+			[Inject]
+			public var predefinedCodeController:PredefinedCodeController;
+			
+			
+			
+			[Inject]
+			public var priceController:PriceController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var priceStatus:ArrayCollection = EnumManage.getPriceStatus();
+			[Bindable]
+			public var level:ArrayCollection = EnumManage.getTruckLevel();
+			[Bindable]
+			public var type:ArrayCollection = EnumManage.getTruckType();
+			[Bindable]
+			public var isReCost:ArrayCollection = EnumManage.getBooelanNoYesType();
+			
+			[Bindable]
+			public var so:PriceSO = new PriceSO();
+			
+			[Bindable]
+			public var routePageList:PageList = new PageList();
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+			public function init():void{
+				if (vo.itemType != null) {
+				    predefinedCodeController.findByCode(vo.itemType,predefinedCode ,predefinedCodeCallback);
+				}
+				if(vo.routeName != null){
+					routeController.getByName(vo.routeName, initRoute);
+				}
+			}
+			
+			private function initRoute(route:Route):void{
+				if(route != null && !isNaN(route.id)){
+					route_.selectedItem = route;
+				} else {
+					route_.text = vo.routeName;
+				}
+			}
+			
+			private function predefinedCodeCallback():void{
+				if (predefinedCode.type == 'MAIN_RECEIVABLE_BILL') {
+					predefinedCodeController.findByType4MainReceivableBill(feeType,feeTypeCallback);
+					search(vo);
+				} else if (predefinedCode.type =='EXCEPTION_RECEIVABLE_BILL'){
+					predefinedCodeController.findByType4ExceptionReceivableBill(feeType,feeTypeCallback);
+				} else if (predefinedCode.type =='OTHER_RECEIVABLE_BILL'){
+					predefinedCodeController.findByType4OtherReceivableBill(feeType,feeTypeCallback);
+				}
+			}
+			
+			private function feeTypeCallback():void{
+				feeTypeElement.value=vo.itemType;
+				trsJobCode.text = vo.trsJobCode;
+				
+				if(vo.flag == "1"){
+					amount.editable = false;
+					amount.enabled = false;
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new FeeItem();
+				ViewUtils.clearFrom(form);
+				feeTypeElement.selectedIndex = -1;
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				vo = new FeeItem();
+				feeTypeElement.selectedIndex = -1;
+				Alert.show("修改成功!");
+				ViewUtils.clearErrorString(form);
+				dispatch.dispatchEvent(new FeeItemEvent(FeeItemEvent.FEE_ITEM_LIST_EVENT));
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见FeeItemComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			public function validate():Boolean{
+				var errors:Array = Validator.validateAll([licensePlateValidator,cardCodeValidator,carrierNameValidator,amountValidator,billDateValidator,feeTypeElementValidator]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			
+			private function update():void{
+				if(!validate()){
+					return;
+				}
+				collectData();
+				//创建方法需要传两个回调函数
+				feeItemController.update(vo,successCallBack,validationCallBack);
+			}
+			
+			
+			public function freshForm():void{
+				feeItemController.find(vo,openEdit);
+			}
+			
+			public function setId(id:Number):void {
+				this.vo.id = id
+				
+			}
+			
+			private function openEdit():void{
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=2;
+			}
+			/**
+			 * 设置非绑定属性
+			 */ 
+			public function collectData():void {
+				vo.itemType = feeTypeElement.selectedItem.code;
+//				vo.flag = flagElement.selectedItem.data;
+				vo.trsJobCode = trsJobCode.text;
+			}
+			
+			protected function addTruck():void
+			{
+				var dialog:TruckDialog = TruckDialog(PopUpManager.createPopUp(root, TruckDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.getTruckCallBack = truckCallBack;
+			}
+			private function truckCallBack(item:Object):void{
+				var truck:Truck = item as Truck;
+				licensePlate.text = truck.licensePlate;
+				cardCode.text = truck.carrierId.toString();
+				carrierName.text = truck.ownerName;
+				vo.truckId = truck.id;
+				vo.truckType = truck.truckType;
+			}
+			
+			protected function cleanTruck():void {
+				licensePlate.text = "";
+				cardCode.text = "";
+				carrierName.text = "";
+			}
+			protected function cleaeTrsJob():void {
+				trsJobCode.text = null;
+			}
+			protected function getTrsJob():void {
+				var dialog:TruckRSJobDialog = 
+					TruckRSJobDialog(PopUpManager.createPopUp(root, TruckRSJobDialog , true));
+				dialog.passFun = localFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			public function localFun(item:Object):void{
+				var truckRSJob:TruckRSJob = item as TruckRSJob;
+				vo.trsJobCode = truckRSJob.code;
+				vo.rsJobType = truckRSJob.rsJobType;
+				vo.payType = truckRSJob.payMethod;
+				trsJobCode.text = truckRSJob.code;
+				vo.routeName = truckRSJob.routeName;
+			}
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,priceStatus);
+			}
+			
+			private function getTruckLevelLabel(item:Object,column:DataGridColumn):String{
+				var truckLevel:String = item.truckLevel as String;
+				return EnumManage.getDisplayText(truckLevel,level);
+			}
+			
+			private function getTruckTypeLabel(item:Object,column:DataGridColumn):String{
+				var truckType:String = item.truckType as String;
+				return EnumManage.getDisplayText(truckType,type);
+			}
+			
+			public function localFun1(days:Number):void{
+				Alert.show("已成功延长期限"+days+"天");
+				dispatch.dispatchEvent(new PriceEvent(PriceEvent.PRICE_LIST_EVENT));
+			}
+			
+			protected function getRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = routeLocalFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function routeLocalFun(item:Object):void{
+				var route:Route = item as Route;
+				so.routeName = route.name;
+				so.routeId = route.id;
+			}
+			
+			public function chgRoute():void{
+				so.routeId = NaN;
+			}
+			
+			public function clear():void{
+				so = new PriceSO();
+				statusId.selectedIndex = 0;
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			public function clearRoute():void{
+				so.routeName = "";
+				so.routeId = NaN;
+			}
+			public function search(vo:FeeItem):void{
+				so.pageNumber=1;
+				so.status='EFFECTIVE';
+				if (vo.routeName != null) {
+    				so.routeName=vo.routeName;
+				}
+				if (vo.truckType != null) {
+    				so.truckType=vo.truckType;
+				}
+				priceController.getPageList(so, pageList);
+			}
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.status = statusId.selectedItem.data;
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				priceController.getPageList(so, pageList,callBack);
+			}
+			
+			public function changeRouteSelect ():void {
+				if (route_.selectedItem != null) {
+					var input:Route = route_.selectedItem as Route;
+					vo.routeName = input.name;
+					vo.routeId = input.id;
+				}  else {
+					vo.routeName = null;
+					vo.routeId = NaN;
+				}
+			}
+			public function clearRouteBtn():void {
+				route_.clear();
+				vo.routeName = null;
+				vo.routeId = NaN;
+			}
+			public function getRouteBtn():void {
+				var dialog:RouteDialog = RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.passFun = editDialogOnComplete;
+			}
+			
+			private function editDialogOnComplete(item:Object):void{
+				vo.routeName = item.name;
+				vo.routeId = item.id;
+				route_.selectedItem = item;
+			}
+			
+			private function searchRoute(keyword:String):void {
+				var routeSO:RouteSO = new RouteSO();
+				routeSO.name =keyword;
+				getRoutePageData(routeSO);
+			}
+			
+			private function getRoutePageData(routeSO:RouteSO ,callBack:Function=null):void{
+				routeSO.pageNumber = 1;
+				routeSO.objectsPerPage = 10;
+				routeController.getPageList(routeSO, routePageList,callBack);
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<fb:MultiColumnForm id="form" width="50%" label="基本信息">
+			<fb:MultiColumnFormItem label="车牌号："  required="true">
+				<fb:SelectableTextInput searchButtonClick="addTruck" id="licensePlate"
+										text="@{vo.licensePlate}" width="180" clearButtonClick="cleanTruck" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车主编号：" required="true" enabled="false">
+				<s:TextInput id="cardCode" text="@{vo.cardCode}" editable="false" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车主名字：" required="true"  enabled="false">
+				<s:TextInput id="carrierName" text="@{vo.carrierName}" editable="false"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车型：" >
+				<mx:Text text="{resourceManager.getString('normalResource',vo.truckType)}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="线路名称：" >
+				<fb:PopUpAutoComplete id="route_" selectedItemChanged="changeRouteSelect()"
+									  enabled="true"
+									  width="160"
+									  searchButtonVisible="true"
+									  clearButtonVisible="true"
+									  searchButtonEnabled="true"
+									  clearButtonEnabled="true"
+									  textInputEnabled="true"
+									  textInputEditable="true"
+									  dataProvider="{routePageList.list}"
+									  labelField="name,code"
+									  displayLabelField="name"
+									  searchFunction="searchRoute"
+									  allowNewValues="false"
+									  clearButtonClick="clearRouteBtn"
+									  searchButtonClick="getRouteBtn" 
+									  focusOut="changeRouteSelect()" 
+									  dropDownWidth="200"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="金额：" required="true"  >
+				<s:TextInput id="amount"  text="@{vo.amount}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费用发生日期：" required="true" >
+				<mx:DateField id="billDate" selectedDate="@{vo.billDate}" formatString="YYYY-MM-DD"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费用类型：" required="true">
+				<dropDownList:DropDownList dataProvider="{feeType}" labelField="value" id="feeTypeElement" searchKey="code"  value="{vo.itemType}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="任务单名称："  >
+				<fb:SelectableTextInput id="trsJobCode" textInputEditable="false"  searchButtonClick="getTrsJob" clearButtonClick="cleaeTrsJob" enabled="false"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="备注："  >
+				<s:TextInput id="reason" text="@{vo.reason}" />
+			</fb:MultiColumnFormItem>
+			<!--<fb:MultiColumnFormItem label="是否申请：" required="true">
+				<dropDownList:DropDownList dataProvider="{feeStatusList}"   id="flagElement" searchKey="data" value="{vo.flag}" width="100" />
+			</fb:MultiColumnFormItem>-->
+		</fb:MultiColumnForm>
+		<mx:Panel width="100%" title="费率本">
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="费率状态：">
+						<mx:ComboBox dataProvider="{priceStatus}" id="statusId" selectedIndex="1"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="线路名称：">
+						<fb:SelectableTextInput id="routeName" dataChange="chgRoute()" textInputEditable="true" text="@{so.routeName}" searchButtonClick="getRoute" clearButtonClick="clearRoute"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="启用日期：">
+						<mx:HBox>
+							<mx:DateField selectedDate="@{so.periodStart}"  formatString="YYYY-MM-DD"/>
+							<mx:Label htmlText="--"/>
+							<mx:DateField selectedDate="@{so.periodEnd}" formatString="YYYY-MM-DD"/>
+						</mx:HBox>
+					</fb:MultiColumnFormItem>
+					<mx:HBox width="100%">  
+						<mx:Spacer width="100%"/>
+						<fb:MultiColumnFormItem>
+							<mx:HBox>
+								<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+								<mx:Button label="清空查询" click="clear()"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+					</mx:HBox>
+				</fb:MultiColumnForm>
+			</flexlib:WindowShade>
+			<grid:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								   getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								   pageSize="{so.objectsPerPage}"
+								   height="100%" allowMultipleSelection="false" showControlColumn="false">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="线路名称" dataField="routeName"/>
+					<grid:DataGridColumnNested headerText="车型" dataField="truckType" labelFunction="getTruckTypeLabel" width="50"/>
+					<grid:DataGridColumnNested headerText="状态" dataField="status" labelFunction="getStatusLabel" width="40"/>
+					<grid:DataGridColumnNested headerText="启用日期" dataField="periodStart" width="75"/>
+					<grid:DataGridColumnNested headerText="正常" dataField="price" width="40"/>
+					<grid:DataGridColumnNested headerText="放空" dataField="ventingPrice" width="40"/>
+					<grid:DataGridColumnNested headerText="加班" dataField="overtimePrice" width="40"/>
+					
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:Panel>
+	</mx:HBox>
+</mx:VBox>

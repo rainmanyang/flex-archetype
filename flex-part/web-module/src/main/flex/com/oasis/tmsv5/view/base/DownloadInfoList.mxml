@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:paymentItem="com.oasis.tmsv5.view.bill.*" xmlns:grid="com.oasis.component.grid.*" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	<fx:Declarations>
+		<mx:WipeDown id="myWD" duration="200" />
+		<mx:WipeUp id="myWU" duration="200" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.base.DownloadInfoController;
+			import com.oasis.tmsv5.bill.FeeItemController;
+			import com.oasis.tmsv5.bill.PaymentItemController;
+			import com.oasis.tmsv5.so.base.DownloadInfoSO;
+			import com.oasis.tmsv5.so.bill.FeeItemSO;
+			import com.oasis.tmsv5.so.bill.PaymentItemSO;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.tmsv5.vo.base.DownloadInfo;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.bill.PaymentItem;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.URLUtil;
+			
+			[Inject]
+			public var downloadInfoController:DownloadInfoController;
+			
+			[Inject]
+			public var feeItemController:com.oasis.tmsv5.bill.FeeItemController;
+			
+			[Bindable]  
+			public var so:DownloadInfoSO = new DownloadInfoSO();	
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var reportTypes:ArrayCollection = EnumManage.getReportTypes();		
+			[Bindable]
+			public var fw:DownloadInfo;	
+			
+			[Bindable]
+			public var mark:Boolean = false;		
+			
+			public var host:String;
+			
+			[Inject]
+			public var paymentItemController:com.oasis.tmsv5.bill.PaymentItemController;
+			
+			
+			
+			private function initApp():void{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+			}
+			public function init():void{
+				DateSearchUtils.initDateInterval(interval);
+				so.fileTypes = EnumManage.getPriceReportTypes();
+				getPageData(so.pageNumber, so.objectsPerPage);
+				initApp();
+			}
+			private function interval(start:Date,end:Date):void{
+				so.beginTime = start;
+				so.endTime = end;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				so.beginTime = beginTime.selectedDate;
+				so.endTime = endTime.selectedDate;
+				if(reportType.selectedIndex != -1){
+					so.fileType = reportType.selectedItem.data;
+				}
+				downloadInfoController.getPageList(so, pageList,callBack);
+			}
+			
+			[EventHandler( event="PaymentItemEvent.PAYMENT_ITEM_LIST_EVENT" )]
+			public function search():void{
+				so.pageNumber=1;
+				downloadInfoController.getPageList(so, pageList);
+			}
+			
+			private function remove_clickHandler():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:PaymentItem = PaymentItem(o);
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要删除的对象!");
+					return ;
+				}else{
+					Alert.show("您确认要删除选中的数据？","确认删除",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								//downloadInfoController.remove(ids,search);
+							}
+						});
+				}
+			}
+			
+			public function download(data:Object): void{
+				fw = data as DownloadInfo;
+				try {
+					var url:String = encodeURI(host+fw.path);
+					var file:FileReference=new FileReference();
+					file.addEventListener(Event.COMPLETE, saveComplete);
+					var fileNameTime:String = DateFormatterUtil.format4(fw.time)
+					var request:URLRequest = new URLRequest(url);
+					file.download(request,"对账单"+fileNameTime+".xls");
+				}catch(errObject:Error) {
+					Alert.show("文件下载失败！\n 原因："+errObject.message);
+					return;
+				}
+			}
+			
+			public function saveComplete(event:Event):void{
+				Alert.show("下载完成");
+			}
+			
+			public function open(data:Object): void{
+				if(data.fileType == 'PAYMENT_ITEM'){
+					paymentItemController.checkApply(data.id,mark,data, onOpen);
+				} else {
+					Alert.show("您确认要打开？","确认打开",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								reopen(data);
+							}
+						});
+				}
+			}
+			
+			public function onOpen(mark:Boolean, data:Object):void{
+				if(mark){
+					Alert.show("已申请的数据不能进行取消关账！");
+				} else {
+					Alert.show("您确认要打开？","确认打开",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								reopen(data);
+							}
+						});
+				}
+			}
+			
+			public function reopen(data:Object):void{
+				fw = data as DownloadInfo;
+				if(fw.fileType == 'PAYMENT_ITEM'){
+					var paymentItemSO:PaymentItemSO = new PaymentItemSO();
+					paymentItemSO.billDateBegin = fw.startTime;
+					paymentItemSO.billDateEnd = fw.endTime;
+					paymentItemController.batchUpdateFlag(paymentItemSO,"0",fw.id,successCallBack,validationCallBack);
+				}else if(fw.fileType == 'FEE_ITEM'){
+					var feeItemSO:FeeItemSO = new FeeItemSO();
+					feeItemSO.billDateBegin = fw.startTime;
+					feeItemSO.billDateEnd = fw.endTime;
+					feeItemController.batchUpdateFlag(feeItemSO,"0",fw.id,successCallBack);
+				}
+			}
+			private function successCallBack():void{
+				fw.opened = true;
+				downloadInfoController.updateOpened(fw,openCallback,null);
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				Alert.show(error.onEdit);
+			}
+			
+			private function openCallback():void{
+				Alert.show("打开成功!");
+			}
+			
+			private function getDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as DownloadInfo).time;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getReportDataTimeString(item:Object,column:DataGridColumn):String{
+				var startTime:Date = (item as DownloadInfo).startTime;
+				var endTime:Date = (item as DownloadInfo).endTime;
+				return DateFormatterUtil.format3(startTime)+"~"+DateFormatterUtil.format3(endTime);
+			}
+			public function clear():void{
+				reportType.selectedIndex = 0;
+				so = new DownloadInfoSO();
+				so.fileTypes = EnumManage.getPriceReportTypes();
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			private function getReportTypesLabel(item:Object,column:DataGridColumn):String{
+				var fileType:String = item.fileType as String;
+				if(fileType == 'FEE_ITEM'){
+					return '应收应付班车费报表';
+				}else if(fileType == 'PAYMENT_ITEM'){
+					return '应付班车费报表';
+				}else {
+					return "其他";
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="30%" height="95%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<mx:VBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="关账人" >
+							<mx:TextInput text="@{so.operator}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="关账时间：">
+							<mx:HBox>
+								<mx:DateField id="beginTime" selectedDate="{so.beginTime}"  formatString="YYYY-MM-DD"/>
+								<mx:Label htmlText="--"/>
+								<mx:DateField id="endTime" selectedDate="{so.endTime}" formatString="YYYY-MM-DD"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="报表类型：" >
+							<fb:AdvancedComboBox dataProvider="{reportTypes}" labelField="label" id="reportType"/>
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:HBox>
+									<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+									<mx:Button label="清空查询" click="clear()"/>
+								</mx:HBox>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+				</mx:VBox>
+			</flexlib:WindowShade>
+			<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}"
+								 height="100%" allowMultipleSelection="false"  showControlColumn="false">
+				<fb:columns>
+					<fb:DataGridColumnNested headerText="关账人" dataField="operator" width="100"/>
+					<fb:DataGridColumnNested headerText="关账时间"  labelFunction="getDateString" width="150"/>
+					<fb:DataGridColumnNested headerText="关账月份"  labelFunction="getReportDataTimeString" width="300"/>
+					<fb:DataGridColumnNested headerText="报表类型" dataField="fileType" width="150" labelFunction="getReportTypesLabel"/>
+					<fb:DataGridColumnNested headerText="描述" dataField="remark" width="200" />
+					<fb:DataGridColumnNested headerText="操作">
+						<fb:itemRenderer>
+							<fx:Component>
+								<mx:HBox>
+									<mx:LinkButton label="下载" color="0x3380DD" click="outerDocument.download(data);"
+												   textDecoration="underline" fontWeight="normal" />
+									<mx:LinkButton label="取消关帐" color="0x3380DD" click="outerDocument.open(data);" 
+												   includeInLayout="{!data.opened &amp;&amp; data.fileType == 'PAYMENT_ITEM'}"
+												   textDecoration="underline" fontWeight="normal" 
+												   visible="{!data.opened &amp;&amp; data.fileType == 'PAYMENT_ITEM'}"/>
+									<mx:LinkButton label="取消申请" color="0x3380DD" click="outerDocument.open(data);"
+												   includeInLayout="{!data.opened &amp;&amp; data.fileType == 'FEE_ITEM'}"
+												   textDecoration="underline" fontWeight="normal" 
+												   visible="{!data.opened &amp;&amp; data.fileType == 'FEE_ITEM'}"/>
+								</mx:HBox>
+								
+							</fx:Component>
+						</fb:itemRenderer>
+						
+					</fb:DataGridColumnNested>
+				</fb:columns>
+			</fb:PageableDataGrid>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>

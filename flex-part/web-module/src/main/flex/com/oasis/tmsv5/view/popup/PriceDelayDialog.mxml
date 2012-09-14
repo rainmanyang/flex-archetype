@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				width="400" height="200"
+				title="延长期限" xmlns:s="library://ns.adobe.com/flex/spark">
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.utils.StringUtil;
+			import com.oasis.tmsv5.price.PriceController;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var priceController:PriceController;
+			
+			public var ids:ArrayCollection;
+			
+			public var passFun:Function;
+			
+			protected function btnOK():void{
+				var days:String = StringUtil.trim(delayDays.text);
+				var reg:RegExp = /^[1-9]\d*$/; 
+				if(!reg.test(days)){
+					Alert.show("请选择有效的延期天数,最少要延长1天!");
+				}else{
+					priceController.delay(ids,Number(days));
+					if(passFun!=null)
+						passFun(Number(days));
+					PopUpManager.removePopUp(this);
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+		<mx:HBox  width="100%" borderStyle="solid">
+				<fb:MultiColumnFormItem label="延长时间(天)" >
+					<mx:TextInput id="delayDays" text="30"/>
+				</fb:MultiColumnFormItem>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="btnOK()"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

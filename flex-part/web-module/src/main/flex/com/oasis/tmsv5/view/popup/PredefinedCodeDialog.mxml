@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				width="400" height="400"
+				creationComplete="init()"
+				title="选择" xmlns:grid="com.oasis.component.grid.*">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.component.grid.SelectableDataGrid;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.base.PredefinedCodeController;
+			import com.oasis.wolfburg.so.predefinedCode.PredefinedCodeSO;
+			import com.oasis.tmsv5.vo.base.PredefinedCode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var predefinedCodeController:PredefinedCodeController;
+			[Bindable]
+			public var so:PredefinedCodeSO = new PredefinedCodeSO();
+			[Bindable]
+			public var item:PredefinedCode = new PredefinedCode();
+			[Bindable]
+			public var items:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			public var pfcData:ArrayCollection = new ArrayCollection();
+			
+			public var passFun:Function;
+			
+			[Bindable]
+			public var type:String;
+			
+			protected function btnOK(event:MouseEvent=null):void{
+				item = grid.selectedItem as PredefinedCode;
+				if(item == null){
+					Alert.show("请选择一条数据!");
+					return;
+				}
+				if(passFun!=null)
+					passFun(item);
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function search():void{
+				so.value = strValue.text;
+				getPageData(so.pageNumber,so.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.type = type;
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				predefinedCodeController.queryPredefinedCodes(pfcData, so,callBack);
+			}
+			
+			public function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox  width="100%" borderStyle="solid">
+				<fb:MultiColumnForm  numColumns="3" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="值/描述" >
+						<mx:TextInput id="strValue"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem>
+						<mx:Button label="查询" click="search();" id="searchBtn"/>
+					</fb:MultiColumnFormItem>
+				</fb:MultiColumnForm>
+			</mx:HBox>
+			<grid:SelectableDataGrid id="grid" dataProvider="{pfcData}" 
+									 height="100%" allowMultipleSelection="false" 
+									 doubleClick="btnOK(event)" doubleClickEnabled="true" showControlColumn="false">
+				<grid:columns>
+					<mx:DataGridColumn headerText="值" dataField="value"/>
+					<mx:DataGridColumn headerText="描述" dataField="description"/>
+				</grid:columns>
+			</grid:SelectableDataGrid>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="btnOK()"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>
+

@@ -1,0 +1,96 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+.searchButton1
+{
+	upSkin: Embed(source="images/searchButton1_upskin.gif");
+	overSkin: Embed(source="images/searchButton1_over.gif");
+	downSkin: Embed(source="images/searchButton1_down.gif");
+	disabledSkin: Embed(source="images/searchButton1_down.gif");	
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+.clearButton1
+{
+	upSkin: Embed(source="images/clearButton1_upskin.gif");
+	overSkin: Embed(source="images/clearButton1_over.gif");
+	downSkin: Embed(source="images/clearButton1_down.gif");
+	disabledSkin: Embed(source="images/clearButton1_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+.searchButton2
+{
+	upSkin: Embed(source="images/searchButton2_upskin.gif");
+	overSkin: Embed(source="images/searchButton2_over.gif");
+	downSkin: Embed(source="images/searchButton2_down.gif");
+	disabledSkin: Embed(source="images/searchButton2_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+.clearButton2
+{
+	upSkin: Embed(source="images/clearButton2_upskin.gif");
+	overSkin: Embed(source="images/clearButton2_over.gif");
+	downSkin: Embed(source="images/clearButton2_down.gif");
+	disabledSkin: Embed(source="images/clearButton2_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+.searchButton3
+{
+	upSkin: Embed(source="images/searchButton3_upskin.gif");
+	overSkin: Embed(source="images/searchButton3_over.gif");
+	downSkin: Embed(source="images/searchButton3_down.gif");
+	disabledSkin: Embed(source="images/searchButton3_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+
+.clearButton3
+{
+	upSkin: Embed(source="images/clearButton3_upskin.gif");
+	overSkin: Embed(source="images/clearButton3_over.gif");
+	downSkin: Embed(source="images/clearButton3_down.gif");
+	disabledSkin: Embed(source="images/clearButton3_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+.zoomBig
+{
+	upSkin: Embed(source="images/zoom_big1.png");
+	overSkin: Embed(source="images/zoom_big2.png");
+	downSkin: Embed(source="images/zoom_big3.png");
+	disabledSkin: Embed(source="images/zoom_big4.png");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+.zoomSmall
+{
+	upSkin: Embed(source="images/zoom_small1.png");
+	overSkin: Embed(source="images/zoom_small2.png");
+	downSkin: Embed(source="images/zoom_small3.png");
+	disabledSkin: Embed(source="images/zoom_small4.png");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+

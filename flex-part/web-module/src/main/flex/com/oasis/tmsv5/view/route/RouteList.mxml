@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:grid="com.oasis.component.grid.*"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 width="100%" height="100%"  creationComplete="init()" xmlns:controls="flexlib.controls.*" xmlns:route="com.oasis.tmsv5.view.route.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" >
+	<mx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			import com.best.oasis.flexbase.util.BeanUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.report.ReportDownloadMsgDialog;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.events.MenuEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var dp:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var so:RouteSO = new RouteSO();
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+		   [Bindable]
+			public var routeStatus:ArrayCollection = EnumManage.getRouteStatus();
+
+			public function init():void{
+				//grid.dataProvider = dp;
+				getPageData(so.pageNumber, so.objectsPerPage);
+			};
+			
+			protected function onMenuChange(event:MenuEvent):void {
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = event.item.index;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				routeController.getPageList(so, pageList,callBack);
+			}
+			[EventHandler( event="RouteEvent.ROUTE_LIST_EVENT" )]
+			public function search():void{
+				so.name = strName.text;
+				so.passStop = passStop.text;
+				if(statusId.selectedIndex != -1){
+					so.status = statusId.selectedItem.data;
+				}
+				so.pageNumber=1;
+				getPageData(so.pageNumber,so.objectsPerPage);
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				if(status == 'NEW'){
+					return '新建';
+				}else if(status == 'ACTIVE'){
+					return '启用';
+				}else{
+					return '停用';
+				}
+			}
+			
+			protected function itemClickHandle(event:ListEvent):void{
+				var itemRenderer:CopyableDataGridItemRenderer = event.itemRenderer as CopyableDataGridItemRenderer;
+				var vo:Route = itemRenderer.data as Route
+				routeController.find(vo,function():void{
+					freshViewForm(vo);
+				});
+				
+			}
+			
+			private function freshViewForm(route:Route):void{
+				view.vo = route;
+				rightPanel.selectedIndex=0;
+			//	view.displayText();
+			}
+			protected function create_clickHandler():void
+			{
+				rightPanel.selectedIndex = 1;
+			}
+			protected function change2Active(event:MouseEvent):void
+			{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					ids.addItem(o.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要启用的数据!");
+					return ;
+				}else{
+					if(ids.length == 1){
+						var route:Route = grid.selectedItem as Route;
+						if(route.status == 'ACTIVE'){
+							Alert.show("请对非启用的线路进行启用操作!");
+							return;
+						}
+					}
+					Alert.show("您确认要启用选中的数据？","确认启用",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								routeController.batchUpdateRouteStatus(ids,"ACTIVE");
+								getPageData(so.pageNumber,so.objectsPerPage);
+							}
+						});
+				}
+			}
+			protected function change2Frozen(event:MouseEvent):void
+			{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					ids.addItem(o.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要停用的数据!");
+					return ;
+				}else{
+					if(ids.length == 1){
+						var route:Route = grid.selectedItem as Route;
+						if(route.status == 'FROZEN'){
+							Alert.show("请对非停用的线路进行停用操作!");
+							return;
+						}
+					}
+					Alert.show("您确认要停用选中的数据？","确认停用",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								routeController.batchUpdateRouteStatus(ids,"FROZEN");
+								getPageData(so.pageNumber,so.objectsPerPage);
+							}
+						});
+				}
+				
+			}
+			
+			private function remove_clickHandler():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					if(o.status != 'NEW'){
+						Alert.show("'启用'和'停用'状态的线路不能被删除!");
+						return;
+					}
+					ids.addItem(o.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要删除的数据!");
+					return ;
+				}else{
+					Alert.show("您确认要删除选中的数据？","确认删除",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								routeController.remove(ids,search);
+								rightPanel.selectedIndex =1 ;
+							}
+						});
+				}
+				
+			}
+			
+			private function exportDate():void{
+				so.name = strName.text;
+				so.passStop = passStop.text;
+				if(statusId.selectedIndex != -1){
+					so.status = statusId.selectedItem.data;
+				}
+				var _so:RouteSO = RouteSO(BeanUtils.clone(so));
+				_so.pageNumber = 1;
+				_so.objectsPerPage = int.MAX_VALUE;
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root, ReportDownloadMsgDialog, true));
+				dialog.routeSO = _so;
+				dialog.reportType = Constants.ROUTE;
+				PopUpManager.centerPopUp(dialog);
+			}
+		]]>
+	</mx:Script>
+	<mx:HDividedBox width="100%" height="100%">
+		<mx:VBox width="45%" height="100%">
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%">
+				<mx:HBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm  numColumns="1" width="60%" defaultButton="{searchBtn}" >
+						<fb:MultiColumnFormItem label="线路名称" >
+							<mx:TextInput id="strName"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="途径站点" >
+							<mx:TextInput id="passStop"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="状态：" >
+							<fb:AdvancedComboBox dataProvider="{routeStatus}" labelField="label" id="statusId"/>
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+									<mx:HBox>
+										<mx:Button label="查询" click="search();" id="searchBtn"/>
+										<PremissionButton:PremissionButton label="导出" click="exportDate();" module="Route" premission="export"/>
+									</mx:HBox>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+				</mx:HBox>
+		</flexlib:WindowShade>
+		<mx:HBox paddingLeft="30">
+			<PremissionButton:PremissionButton label="新建" id="create" click="create_clickHandler()" module="Route" premission="create"/>
+			<PremissionButton:PremissionButton label="启用" click="change2Active(event)" module="Route" premission="enable"/>
+			<PremissionButton:PremissionButton label="停用" click="change2Frozen(event)" module="Route" premission="disable"/>
+			<PremissionButton:PremissionButton label="删除" id="remove" click="remove_clickHandler()" module="Route" premission="remove"/>
+		</mx:HBox>
+		<grid:PageableDataGrid id="grid" 
+							 width="100%" height="100%" allowMultipleSelection="true" dataProvider="{pageList.list}"
+							 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+							 pageSize="{so.objectsPerPage}"  itemClick="itemClickHandle(event)" showControlColumn="false">
+			<grid:columns >
+				<grid:DataGridColumnNested headerText="编号" dataField="code" width="80"/>
+				<grid:DataGridColumnNested headerText="名称" dataField="name"/>
+				<grid:DataGridColumnNested headerText="参考时效(分钟)" dataField="enrouteDays" width="95" textAlign="right"/>
+				<grid:DataGridColumnNested headerText="里程(公里)" dataField="distance" width="80" textAlign="right"/>
+				<grid:DataGridColumnNested headerText="状态" dataField="status" width="50" labelFunction="getStatusLabel"/>
+			</grid:columns>
+		</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:ViewStack id="rightPanel" selectedIndex="0" width="55%" height="100%" >
+			<route:RouteView  id="view" width="100%"/>
+			<route:RouteCreate width="100%"/>
+			<route:RouteEdit id="edit" width="100%"/>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+</mx:VBox>

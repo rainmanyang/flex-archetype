@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:nv="com.oasis.wolfburg.validator.*"
+	width="100%" height="100%" xmlns:price="price.*" title="创建" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="validator1" source="{periodStart}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="validator3" source="{routeName}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:NumberValidator id="validator4" source="{price}" minValue="0" precision="2" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','requireNumber')}"/>
+		<mx:NumberValidator id="validator5" source="{ventingPrice}" minValue="0" precision="2" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','requireNumber')}"/>
+		<mx:NumberValidator id="validator6" source="{overtimePrice}" minValue="0" precision="2" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','requireNumber')}"/>
+		
+		<!--mx:StringValidator id="validator7" source="{truckLevel}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/-->
+		<nv:SelectValidator id="validator8" source="{truckType}" property="selectedIndex" required="true" fieldError="{resourceManager.getString('errorResource','requireSelect')}"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.PriceEvent;
+			import com.oasis.tmsv5.price.PriceController;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.popup.PredefinedCodeCreateDialog;
+			import com.oasis.tmsv5.view.popup.PredefinedCodeDialog;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.vo.base.PredefinedCode;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.price.Price;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.ObjectUtil;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var priceController:PriceController;
+			[Inject]
+			public var routeController:RouteController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:Price= new Price();
+			
+			[Bindable]
+			public var priceStatus:ArrayCollection = EnumManage.getPriceStatus();
+			[Bindable]
+			public var level:ArrayCollection = EnumManage.getTruckLevel();
+			[Bindable]
+			public var type:ArrayCollection = EnumManage.getTruckType();
+			
+			public function setId(id:Number):void {
+				vo.id=id;
+			}
+			
+			public function freshForm():void{
+				if(vo.returnRouteName != null && vo.returnRouteName != ""){
+					returnFlag.selected = true;
+				}
+				priceController.find(vo,temp);
+			}
+			
+			private function temp():void{
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=1;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new Price();
+				truckType.selectedIndex = -1;
+				returnFlag.selected = false;
+				truckType.prompt=resourceManager.getString('normalResource','select');
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				vo = new Price();
+				returnFlag.selected = false;
+				truckType.selectedIndex = -1;
+				ViewUtils.clearErrorString(form);
+				truckType.prompt = resourceManager.getString('normalResource','select');
+				Alert.show("费率本创建成功!");
+				dispatch.dispatchEvent(new PriceEvent(PriceEvent.PRICE_LIST_EVENT));
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PriceComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([validator1,validator3,validator4,validator5,validator6,validator8]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			private function create():void{
+				if(!validate()){
+					return;
+				}
+				
+				vo.truckType = truckType.selectedItem.data;
+				//创建方法需要传两个回调函数
+				priceController.create(vo,successCallBack,validationCallBack);
+			}
+			
+			protected function getRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = localFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFun(item:Object):void{
+				var route:Route = item as Route;
+				vo.routeId = route.id;
+				vo.routeName = route.name;
+			}
+			
+			protected function getReturnRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = localFunReturn;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFunReturn(item:Object):void{
+				var route:Route = item as Route;
+				vo.returnRouteId = route.id;
+				vo.returnRouteName = route.name;
+			}
+			
+			protected function getBrand():void {
+				var dialog:PredefinedCodeDialog = 
+					PredefinedCodeDialog(PopUpManager.createPopUp(root, PredefinedCodeDialog , true));
+				dialog.passFun = brandFun;
+				dialog.type = Constants.TRUCK_BRAND;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function brandFun(item:Object):void{
+				var pfc:PredefinedCode = item as PredefinedCode;
+				vo.truckLevel = pfc.value;
+			}
+			
+			public function createBrand():void{
+				var dialog:PredefinedCodeCreateDialog = PredefinedCodeCreateDialog(PopUpManager.createPopUp(root, PredefinedCodeCreateDialog , true));
+				dialog.type = Constants.TRUCK_BRAND;
+				PopUpManager.centerPopUp(dialog);
+				dialog.passFun = brandFun;
+			}
+			
+			private function chgReturn():void{
+				var flag:Boolean = returnFlag.selected;
+				if(flag){
+					returnRouteName.searchButtonVisible = true;
+					returnRouteName.clearButtonVisible = true;
+					if(vo.routeName == null || vo.routeName == ""){
+						return;
+					}
+					
+					var route:String = '';
+					var arrs:Array = vo.routeName.split('-');
+					for(var dex:int=arrs.length-1;dex>0;dex--){
+						route += arrs[dex]+'-';
+					}
+					route += arrs[0];
+					routeController.findReturnRoute(route,routeCallback);
+				}else{
+					returnRouteName.searchButtonVisible = false;
+					returnRouteName.clearButtonVisible = false;
+					vo.returnRouteId = NaN;
+					vo.returnRouteName = "";
+				}
+			}
+			
+			private function routeCallback(route:Route):void{
+				vo.returnRouteId = route.id;
+				vo.returnRouteName = route.name;
+			}
+			
+			private function clearRoute():void{
+				vo.routeName = "";
+				vo.routeId = NaN;
+			}
+			private function clearReturnRoute():void{
+				vo.returnRouteName = "";
+				vo.returnRouteId = NaN;
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<fb:MultiColumnForm id="form"  width="90%" label="基本信息">
+			<fb:MultiColumnFormItem label="启用日期：" required="true">
+				<mx:DateField id="periodStart" selectedDate="@{vo.periodStart}" formatString="YYYY-MM-DD"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="线路名称：" required="true">
+				<fb:SelectableTextInput id="routeName" textInputEditable="false" text="@{vo.routeName}" searchButtonClick="getRoute" clearButtonClick="clearRoute"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="返程：">
+				<s:CheckBox id="returnFlag" change="chgReturn()"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="返程线路：">
+				<fb:SelectableTextInput id="returnRouteName"  textInputEditable="false" text="@{vo.returnRouteName}" searchButtonClick="getReturnRoute" clearButtonClick="clearReturnRoute" searchButtonVisible="false" clearButtonVisible="false"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车型：" required="true">
+				<dropDownList:DropDownList dataProvider="{type}" id="truckType" width="110" searchKey="data" value="{vo.truckType}" prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车辆品牌：">
+				<mx:HBox>
+					<fb:SelectableTextInput id="truckLevel" textInputEditable="false" text="@{vo.truckLevel}" searchButtonClick="getBrand"/>
+					<mx:Button label="添加品牌" click="createBrand()"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="正常结算价格：" required="true">
+				<mx:TextInput id="price" text="@{vo.price}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="放空结算价格：" required="true">
+				<mx:TextInput id="ventingPrice" text="@{vo.ventingPrice}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="加班车结算价格：" required="true">
+				<mx:TextInput id="overtimePrice" text="@{vo.overtimePrice}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="备注：">
+				<mx:TextInput text="@{vo.remark}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="create()"/>
+		<mx:Button label="取消" id="cancel" click="cancel_clickHandler(event)"/>
+	</mx:HBox>
+</mx:Panel>

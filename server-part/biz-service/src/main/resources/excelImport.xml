@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<excelImport>
+	<!-- 模板文件根目录，如果该属性不配置，则默认是classpath根目录 -->
+	<template-file-base-path>/excel/template</template-file-base-path>
+</excelImport>
+

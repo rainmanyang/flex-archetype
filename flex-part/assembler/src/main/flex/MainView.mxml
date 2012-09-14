@@ -1,0 +1,150 @@
+<s:Application 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:layout="com.oasis.tmsv5.layout.*"
+	xmlns:view="com.oasis.tmsv5.view.*"
+	xmlns:swiz="http://swiz.swizframework.org" 
+	xmlns:config="com.oasis.tmsv5.config.*" xmlns:security="com.oasis.tmsv5.view.security.*"
+	creationComplete="init()">
+	
+	<fx:Style source="assets/style/default/defaultStyle.css" />
+	<fx:Metadata>
+		[ResourceBundle("normalResource")]
+		[ResourceBundle("errorResource")]
+		[ResourceBundle("posResource")]
+	</fx:Metadata> 
+	<fx:Declarations>
+		<swiz:Swiz>
+			<!-- BeanProviders simply contain the non-display objects that Swiz should process. -->
+			<swiz:beanProviders>
+				<config:ServiceFacade />
+				<config:Beans />				
+			</swiz:beanProviders>
+			
+			<swiz:config>
+				<!-- The eventPackages value tells Swiz the path to your Event classes,
+				and viewPackages is an optional value that speeds up the processing of display classes. -->
+				<swiz:SwizConfig
+					defaultFaultHandler="onFault"
+					eventPackages="com.oasis.tmsv5.event.*" 
+					viewPackages="com.oasis.tmsv5.view.*,com.oasis.tmsv5.layout.*,flex.*,com.oasis.tmsv5.view.popup.*,com.oasis.layout.*"
+					/>
+			</swiz:config>
+			
+		</swiz:Swiz>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[			
+			import com.oasis.layout.ExceptionDialog;
+			import com.oasis.security.ModelLocator;
+			import com.oasis.tmsv5.event.PopExceptionWinEvent;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.utils.message.MessageConfig;
+			
+			import mx.controls.Alert;
+			import mx.core.mx_internal;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.messaging.ChannelSet;
+			import mx.messaging.channels.AMFChannel;
+			import mx.messaging.channels.StreamingAMFChannel;
+			import mx.rpc.events.FaultEvent; 
+			
+			[Inject]
+			public var accountController:AccountController					        
+			
+			[EventHandler( event="PopExceptionWinEvent.POP_EXCEPTION_WIN" )]
+			public function  popUpExceptionWindow(event:PopExceptionWinEvent):void {
+				var exp:ExceptionDialog = ExceptionDialog(PopUpManager.createPopUp(root, ExceptionDialog , true));
+				exp.errorStr = event.error;
+				PopUpManager.centerPopUp(exp);
+			}  
+			
+			private function onFault(event:FaultEvent):void
+			{
+				Alert.show( event.fault.message, "Error" );
+			}
+			
+			protected function loginCallback():void
+			{		
+				/**
+				 * 重置页面
+				 */
+				if(staticMenuLayout.initialized){
+					staticMenuLayout.resetStaticLayout();
+				}
+				staticMenuLayout.init();
+			}
+			
+			protected function logoutCallback():void
+			{
+				loginForm.init();
+				staticMenuLayout.viewStack.selectedIndex = 0;
+			}
+			
+			public function init():void{				
+				//resourceManager.localeChain=["zh_CN"]; 
+				messageConfigInitialize();
+				this.systemManager.addEventListener(FlexEvent.IDLE,userIdle);							
+			}
+			
+			private function userIdle(event:FlexEvent):void{
+				if(event.currentTarget.mx_internal::idleCounter == 18000){			
+					accountController.logout();					
+				}				
+			}
+			private function messageConfigInitialize():void{
+				
+				var myPoolingAmfEndPoint:String=channelConfig.channel.(@id=="my-polling-amf").endpoint.@["url"]				
+				var myPollingAMF:AMFChannel = new AMFChannel(null,myPoolingAmfEndPoint);
+				
+				var myStreamAmfEndPoint:String=channelConfig.channel.(@id=="my-streaming-amf").endpoint.@["url"]				
+				var myStreamAMF:AMFChannel = new StreamingAMFChannel(null, myStreamAmfEndPoint);				
+				
+				myPollingAMF.pollingEnabled = true;
+				myPollingAMF.pollingInterval = 4000;
+				
+				var myPoolingAmfEndPoint1:String=channelConfig.channel.(@id=="my-polling-amf1").endpoint.@["url"]				
+				var myPollingAMF1:AMFChannel = new AMFChannel(null, myPoolingAmfEndPoint1);
+				
+				var myStreamAmfEndPoint1:String=channelConfig.channel.(@id=="my-streaming-amf1").endpoint.@["url"]				
+				var myStreamAMF1:AMFChannel = new StreamingAMFChannel(null, myStreamAmfEndPoint1);				
+				
+				myPollingAMF.pollingEnabled = true;
+				myPollingAMF.pollingInterval = 4000;
+				
+				
+				var channelSet: ChannelSet= new ChannelSet();
+				channelSet.addChannel(myStreamAMF);
+				channelSet.addChannel(myStreamAMF1);
+				
+				var poolingChannelSet: ChannelSet= new ChannelSet();
+				poolingChannelSet.addChannel(myPollingAMF);
+				poolingChannelSet.addChannel(myPollingAMF1);
+				
+				MessageConfig.initializeChannel(channelSet);
+				MessageConfig.initializePoolingChannel(poolingChannelSet);
+				
+			
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+	   <fx:XML id="channelConfig" source="/../resources/messageChannel.xml" />
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center"/>
+	</s:layout>
+	
+	<mx:ViewStack id="viewStack" resizeToContent="true" selectedIndex="{ModelLocator.getInstance().mainContentViewStackSelectedIndex}" width="100%" height="100%" >
+		<!--登录页面-->
+		<security:LoginForm id="loginForm" callBackFunction="loginCallback"/>
+		<!--主程序界面-->
+		<layout:StaticMenuLayout id="staticMenuLayout" callBackFunction="logoutCallback" />
+	</mx:ViewStack>
+	
+	
+</s:Application>

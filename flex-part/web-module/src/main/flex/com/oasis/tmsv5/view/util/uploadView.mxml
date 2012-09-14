@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 fontSize="12" xmlns:flexbase="http://flexbase.800best.com/mxml" 
+		 width="620" height="300" creationComplete="initApp()">
+	<mx:NumberFormatter id="filesizeFormatter" useThousandsSeparator="true"/>
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.attachment.AttachmentController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.attachment.Attachment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.ProgressBar;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.utils.URLUtil;
+			
+			import spark.components.Application;
+			
+			[Inject]
+			public var attachmentController:AttachmentController;
+			
+			[Bindable]
+			public var attachmentType:ArrayCollection;
+			[Bindable]
+			public var attachments:ArrayCollection = new ArrayCollection();
+			
+			public var host:String;
+			
+			private function initApp():void{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+			}
+			
+			public function download(data:Object): void{
+				var fw:Attachment = data as Attachment;
+				var type:String = EnumManage.getDisplayText(fw.type,attachmentType);
+				try {
+					var url:String = encodeURI(host+fw.fileUrl);
+					var request:URLRequest = new URLRequest(url);
+					var file:FileReference=new FileReference();
+					file.addEventListener(Event.COMPLETE, saveComplete);
+					file.download(request,type+"."+fw.fileType);
+				}catch(errObject:Error) {
+					Alert.show("文件下载失败！\n 原因："+errObject.message);
+					return;
+				}
+			}
+			
+			public function saveComplete(event:Event):void{
+				Alert.show("下载完成");
+			}
+			
+			public function getType(item:Object,column:DataGridColumn):String{
+				var type:String = item.type as String;
+				return EnumManage.getDisplayText(type,attachmentType);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		<mx:DataGrid id="files" dataProvider="{attachments}">
+			<mx:columns>
+				<mx:DataGridColumn width="120" headerText="文件格式" dataField="fileType"/>
+				<mx:DataGridColumn width="150" headerText="附件类型" dataField="type" labelFunction="getType"/>
+				<mx:DataGridColumn headerText="操作" sortable="false" width="80">
+					<mx:itemRenderer> 
+						<mx:Component> 
+							<mx:Button label="下载" click="outerDocument.download(data)"/>
+						</mx:Component> 
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:VBox>
+</mx:VBox> 

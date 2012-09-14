@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				width="100%" height="500" creationComplete="init()"
+				title="创建加班/放空任务单" xmlns:truckRSSchedule="com.oasis.tmsv5.view.truckRSSchedule.*" xmlns:dispatchDock="com.oasis.tmsv5.view.dispatchDock.*"   >
+	<fx:Declarations>
+		<mx:NumberValidator id="validator4" source="{price}" minValue="0" required="false" precision="2" property="text" />
+		<mx:StringValidator id="nameValidation" source="{rsName}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="routeValidation" source="{route}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="truckValidation" source="{truck}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.adobe.utils.StringUtil;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSScheduleController;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.route.PosView;
+			import com.oasis.wolfburg.vo.route.Stop;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var truckRSJobController:TruckRSJobController;
+			
+			[Inject]
+			public var truckRSScheduleController:TruckRSScheduleController;
+			
+			public var closeCallBack:Function;
+			
+			[Bindable]
+			public var _vo:TruckRSJob = new TruckRSJob();
+			
+			[Bindable]
+			public var dayTypeArray:ArrayCollection = EnumManage.getDayType();
+			
+			[Bindable]
+			public var stops:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var allTimeStr:String ;
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+			public function init():void{
+				if(!isNaN(_vo.id)){
+					_vo.rsScheduleId = NaN;
+					_vo.code = null;
+					_vo.id = NaN;
+					_vo.licensePlate = null;
+					_vo.driver = null;
+					_vo.truckId = NaN;
+					_vo.identityCard = null;
+					
+					route.text = _vo.routeName;
+					if(!isNaN(_vo.routeId) && _vo.routeId != 0){
+						routeController.findStopsByRouteId(stops,_vo.routeId);
+					}
+				}
+			}
+			
+			protected function selectTruck():void {
+				var dialog:TruckDialog4Dispatch = TruckDialog4Dispatch(PopUpManager.createPopUp(root, TruckDialog4Dispatch , true));
+				dialog.allMultiSelected = false;
+				dialog.showOtherTruck = true;
+				dialog.routeId = _vo.routeId;
+				dialog.getTruckCallBack = changeTruckCallBack;
+				PopUpManager.centerPopUp(dialog);
+			}
+				
+			private var isOut:Boolean = false;  
+			private function changeTruckCallBack(item:Object):void {
+				var seltruck:com.oasis.wolfburg.vo.truck.Truck = item as Truck;
+				truck.text = seltruck.licensePlate;
+				_vo.identityCard = seltruck.cardCode;
+				_vo.licensePlate = seltruck.licensePlate;
+				_vo.truckId = seltruck.id;
+				_vo.driver = seltruck.driver1Name;
+				if(seltruck.resourceType == EnumManage.truckResourceType3.data){//临时车辆
+//					payMethod.selectedIndex = 0;
+//					payMethod.enabled = false;
+//					isOut = true;					
+				}else{
+//					isOut = false;
+//					if (chLine.selected)  {
+//						payMethod.selectedIndex = 1;
+//						payMethod.enabled=true;
+//					}  else {
+//						payMethod.selectedIndex = 0;
+//						payMethod.enabled=false;
+//					}
+				}
+				
+			}
+			
+			protected function ok_clickHandler():void {
+				var errors:Array;
+				var routeName:String = "";
+				if(stops.length <2){
+					Alert.show("站点数量必须大于2个!");
+					return;
+				}
+				for each(var elm:Stop in stops){
+					if(isNaN(elm.seqNum)|| elm.seqNum == 0){
+						elm.seqNum = stops.getItemIndex(elm)+1;
+					}
+				}
+				for each(var stop:Stop in stops) {
+					if(stop.seqNum == 1){
+						routeName += stop.posName;
+						if(stop.planOutboundTime == null){
+							errorStr += stop.posName +"预计离开时间"+"\n";
+						}
+					}
+					else if(stop.seqNum == stops.length) {
+						routeName += "-"+stop.posName;
+						if(stop.planInboundTime == null) {
+							errorStr += stop.posName +"预计到达时间"+"\n";
+						}
+					}
+					else {
+						routeName += "-"+stop.posName;
+						if(stop.planOutboundTime == null){
+							errorStr += stop.posName +"预计离开时间"+"\n";
+						}
+						else if(stop.planInboundTime == null) {
+							errorStr += stop.posName +"预计到达时间"+"\n";
+						}
+					}
+				}
+				if(chLine.selected){
+					errors = Validator.validateAll([routeValidation,truckValidation,nameValidation,validator4]);
+					_vo.startDate = null;
+				} else {
+					errors = Validator.validateAll([truckValidation,nameValidation,validator4]);
+					//清空线路信息
+					_vo.routeName = routeName;
+					_vo.routeId = NaN;
+				}	
+				var errorStr:String = "";
+				if(errors.length>0)
+					return;
+				if(errorStr != ""){
+					errorStr += "不能为空！"
+					Alert.show(errorStr);
+					errorStr = "";
+					return;
+				}
+				_vo.code = rsName.text;
+				_vo.payMethod = payMethod.selectedItem.data;
+				_vo.rsJobType = type.selectedItem.data;
+				//防止多次触发，disable确定按钮
+				ok.enabled = false;
+				truckRSJobController.addTempTruckRsJob(_vo,stops,closeCallBackAndCloseWin,validationCallBack);
+			}
+			
+			public function closeCallBackAndCloseWin(event:TruckRSJob):void{
+				ok.enabled = true;
+				PopUpManager.removePopUp(this);
+				closeCallBack(event);
+			}
+			
+			protected function getRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = localFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			protected function localFun(item:Object):void{
+				_vo.routeId = item.id;
+				_vo.routeName = item.name;
+				route.text = item.name;
+				routeController.findStopsByRouteId(stops,_vo.routeId);
+			}
+			
+			private function getTime(item:Object,column:DataGridColumn):String {
+				var dataField:String = column.dataField;
+				return DateFormatterUtil.format6(item[dataField]);
+			}
+			
+			public function set vo(rsjob:TruckRSJob):void {
+				_vo = rsjob
+			}
+			
+			public function get vo():TruckRSJob{
+				return _vo;
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				ok.enabled = true;
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			public function validateionTime(time:String):Boolean {
+				var pattern:RegExp = /\d:\d/;
+				return pattern.test(time);
+			}
+			protected function toggle(event:Event):void
+			{
+				var check:CheckBox = event.target as CheckBox;
+				id = check.id;
+				if(id=="chLine"){
+					stops.removeAll();
+					_vo.routeId = NaN;
+					_vo.routeName = null;
+					route.text = null;
+					_vo.startDate =  null;
+					if(chLine.selected){
+						chPos.selected=false;
+						viewStack.selectedIndex=0;
+						
+					} else {
+						chPos.selected=true;
+						viewStack.selectedIndex=1;
+					}
+				} else {
+					stops.removeAll();
+					_vo.routeId = NaN;
+					_vo.routeName = null;
+					route.text = null;
+					_vo.startDate =  null;
+					_vo.startDate =  new Date();
+					if(chLine.selected){
+						chLine.selected=false;
+						viewStack.selectedIndex=1;
+					} else {
+						chLine.selected=true;
+						viewStack.selectedIndex=0;
+					}
+				}
+			}
+			protected function addPOS():void {
+				var dialog:POSDialog = 
+					POSDialog(PopUpManager.createPopUp(root, POSDialog , true));
+				dialog.passFun = localFunStart;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFunStart(item:Object):void{
+				var posStart:PosView = item as PosView;
+				var stopStart:Stop = new Stop();
+				stopStart.posId = posStart.id;
+				stopStart.posName = posStart.name;
+				stops.addItem(stopStart);
+			}
+			
+			private function getEnrouteSrt(item:Object,column:DataGridColumn):String {
+				if(item.enrouteTime != null && item.enrouteTime!=""){
+					var enrouteTime_min:Number = Number(item.enrouteTime);
+					var enrouteTime_min2:Number = enrouteTime_min%60;
+					var enrouteTime_hour:Number = (enrouteTime_min - enrouteTime_min2)/60;
+					return enrouteTime_hour+"小时"+enrouteTime_min2+"分";
+				}
+				return "";
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="90%">
+		<mx:Form>
+			<mx:FormItem label="任务单号:" required="true">
+				<mx:TextInput id="rsName" text="@{_vo.code}"/>
+			</mx:FormItem>
+			<mx:FormItem label="任务单类型:" required="true">
+				<s:DropDownList id="type" dataProvider="{EnumManage.getRsjobType4Temp()}" selectedIndex="0"/>
+			</mx:FormItem>
+			<mx:FormItem>
+				<mx:HBox>
+					<mx:CheckBox id="chLine" label="线路" selected="true" click="toggle(event)" />
+					<mx:CheckBox id="chPos" label="网点" click="toggle(event)"/>
+				</mx:HBox>
+			</mx:FormItem>
+			<mx:ViewStack id="viewStack" selectedIndex="0" width="100%">
+				<mx:FormItem required="true" label="线路:" paddingLeft="35">
+					<fb:SelectableTextInput id="route" textInputEditable="false" searchButtonClick="getRoute"/>
+				</mx:FormItem>
+				<mx:FormItem required="true" label="网点:" paddingLeft="35">
+					<mx:HBox width="100%">
+						<mx:Button label="增加网点" click="addPOS()"/>
+					</mx:HBox>
+				</mx:FormItem>
+			</mx:ViewStack>
+			<mx:FormItem label="车辆:" required="true">
+				<fb:SelectableTextInput id="truck" searchButtonClick="selectTruck" />
+			</mx:FormItem>
+			<mx:FormItem label="费用:">
+				<mx:HBox>
+					<mx:TextInput id="price" text="@{_vo.contrackPrice}" />
+					<s:DropDownList id="payMethod" dataProvider="{EnumManage.getPayTypes()} " selectedIndex="1"/>
+				</mx:HBox>
+			</mx:FormItem>
+			<mx:FormItem label="备注:"  >
+				<s:TextInput id="remark" text="@{_vo.remark}" />
+			</mx:FormItem>
+		</mx:Form>
+		<mx:VBox borderStyle="outset" width="100%" id="warning">
+			<mx:Label text="点击列表编辑站点到发时间，首站点无需设置到达时间，末站点无需设置离开时间，时间格式为 12:12"  color="red" textAlign="center"/>
+		</mx:VBox>
+		<mx:Panel title="网点" height="100%" width="100%" id="vehiclePanel">
+			<mx:DataGrid id="stopGrid"  horizontalScrollPolicy="auto"  dataProvider="{stops}" 
+						 editable="true" width="100%" height="100%"   verticalScrollPolicy="auto">
+				<mx:columns>
+					<mx:DataGridColumn headerText="网点名称:" dataField="posName" editable="false" width="80" sortable="false"/>
+					<mx:DataGridColumn headerText="预计到达时间:" width="300" editable="true" dataField="planInboundTime" editorDataField="value" labelFunction="getTime" sortable="false">
+						<mx:itemEditor>
+							<fx:Component>
+								<mx:HBox>
+									<fx:Script>
+										<![CDATA[
+											import com.oasis.wolfburg.vo.carrier.ParentCompany;
+											import com.oasis.wolfburg.vo.route.Stop;
+											
+											override public function set data(value:Object):void{
+												super.data = value;
+												toggleShow(value);
+												var temp:Date = value.planInboundTime as Date;
+												if(temp != null){
+													date.selectedDate = temp;
+													time.text = temp.hours+":"+temp.minutes;
+												}
+											}
+											
+											private function toggleShow(value:Object):void {
+												var stop:Stop = value as Stop;
+												if(outerDocument.stops.getItemIndex(stop) == 0){
+													date.visible = false;
+													time.visible = false;
+												}
+											}
+											
+											public function get value():Date{
+												if(date.selectedDate != null){
+													var temp:Date = date.selectedDate;
+													if(outerDocument.validateionTime(time.text)){
+														var timeArr:Array = time.text.split(":");
+														temp.setHours(timeArr[0]);
+														temp.setMinutes(timeArr[1],0,0);
+														return temp;
+													}
+													return null;
+												}
+												return null;
+											}
+											
+										]]>	
+									</fx:Script>
+									<mx:DateField id="date" formatString="YYYY-MM-DD" width="100"/>
+									<mx:TextInput id="time" width="60"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="预计离开时间:"  width="300" editable="true" dataField="planOutboundTime" editorDataField="value" labelFunction="getTime" sortable="false">
+						<mx:itemEditor>
+							<fx:Component>
+								<mx:HBox>
+									<fx:Script>
+										<![CDATA[
+											import com.oasis.wolfburg.vo.carrier.ParentCompany;
+											import com.oasis.wolfburg.vo.route.Stop;
+											
+											import mx.controls.Alert;
+											import mx.resources.ResourceManager;
+											
+											override public function set data(value:Object):void{
+												super.data = value;
+												toggleShow(value);
+												var temp:Date = value.planOutboundTime as Date;
+												if(temp != null){
+													date.selectedDate = temp;
+													time.text = temp.hours+":"+temp.minutes;
+												}
+											}
+											
+											private function toggleShow(value:Object):void {
+												var stop:Stop = value as Stop;
+												if(outerDocument.stops.getItemIndex(stop) == outerDocument.stops.length-1){
+													date.visible = false;
+													time.visible = false;
+												}
+											}
+											
+											public function get value():Date{
+												if(date.selectedDate != null){
+													var temp:Date = date.selectedDate;
+													var timeArr:Array = time.text.split(":");
+													if(outerDocument.validateionTime(time.text)){
+														temp.setHours(timeArr[0]);
+														temp.setMinutes(timeArr[1],0,0);
+														return temp;
+													}
+													return null;
+												}
+												return null;
+											}
+											
+										]]>	
+									</fx:Script>
+									<mx:DateField id="date" formatString="YYYY-MM-DD" width="100"/>
+									<mx:TextInput id="time" width="60"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="预计在途时间" dataField="enrouteTime" editable="false" sortable="false" labelFunction="getEnrouteSrt"/>
+					<mx:DataGridColumn headerText="操作" editable="false" sortable="false">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox verticalAlign="middle" horizontalAlign="center">
+									<fx:Script>
+										<![CDATA[
+											import com.best.oasis.flexbase.components.autoComplete.components.autoComplete.classes.SelectedItem;
+											import com.best.oasis.flexbase.util.LangUtil;
+											import com.oasis.utils.BeanUtils;
+											import com.oasis.wolfburg.vo.route.Stop;
+											import com.oasis.wolfburg.vo.truck.Truck;
+											
+											import mx.collections.ArrayCollection;
+											import mx.controls.Alert;
+											import mx.events.CloseEvent;
+											import mx.managers.PopUpManager;
+											
+											private function remove():void {
+												var database:ArrayCollection = outerDocument.stops ? outerDocument.stops:null;
+												var elm:Stop = data as Stop;
+												database.removeItemAt(database.getItemIndex(elm));
+											}
+											
+										]]>
+									</fx:Script>
+									<mx:LinkButton skin="@Embed(source='/assets/style/default/images/delete.gif')" click="remove()" toolTip="删除" visible="{outerDocument.chPos.selected}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+				</mx:columns>
+			</mx:DataGrid>
+		</mx:Panel>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button id="ok" click="ok_clickHandler()" label="确定"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

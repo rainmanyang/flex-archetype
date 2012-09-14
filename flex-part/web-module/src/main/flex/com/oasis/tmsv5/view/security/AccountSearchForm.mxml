@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" borderStyle="solid"
+		 initialize="init()" 
+		 verticalScrollPolicy="off" xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.so.security.AccountSO;
+			import com.oasis.tmsv5.so.security.RolePremissionSO;
+			
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			public var so:AccountSO;
+			
+			public var searchFunction:Function;
+			
+			[Bindable]
+			private var statusList:ArrayCollection = new ArrayCollection(
+				[ {label:"正常", data:false},{label:"锁定", data:true}
+				]);
+			
+			public function init():void{
+				if(so == null){
+					so = new AccountSO();
+				}
+			}
+			public function search():void{
+				so.loginName = tname.text;
+				if(status.selectedIndex != -1){
+					so.disabled = status.selectedItem.data;
+				}
+				searchFunction();
+			}
+			
+		]]>
+	</fx:Script>
+	<fb:MultiColumnForm height="100%" numColumns="2" width="800" defaultButton="{searchBtn}">
+		<fb:MultiColumnFormItem label="用户名称：" colspan="2">
+			<mx:TextInput id="tname" />
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="用户状态：" >
+			<s:ComboBox id="status" dataProvider="{statusList}" selectedIndex="0"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem>
+			<mx:Button label="查询" click="search();" id="searchBtn"/>
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+</mx:VBox>
+

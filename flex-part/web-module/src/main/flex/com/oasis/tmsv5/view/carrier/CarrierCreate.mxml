@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:input="com.best.oasis.flexbase.components.selectableTextInput.*"
+	xmlns:combobox="com.oasis.component.combobox.*"
+	xmlns:dropDownList="com.oasis.component.dropDownList.*"
+	xmlns:upload="com.oasis.tmsv5.view.util.*"
+	width="100%" height="100%" xmlns:carrier="carrier.*" title="创建" creationComplete="init()" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="nameValidator" source="{carrierName}" property="text" required="true"/>
+		<mx:StringValidator id="codeValidator" source="{carrierCode}" property="text" required="true"/>
+		<mx:StringValidator id="shortNameValidator" source="{carrierShortName}" property="text" required="true"/>
+		<mx:StringValidator id="licenseCodeValidator" source="{licenseCode}" property="text" required="true"/>
+		<mx:StringValidator id="parentCompanyValidator" source="{parentCompany}" property="selectedItem" required="true"/>
+		<mx:StringValidator id="bankValidator" source="{bank}" property="text" required="true"/>
+		<mx:StringValidator id="bankAccountValidator" source="{bankAccount}" property="text" required="true"/>
+		<mx:NumberValidator id="apAgeValidator" source="{apAge}" property="value" domain="int" minValue="1" required="true"/>
+		<mx:StringValidator id="validator7" source="{contactAddress}" property="text" required="true"/>
+		<mx:StringValidator id="validator2" source="{contactPerson}" property="text" required="true"/>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.carrier.CarrierController;
+			import com.oasis.tmsv5.carrier.ParentCompanyController;
+			import com.oasis.tmsv5.event.CarrierEvent;
+			import com.oasis.tmsv5.view.popup.BankDialog;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.carrier.ParentCompanySO;
+			import com.oasis.wolfburg.vo.bank.Bank;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.wolfburg.vo.carrier.ParentCompany;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var carrierController:CarrierController;
+			
+			[Inject]
+			public var parentCompanyController:ParentCompanyController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var carrierVO:Carrier= new Carrier();
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var parentCompanySO:ParentCompanySO = new ParentCompanySO();
+			
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var certType:ArrayCollection = EnumManage.getCarrierCertType();
+			
+			[Bindable]
+			public var carrierTypeList:ArrayCollection = EnumManage.getCarrierType();
+			
+			[Bindable]
+			public var licenseTypeList:ArrayCollection = EnumManage.getLicenseType();
+			
+			[Bindable]
+			public var carrierStatusList:ArrayCollection = EnumManage.getCarrierStatus();
+			
+			[Bindable]
+			public var payWayList:ArrayCollection = EnumManage.getPayWay();
+			
+			[Bindable]
+			public var invoiceList:ArrayCollection = EnumManage.getBooelanYesNoType();
+			
+			public function init():void{
+			}
+			
+			private function search(keyword:String):void {
+				parentCompanySO.companyName =keyword;
+				getPageData(parentCompanySO.pageNumber, parentCompanySO.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				parentCompanySO.pageNumber = 1;
+				parentCompanySO.objectsPerPage = 10;
+				parentCompanyController.getPageList(parentCompanySO, pageList,callBack);
+			}
+			
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				carrierVO = new Carrier();
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				carrierVO = new Carrier();
+				parentCompany.clear();
+				parentCompany.autoComplete.searchText=null;
+				parentCompany.errorString=null;
+				
+				carrierType.selectedIndex=1;
+				licenseType.selectedIndex=1;
+				payWay.selectedIndex=1;
+				invoice.selectedIndex=1;
+				
+				upload.clearPage();
+				Alert.show("承运商新增成功!");
+				ViewUtils.clearErrorString(body);
+				dispatch.dispatchEvent(new CarrierEvent(CarrierEvent.CARRIER_LIST_EVENT));
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([nameValidator,codeValidator,shortNameValidator,
+		                            licenseCodeValidator,bankValidator,bankAccountValidator,apAgeValidator,validator2,validator7
+									//,validator1,validator3,validator4,validator5,validator6
+				]);
+				if (carrierVO.carrierType == 'PERSON') {
+					if (carrierVO.parentCompanyName == null || carrierVO.parentCompanyName =="") {
+						parentCompany.errorString="请输入所属公司";
+						return false;
+					}
+				}
+				if(errors.length > 0 ){
+					return false;
+				}
+				if (carrierVO.contactEmail == null && carrierVO.contactFX == null && carrierVO.contactMobile == null && 
+					carrierVO.contactPhone == null && carrierVO.contactQQ == null) {
+					contactMobile.errorString="至少输入一种联系方式（电话，手机，QQ，FX，电子邮件）";
+					return false;
+				}
+				return true;
+			}
+			
+			private function create():void{
+				carrierVO.status="NEW";
+				carrierVO.carrierType=carrierType.selectedItem.data;
+				carrierVO.licenseType=licenseType.selectedItem.data;
+				carrierVO.payWay=payWay.selectedItem.data;
+				carrierVO.invoice=invoice.selectedItem.data;
+				carrierVO.apAge=apAge.value;
+				
+				carrierVO.attachmentList = upload.attachments;
+				if(!validate()){
+					return;
+				}
+				//创建方法需要传两个回调函数
+				carrierController.createCarrier(carrierVO,successCallBack,validationCallBack);
+			}
+			
+			private function pageIndex():void{
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=0;
+			}
+		
+			private function createActive():void{
+		        carrierVO.status="ACTIVED";
+				carrierVO.carrierType=carrierType.selectedItem.data;
+				carrierVO.licenseType=licenseType.selectedItem.data;
+				carrierVO.payWay=payWay.selectedItem.data;
+				carrierVO.invoice=invoice.selectedItem.data;
+				carrierVO.apAge=apAge.value;
+
+				carrierVO.attachmentList = upload.attachments;
+				if(!validate()){
+					return;
+				}
+				//创建方法需要传两个回调函数
+				carrierController.createCarrier(carrierVO,successCallBack,validationCallBack);
+				
+			}
+			
+			protected function addBank():void
+			{
+				var dialog:BankDialog = BankDialog(PopUpManager.createPopUp(root, BankDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.getBankCallBack = getBankCallBack;
+			}
+			private function getBankCallBack(item:Object):void{
+				var bank:Bank = Bank(item);
+				carrierVO.bank = bank.bankName + " " + bank.branchName;
+			}
+			
+			public function changeCompanySelect ():void {
+				if (parentCompany.selectedItem != null) {
+					var input:ParentCompany = parentCompany.selectedItem as ParentCompany;
+					if (input == null) {
+						carrierVO.parentCompanyName = parentCompany.selectedItem as String;
+					} else {
+						if (parentCompany.selectedItem.id != null) {
+	    				    carrierVO.parentCompanyId = parentCompany.selectedItem.id;
+						}
+						carrierVO.parentCompanyName = parentCompany.selectedItem.companyName;
+					}
+				}  else if (parentCompany.autoComplete.searchText != null) {
+					carrierVO.parentCompanyName = parentCompany.autoComplete.searchText;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="800" id="body" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<flexlib:WindowShade id="ws1"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="基本信息"
+							 width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+			<fb:MultiColumnForm  numColumns="2">
+				<fb:MultiColumnFormItem label="承运商编码：" required="true" >
+					<mx:TextInput id="carrierCode"  text="@{carrierVO.carrierCode}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				
+				<fb:MultiColumnFormItem label="承运商名称：" required="true" >
+					<mx:TextInput id="carrierName"  text="@{carrierVO.carrierName}" width="100"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="承运商简称：" required="true" >
+					<mx:TextInput id="carrierShortName"  text="@{carrierVO.carrierShortName}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="承运商类型：" >
+					<dropDownList:DropDownList dataProvider="{carrierTypeList}" selectedIndex="1" id="carrierType" 
+											   searchKey="data" value="{carrierVO.carrierType}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="证件类型：" required="true">
+					<dropDownList:DropDownList dataProvider="{licenseTypeList}" selectedIndex="1" id="licenseType" 
+											   searchKey="data" value="{carrierVO.licenseType}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="证件号码：" required="true" >
+					<mx:TextInput id="licenseCode"  text="@{carrierVO.licenseCode}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="所属公司："   >
+					<input:PopUpAutoComplete id="parentCompany" selectedItemChanged="changeCompanySelect()"
+											 enabled="true"
+											 width="100"
+											 searchButtonVisible="false"
+											 clearButtonVisible="false"
+											 searchButtonEnabled="false"
+											 clearButtonEnabled="true"
+											 textInputEnabled="true"
+											 textInputEditable="true"
+											 dataProvider="{pageList.list}"
+											 labelField="companyName"
+											 displayLabelField="companyName"
+											 searchFunction="search"
+											 allowNewValues="true"
+											 focusOut="changeCompanySelect()"/>
+
+
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="备注："  >
+					<s:TextArea id="remark" text="@{carrierVO.remark}" height="25"/>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		<flexlib:WindowShade id="ws2"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="联系方式"
+							 width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">	
+			<fb:MultiColumnForm numColumns="3">	
+				<fb:MultiColumnFormItem label="联系人：" required="true">
+					<mx:TextInput id="contactPerson"  text="@{carrierVO.contactPerson}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="联系手机：" required="true">
+					<mx:TextInput id="contactMobile"  text="@{carrierVO.contactMobile}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="联系电话：" >
+					<mx:TextInput id="contactPhone"  text="@{carrierVO.contactPhone}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="QQ：" >
+					<mx:TextInput id="contactQQ"  text="@{carrierVO.contactQQ}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="传真：" >
+					<mx:TextInput id="contactFX"  text="@{carrierVO.contactFX}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="电子邮件：" >
+					<mx:TextInput id="contactEmail"  text="@{carrierVO.contactEmail}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="联系地址：" required="true" >
+					<mx:TextInput id="contactAddress"  text="@{carrierVO.contactAddress}" />
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		
+		<flexlib:WindowShade id="ws3"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="合同信息"
+							 width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">	
+			<fb:MultiColumnForm numColumns="3">	
+				<fb:MultiColumnFormItem label="支付方式：" required="true" >
+					<dropDownList:DropDownList dataProvider="{payWayList}" selectedIndex="1" id="payWay" searchKey="data" value="{carrierVO.payWay}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="提供发票：" required="true" >
+					<dropDownList:DropDownList dataProvider="{invoiceList}" selectedIndex="1" id="invoice" searchKey="data" value="{carrierVO.invoice}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+			</fb:MultiColumnForm>
+			
+		</flexlib:WindowShade>
+		
+		
+		<flexlib:WindowShade id="ws4"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="账户信息"
+							 width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">	
+			<fb:MultiColumnForm  numColumns="2" width="100%">	
+				<fb:MultiColumnFormItem label="开户银行：" required="true" colspan="2">
+					<fb:SelectableTextInput id="bank" textInputEditable="false" searchButtonClick="addBank" text="@{carrierVO.bank}" />  
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="银行账号：" required="true" >
+					<mx:TextInput id="bankAccount"  text="@{carrierVO.bankAccount}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="结算周期（天）：" required="true" >
+					<mx:NumericStepper id="apAge"  value="{carrierVO.apAge}"  minimum="1" maximum="31" />
+				</fb:MultiColumnFormItem>
+				
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		<flexlib:WindowShade id="ws5"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="资质文件"
+							 width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">	
+			<upload:upload id="upload" attachmentType="{certType}" width="100%"/>
+		</flexlib:WindowShade>
+
+		<mx:HBox width="100%" paddingLeft="80">
+			<mx:Button label="创建" id="save" click="create()"/>
+			<mx:Button label="创建并激活" id="saveActive" click="createActive()"/>
+		</mx:HBox>
+		
+	</mx:VBox>
+</mx:Panel>

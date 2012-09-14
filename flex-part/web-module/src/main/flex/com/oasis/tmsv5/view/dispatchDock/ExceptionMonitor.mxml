@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	width="100%" height="100%" xmlns:pos="pos.*" title="异常监控" xmlns:grid="com.oasis.component.grid.*" creationComplete="init()" close="closeWin()">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="contentValidator" source="{content}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.track.ExpTrackController;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.track.ExpTrack;
+			
+			import flexunit.utils.ArrayList;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			import mx.validators.Validator;
+			
+			[Bindable]
+			public var exp:ExpTrack = new ExpTrack();
+			
+			[Bindable]
+			public var expList:ArrayCollection = new ArrayCollection();
+			
+			[Inject]
+			public var expTrackController:ExpTrackController;
+			
+			public var timer:Timer;
+			
+			public function init():void {
+				expTrackController.getCurrentExpList(expList);
+				//间隔*S自动刷新页面
+				timer=new Timer(2000);
+				timer.addEventListener("timer", getPageList);
+				timer.start();
+			}
+			
+			public function getPageList(event:TimerEvent):void {
+				expTrackController.getCurrentExpList(expList);
+			}
+			
+			/**
+			 * 跳转到处理页面
+			 */ 
+			public function process():void {
+				exp = grid.selectedItem as ExpTrack;
+				expWin.selectedIndex = 1;
+				if(exp){
+					expWin.selectedIndex = 1;
+					return;
+				}
+				Alert.show("请选择一条记录!");
+			}
+			
+			public function cancle():void {
+				exp.expContent = "";
+				expWin.selectedIndex = 0;
+			}
+			
+			public function submit():void {
+				var errors:Array = Validator.validateAll([contentValidator]);
+				if(errors.length >0){
+					return ;
+				}
+				expTrackController.process(exp,submitCallback);
+			}
+			
+			public function submitCallback():void {
+				expWin.selectedIndex = 0;
+				expTrackController.getCurrentExpList(expList);
+			}
+			
+			public function closeWin():void {
+				timer.stop();
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function getType(item:Object,column:DataGridColumn):String {
+				return EnumManage.getDisplayText(item.expGrade,EnumManage.getExpGrade());
+			}
+			
+			private function getDate(item:Object,column:DataGridColumn):String {
+				return DateFormatterUtil.format1(item.createdTime);
+			}
+			private function getStatus(item:Object,column:DataGridColumn):String {
+				return EnumManage.getDisplayText(item.status,EnumManage.getExpStatus());
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:ViewStack id="expWin" width="100%" height="100%" creationPolicy="ContainerCreationPolicy.ALL">
+		<mx:VBox width="100%" height="100%">
+			<mx:DataGrid id="grid" width="400" height="250" dataProvider="{expList}" >
+				<mx:columns>
+					<grid:DataGridColumnNested headerText="车牌号码" dataField="licensePlate"/>
+					<grid:DataGridColumnNested headerText="任务单号" dataField="rssJobCode"/>
+					<grid:DataGridColumnNested headerText="异常级别" labelFunction="getType"/>
+					<grid:DataGridColumnNested headerText="联系电话" dataField="contactPhone"/>
+					<grid:DataGridColumnNested headerText="记录时间" labelFunction="getDate"/>
+					<grid:DataGridColumnNested headerText="状态" labelFunction="getStatus"/>
+					<grid:DataGridColumnNested headerText="操作">
+						<grid:itemRenderer>
+							<fx:Component>
+								<mx:HBox>
+									<mx:LinkButton  click="outerDocument.process()" visible="{data.operation}" icon="@Embed(source='/assets/style/default/images/edit.gif')"/>
+								</mx:HBox>
+							</fx:Component>
+						</grid:itemRenderer>
+					</grid:DataGridColumnNested>
+				</mx:columns>
+			</mx:DataGrid>
+			<mx:Button label="关闭" click="closeWin();" />
+		</mx:VBox>
+		<mx:VBox>
+			<mx:Form>
+				<mx:FormItem label="车牌号">
+					<mx:Label text="{exp.licensePlate}" />
+				</mx:FormItem>
+				<mx:FormItem label="任务单号">
+					<mx:Label text="{exp.rssJobCode}" />
+				</mx:FormItem>
+				<mx:FormItem label="异常类型">
+					<mx:Label text="{EnumManage.getDisplayText(exp.expType,EnumManage.getExpType4list())}" />
+				</mx:FormItem>
+				<mx:FormItem  label="处理内容" required="true">
+					<mx:TextArea id="content" text="@{exp.expDealContent}" />
+				</mx:FormItem>
+				<mx:FormItem>
+					<mx:HBox>
+						<mx:Button label="处理" click="submit()" />
+						<mx:Button label="取消" click="cancle()"/>
+					</mx:HBox>
+				</mx:FormItem>
+			</mx:Form>
+		</mx:VBox>
+	</mx:ViewStack>
+</fb:PopupDialog>

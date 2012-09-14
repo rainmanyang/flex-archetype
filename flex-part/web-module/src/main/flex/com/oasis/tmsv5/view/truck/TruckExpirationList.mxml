@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:truck="com.oasis.tmsv5.view.truck.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" xmlns:grid="com.oasis.component.grid.*" xmlns:dropDownList="com.oasis.component.dropDownList.*"  >
+	<fx:Declarations>
+		<mx:WipeDown id="myWD" duration="200" />
+		<mx:WipeUp id="myWU" duration="200" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			
+			import mx.utils.URLUtil;
+			
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.popup.CarrierDialog;
+			import com.oasis.tmsv5.view.report.ReportDownloadMsgDialog;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.wolfburg.vo.insure.Insure;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var expirateList:ArrayCollection = EnumManage.getExpirateList();
+			
+			[Bindable]
+			public var statusList:ArrayCollection = EnumManage.getTruckStatus4list();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			public var host:String;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var truckSO:TruckSO = new TruckSO();
+			
+			private function init():void{
+				//getPageData(truckSO.pageNumber, truckSO.objectsPerPage);
+				//grid.dataProvider = dataProvider;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				truckSO.pageNumber = pageNum;
+				truckSO.objectsPerPage = pageSize;
+				truckSO.expiration = expirate.selectedItem.data;
+				truckController.getExpiratePageList(truckSO, pageList,callBack);
+			}
+			
+			public function search():void{
+				truckSO.pageNumber=1;
+				truckController.getPageList(truckSO, pageList);
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumnNested):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,statusList);
+			}
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			
+			private function export():void{
+				truckSO.pageNumber = 1;
+				truckSO.objectsPerPage = int.MAX_VALUE;
+				truckSO.expiration = expirate.selectedItem.data;
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root, ReportDownloadMsgDialog, true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.truckSO = truckSO;
+				truckSO.requestUrl = getRequestURL();
+				dialog.reportType=Constants.TRUCK_EXPIRATION;
+				dialog.init();
+			}
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%">
+		<mx:VBox width="26%" height="100%">
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%">
+				<mx:HBox  width="100%" >
+					<fb:MultiColumnForm  numColumns="2" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="到期类型："  required="true">
+								<dropDownList:DropDownList dataProvider="{expirateList}" id="expirate" selectedIndex="0" searchKey="data" value="{truckSO.expiration}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="几天内到期：" >
+							<mx:NumericStepper id="expirationCount" value="@{truckSO.expirationCount}" maximum="240" />
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:Button label="查询" click="getPageData(1, truckSO.objectsPerPage)" id="searchBtn"/>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+				</mx:HBox>
+			</flexlib:WindowShade>
+			<mx:HBox width="100%">
+				<PremissionButton:PremissionButton label="导出" click="export()" module="TruckExpiration" premission="export"/>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+									getPageData="getPageData"  currentPageNum="{truckSO.pageNumber}" totalItemNum="{pageList.fullListSize}"
+									pageSize="{truckSO.objectsPerPage}"
+									height="100%" allowMultipleSelection="false" showControlColumn="false">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="状态" dataField="truckType" width="60"  labelFunction="getStatusLabel"/>
+					<grid:DataGridColumnNested headerText="车牌号" dataField="licensePlate" width="80"/>
+					<grid:DataGridColumnNested headerText="联系电话" dataField="contactPhone1" width="100"/>
+					<grid:DataGridColumnNested headerText="车主" dataField="ownerName" />
+					<grid:DataGridColumnNested headerText="合同号" dataField="contractNumber" width="100"/>
+					<grid:DataGridColumnNested headerText="合同到期时间" dataField="contractDateTo" width="100"/>
+					<grid:DataGridColumnNested headerText="保险公司" dataField="insurer" width="200"/>
+					<grid:DataGridColumnNested headerText="保险编号" dataField="insureCode1" width="200"/>
+					<grid:DataGridColumnNested headerText="保险到期时间" dataField="insureTo" width="100"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>

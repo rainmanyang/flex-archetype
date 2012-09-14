@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:grid="com.oasis.component.grid.*"
+		 width="100%" height="100%"  creationComplete="init()" xmlns:controls="flexlib.controls.*" xmlns:carrier="com.oasis.tmsv5.view.carrier.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	<mx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			import com.best.oasis.flexbase.util.BeanUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.carrier.CarrierController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.popup.OrgDialog;
+			import com.oasis.tmsv5.view.report.ReportDownloadMsgDialog;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.carrier.CarrierSO;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.CheckBox;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var dataProvider:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var carrierTypeList:ArrayCollection = EnumManage.getCarrierType4list();
+			
+			[Bindable]
+			public var statusList:ArrayCollection = EnumManage.getCarrierStatus4list();
+			
+			[Inject]
+			public var carrierController:CarrierController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var carrierSO:CarrierSO = new CarrierSO();
+			
+			private function init():void{
+				getPageData(carrierSO.pageNumber, carrierSO.objectsPerPage);
+				grid.dataProvider = dataProvider;
+			}
+			
+			private function freshViewForm(carrier:Carrier):void{
+				view.carrierVO = carrier;
+				rightPanel.selectedIndex=0;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				if(statusId.selectedIndex != -1){
+					carrierSO.status = statusId.selectedItem.data;
+				}
+				if(typeId.selectedIndex != -1){
+					carrierSO.carrierType = typeId.selectedItem.data;
+				}
+				carrierSO.pageNumber = pageNum;
+				carrierSO.objectsPerPage = pageSize;
+				carrierController.getPageList(carrierSO, pageList,callBack);
+			}
+			
+			[EventHandler( event="CarrierEvent.CARRIER_LIST_EVENT" )]
+			public function search():void{
+				carrierSO.pageNumber=1;
+				carrierController.getPageList(carrierSO, pageList);
+			}
+			
+			protected function getOrg():void {
+				var dialog:OrgDialog = 
+					OrgDialog(PopUpManager.createPopUp(root, OrgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			protected function create_clickHandler():void
+			{
+				rightPanel.selectedIndex = 1;
+			}
+			
+			protected function itemClickHandle(event:ListEvent):void{
+				var itemRenderer:* = event.itemRenderer;	
+				var carrierVO:Carrier = itemRenderer.data as Carrier;
+				carrierController.findCarrier(carrierVO,function():void{
+					freshViewForm(carrierVO);
+				});
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumnNested):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,statusList);
+			}
+			
+			private function getCarrierTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var carrierType:String = item.carrierType as String;
+				return EnumManage.getDisplayText(carrierType,carrierTypeList);
+			}
+			
+			protected function remove(event:MouseEvent):void
+			{
+				dataProvider = grid.dataProvider as ArrayCollection;
+				var arrs:Array = grid.selectedIndices;
+				arrs = arrs.sort(Array.DESCENDING);
+				for each(var index:int in arrs){
+					dataProvider.removeItemAt(index);
+				}
+			}
+			
+			protected function change2Active(event:MouseEvent):void
+			{
+				if (grid.selectedItems.length<1) {
+					Alert.show("请选择要操作的对象!");
+					return ;
+				} else {
+					var idList:ArrayCollection = new ArrayCollection();
+					for each(var o:Carrier in grid.selectedItems){
+						var carrierVO:Carrier = o;
+						if(carrierVO.status == 'NEW' || carrierVO.status == 'FROZEN') {
+						    idList.addItem(carrierVO.id);
+						} else {
+							Alert.show("请选择状态为新建或冻结的承运商激活!");
+							return ;
+						}
+					}
+					Alert.show("您确认要激活承运商？","确认激活",Alert.YES|Alert.NO,null, 
+					function(closeEvent:CloseEvent):void{
+						if (closeEvent.detail==Alert.YES){
+							carrierController.batchUpdateCarrierStatus(idList,"ACTIVED",search);
+						}
+					});
+				}
+			}
+			
+			protected function change2Frozen(event:MouseEvent):void
+			{
+				if (grid.selectedItems.length<1) {
+					Alert.show("请选择要操作的对象!");
+					return ;
+				}else {
+					var idList:ArrayCollection = new ArrayCollection();
+					for each(var o:Carrier in grid.selectedItems){
+						var carrierVO:Carrier = o;
+						if(carrierVO.status == 'ACTIVED') {
+							idList.addItem(carrierVO.id);
+						} else {
+							Alert.show("请选择状态为激活的承运商冻结!");
+							return ;
+						}
+					}
+					Alert.show("您确认要冻结承运商？","确认冻结",Alert.YES|Alert.NO,null, 
+					function(closeEvent:CloseEvent):void{
+						if (closeEvent.detail==Alert.YES){
+				            carrierController.batchUpdateCarrierStatus(idList,"FROZEN",search);
+						}
+					});
+				}
+			}
+			
+			protected function change2Disabled(event:MouseEvent):void
+			{
+				if (grid.selectedItems.length<1) {
+					Alert.show("请选择要操作的对象!");
+					return ;
+				} else {
+						
+				var idList:ArrayCollection = new ArrayCollection();
+				for each(var o:Carrier in grid.selectedItems){
+					var carrierVO:Carrier = o;
+					if(carrierVO.status == 'NEW' || carrierVO.status == 'FROZEN') {
+						idList.addItem(carrierVO.id);
+					} else {
+						Alert.show("只有状态为新建或冻结的承运商才能退网!");
+						return ;
+					}
+				}
+				Alert.show("您确认要承运商退网？","确认退网",Alert.YES|Alert.NO,null, 
+				function(closeEvent:CloseEvent):void{
+					   if (closeEvent.detail==Alert.YES){
+						    carrierController.batchUpdateCarrierStatus(idList,"DISABLED",search);
+					   }
+				   });
+				}
+			}
+			
+			private function exportDate():void{
+				if(statusId.selectedIndex != -1){
+					carrierSO.status = statusId.selectedItem.data;
+				}
+				if(typeId.selectedIndex != -1){
+					carrierSO.carrierType = typeId.selectedItem.data;
+				}
+				var _so:CarrierSO = CarrierSO(BeanUtils.clone(carrierSO));
+				_so.pageNumber = 1;
+				_so.objectsPerPage = int.MAX_VALUE;
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root, ReportDownloadMsgDialog, true));
+				dialog.carrierSO = _so;
+				dialog.reportType = Constants.CARRIER;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:HDividedBox width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="auto">
+		<mx:VBox width="30%" height="95%">
+			<flexlib:WindowShade id="ws1"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%">
+					<fb:MultiColumnForm width="100%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="编码：" >
+							<mx:TextInput id="carrierCode" text="@{carrierSO.carrierCode}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="名称：" >
+							<mx:TextInput id="carrierName" text="@{carrierSO.carrierName}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="承运商类型：">
+							<fb:AdvancedComboBox dataProvider="{carrierTypeList}" labelField="label" id="typeId" />
+						</fb:MultiColumnFormItem>
+						
+						<fb:MultiColumnFormItem label="状态：">
+							<fb:AdvancedComboBox dataProvider="{statusList}" labelField="label" id="statusId" />
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:HBox>
+									<mx:Button label="查询" click="getPageData(1, carrierSO.objectsPerPage)" id="searchBtn"/>
+									<PremissionButton:PremissionButton label="导出" click="exportDate()" module="Carrier" premission="export"/>
+								</mx:HBox>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+			</flexlib:WindowShade>
+			<mx:HBox paddingLeft="30" width="100%">
+				<PremissionButton:PremissionButton label="新建" click="create_clickHandler()" module="Carrier" premission="create"/>
+				<PremissionButton:PremissionButton label="激活" click="change2Active(event)" module="Carrier" premission="enable"/>
+				<PremissionButton:PremissionButton label="冻结" click="change2Frozen(event)" module="Carrier" premission="disable"/>
+				<PremissionButton:PremissionButton label="退网" click="change2Disabled(event)" module="Carrier" premission="remove"/>
+			</mx:HBox>
+			<grid:PageableDataGrid  id="grid" dataProvider="{pageList.list}" width="100%"
+								  getPageData="getPageData"  currentPageNum="{carrierSO.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								  pageSize="{carrierSO.objectsPerPage}"
+								  height="100%" allowMultipleSelection="false" itemClick="itemClickHandle(event)" showControlColumn="false">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="编码" dataField="carrierCode" width="80"/>
+					<grid:DataGridColumnNested headerText="承运商名称" dataField="carrierName" />
+					<grid:DataGridColumnNested headerText="类型" dataField="carrierType" labelFunction="getCarrierTypeLabel" width="60"/>
+					<grid:DataGridColumnNested headerText="状态" dataField="status" labelFunction="getStatusLabel" width="60"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:ViewStack id="rightPanel" selectedIndex="0" width="60%" height="100%" >
+			<carrier:CarrierView id="view"/>
+			<carrier:CarrierCreate id="create"/>
+			<carrier:CarrierEdit id="edit"/>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+</mx:VBox>

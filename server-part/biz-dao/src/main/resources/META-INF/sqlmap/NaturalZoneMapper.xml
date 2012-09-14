@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.nzone.NaturalZoneDAO">
+	<resultMap type="NaturalZone" id="NaturalZoneMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="desc" column="description"/>
+	</resultMap>
+
+	<insert id="insert" parameterType="NaturalZone">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<update id="update" parameterType="NaturalZone">
+		<include refid="sqlmap.common.model.update"/>
+	</update>
+	
+	<select id="find" resultMap="NaturalZoneMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<sql id="pageListClause">
+		<where>
+			<![CDATA[
+			   t.status <> 'DESTROYED'
+        	]]>
+			<if test="name!=null and name!='' ">
+			and t.name like '%'||#{name}||'%'
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultMap="NaturalZoneMap" parameterType="com.oasis.tmsv5.common.so.zone.NaturalZoneSO">
+		select * from gt_natural_zone t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.tmsv5.common.so.zone.NaturalZoneSO">
+		select count(1) from gt_natural_zone t               
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="getNzonesByOrgId" parameterType="long" resultMap="NaturalZoneMap">
+		select t.* from gt_natural_zone t,gt_org_nzone_assoc a 
+		 where a.nzone_id=t.id and a.organization_id = #{orgId}
+	</select>
+	
+	<select id="getRootNZone" resultMap="NaturalZoneMap">
+		<![CDATA[
+		select *
+			  from gt_natural_zone t
+			 	where t.parent is null
+			   and t.status <> 'DESTROYED'
+        ]]>
+	</select>
+	
+	<select id="getNzoneByOrg" resultMap="NaturalZoneMap">
+		select *
+  			from gt_natural_zone t, gt_org_nzone_assoc oz , gt_organization o
+ 				<where> 
+	 				t.id = oz.nzone_id
+	   				and oz.organization_id = o.id
+	   				and o.id = #{id}
+	   				<![CDATA[
+	   				and t.status <> 'DESTROYED'
+	   				 ]]>
+ 				</where>
+	</select>
+	
+	<select id="getNzoneByParent" resultMap="NaturalZoneMap">
+		select *
+  			from gt_natural_zone t
+ 				<where> 
+	 				t.parent = #{id}
+	   				<![CDATA[
+	   				and t.status <> 'DESTROYED'
+	   				 ]]>
+ 				</where>
+	</select>
+	
+	
+	
+</mapper>

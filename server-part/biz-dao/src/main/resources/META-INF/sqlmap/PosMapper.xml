@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.route.PosDAO">
+
+	<resultMap type="Pos" id="PosMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="loginToken" column="LOGIN_TOKEN"/>
+		<result property="organizationTreePath" column="ORGANIZATION_TREEPATH"/>
+		<result property="organizationId" column="ORGANIZATION_ID"/>
+		<result property="contactPerson" column="CONTACT_PERSON"/>
+		<result property="contactPhone" column="CONTACT_PHONE"/>
+		<result property="chargePerson" column="CHARGE_PERSON"/>
+		<result property="districtId" column="DISTRICT_ID"/>
+		<result property="cityId" column="CITY_ID"/>
+		<result property="privinceId" column="PRIVINCE_ID"/>
+		<result property="shortName" column="short_name"/>
+		<result property="roadMap" column="road_map"/>
+	</resultMap>
+	
+	<resultMap type="PosView" id="PosViewMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="loginToken" column="LOGIN_TOKEN"/>
+		<result property="organizationTreePath" column="ORGANIZATION_TREEPATH"/>
+		<result property="organizationName" column="organization_name"/>
+		<result property="organizationId" column="ORGANIZATION_ID"/>
+		<result property="contactPerson" column="CONTACT_PERSON"/>
+		<result property="contactPhone" column="CONTACT_PHONE"/>
+		<result property="chargePerson" column="CHARGE_PERSON"/>
+		<result property="chargePhone" column="charge_phone"/>
+		<result property="districtId" column="DISTRICT_ID"/>
+		<result property="cityId" column="CITY_ID"/>
+		<result property="privinceId" column="PRIVINCE_ID"/>
+		<result property="shortName" column="short_name"/>
+		<result property="roadMap" column="road_map"/>
+	</resultMap>
+	
+	
+
+	<select id="find" resultMap="PosMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+	
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds"/>
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="Pos">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<insert id="insert" parameterType="Pos">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<sql id="pageListClause">
+		<where>
+			t.organization_id = o.id 
+			<if test="name!=null and name!='' ">
+			and t.name like '%'||#{name}||'%'
+			</if>
+			<if test="code!=null and code!='' ">
+			and t.code like '%'||#{code}||'%'
+			</if>
+			<if test="organizationId != null and organizationId !=0">
+			and t.organization_id = #{organizationId}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultMap="PosViewMap" parameterType="com.oasis.wolfburg.common.so.route.PosSO">
+		select t.*,o.name as organization_name from wl_pos t, gt_organization o  
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.route.PosSO">
+		select count(1) from wl_pos t, gt_organization o  
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="checkDuplication" resultMap="PosMap" parameterType="map">
+		select * from wl_pos o 
+			<where>
+				(
+				<if test="name!=null and name!='' ">
+					o.name = #{name}
+				</if>
+				<if test="code!=null and code!='' ">
+					or o.code = #{code}
+				</if>
+				)
+				<if test="id!=null and id!='' ">
+					and id != #{id}
+				</if>
+			</where>
+	</select>
+	
+	<select id="getView" resultMap="PosViewMap">
+		select t.*,o.name as organization_name from wl_pos t, gt_organization o  where t.organization_id = o.id and t.id=#{id}
+	</select>
+	
+	<select id="getPOSByAccount" resultType="Pos" parameterType="long">
+		select distinct t.* from wl_pos t, gt_organization o, gt_account_org_assoc p  
+		where <![CDATA[
+		t.organization_treepath like o.treepath||'%'  and (o.id=p.org_id and p.account_id=#{accountId})
+		]]>
+	</select>
+	
+</mapper>

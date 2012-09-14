@@ -1,0 +1,68 @@
+<swiz:BeanProvider 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:swiz="http://swiz.swizframework.org"	 
+	xmlns:storage="org.swizframework.storage.*"
+	xmlns:utils="com.oasis.tmsv5.utils.*"
+	xmlns:controller="com.oasis.tmsv5.*" 
+	xmlns:common="com.oasis.tmsv5.common.*" 
+	xmlns:security="com.oasis.tmsv5.security.*"
+	xmlns:customer="com.oasis.tmsv5.customer.*"
+	xmlns:nzone="com.oasis.tmsv5.nzone.*" 
+	xmlns:route="com.oasis.tmsv5.route.*"
+	xmlns:price="com.oasis.tmsv5.price.*"
+	xmlns:driver="com.oasis.tmsv5.driver.*"
+	xmlns:carrier="com.oasis.tmsv5.carrier.*"
+	xmlns:bank="com.oasis.tmsv5.bank.*"
+	xmlns:truck="com.oasis.tmsv5.truck.*"
+	xmlns:insure="com.oasis.tmsv5.insure.*"
+	xmlns:truckRSSchedule="com.oasis.tmsv5.truckRSSchedule.*" 
+	xmlns:attachment="com.oasis.tmsv5.attachment.*"
+    xmlns:trackrecord="com.oasis.tmsv5.trackrecord.*"
+	xmlns:paymentItem="com.oasis.tmsv5.bill.*"
+	xmlns:base="com.oasis.tmsv5.base.*"
+	xmlns:track="com.oasis.tmsv5.track.*" xmlns:util="com.best.oasis.flexbase.util.*" xmlns:layout="com.oasis.layout.*" xmlns:truckRSSchedule1="com.oasis.wolfburg.vo.truckRSSchedule.*" xmlns:bill="com.oasis.wolfburg.vo.bill.*" xmlns:truckAttence="com.oasis.tmsv5.truckAttence.*" xmlns:mail="com.oasis.tmsv5.mail.*" xmlns:configurePage="com.oasis.tmsv5.configurePage.*" xmlns:report="com.oasis.tmsv5.report.*"
+	>
+
+	<security:AccountController id="accountController"/>
+	<security:MenuItemController id="menuItemController"/>
+	<security:RoleController id="roleController"/>
+    <security:OrganizationController id="organizationController"/>
+	<customer:CustomerController id="customerController"/>
+	<nzone:NaturalZoneController id="nzoneController"/>
+	<controller:BaseController id="baseController"/>
+	
+	<layout:ModuleManager id="moduleManager"/>
+	<layout:StaticModuleManager id="staticModuleManager"/>
+	
+	<!-- We'll use the Swiz ServiceHelper to help simulate a server-side call. -->	
+	<common:SimpleServiceHelper id="simpleServiceHelper"/>
+	
+	<!-- wolfburg -->
+	<route:PosController id="posController" />
+	<route:RouteController id="routeController" />
+	<price:PriceController id="priceController" />
+	<driver:DriverController id="driverController" />
+	<carrier:CarrierController id="carrierController" />
+	<carrier:ParentCompanyController id="parentCompanyController" />
+	<truck:TruckStatusRecordController id="truckStatusRecordController" />
+	<truck:TruckController id="truckController" />
+	<insure:InsureController id="insureController" />
+	<bank:BankController id="bankController" />
+	<truckRSSchedule:TruckRSScheduleController id="truckRSScheduleController"/>
+	<truckRSSchedule:TruckRSJobController id="truckRSJobController"/>
+	<attachment:AttachmentController id="attachmentController"/>
+	<trackrecord:TrackRecordController id="trackRecordController" />
+	<truckRSSchedule:TruckRSJobTimeRecordController id="truckRSJobTimeRecordController" />
+	<truckRSSchedule:ClientBarcodeRecordController id="clientBarcodeRecordController" />
+	<paymentItem:PaymentItemController id="paymentItemController" />
+	<paymentItem:FeeItemController id="feeItemController"/>
+	
+	<base:PredefinedCodeController id="predefinedCodeController"/>
+	<base:DownloadInfoController id="downloadInfoController"/>
+	<track:ExpTrackController id="expTrackController"/>
+	<truckAttence:TruckAttenceController id="truckAttenceController"/>
+	<mail:UserMailTargetController id="userMailTargetController"/>
+	<configurePage:ConfigurePageController id="configurePageController"/>
+	<report:OperationStateController id="operationStateController"/>
+</swiz:BeanProvider>

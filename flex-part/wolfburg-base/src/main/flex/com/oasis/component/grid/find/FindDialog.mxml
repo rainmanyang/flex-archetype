@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flexbase:PopupDialog  xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"  
+					  xmlns:flexbase="http://flexbase.800best.com/mxml" 
+					  layout="absolute" width="408" height="308"
+					  title="查找" >
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.grid.DataGridColumnNested;
+			import com.oasis.component.grid.SelectableDataGrid;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.CursorBookmark;
+			import mx.collections.ICollectionView;
+			import mx.collections.IViewCursor;
+			import mx.controls.DataGrid;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			public var grid:SelectableDataGrid;
+			[Bindable]
+			public var columnFields:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			public var columnFieldsForDiaplay:ArrayCollection;
+			/**
+			 * 查找起始点的位置
+			 */
+			public var startPos:DataGridCellPosition = new DataGridCellPosition(0, 0);
+			/**
+			 * 上一个匹配项的位置
+			 */
+			public var lastMachItemPos:Object = null;
+			public function init():void{
+				prepareColumnFields(grid);
+				selectAllFields();
+			}
+			
+			/**
+			 * 把grid的column field填充到成员变量columnFields 和columnFieldsForDiaplay
+			 */
+			private function prepareColumnFields(grid:SelectableDataGrid):void{
+				columnFieldsForDiaplay = new ArrayCollection();
+				var gridColumns:Array = grid.columns;
+				var gridColumn:DataGridColumn;
+				var item:Object;
+				for(var i:int=0; i<gridColumns.length; i++){
+					gridColumn = gridColumns[i];
+					if(gridColumn.dataField != null && gridColumn.visible){
+						item = {};
+						item['label'] = gridColumn.headerText;
+						item['data'] = gridColumn.dataField;
+						columnFieldsForDiaplay.addItem(item);
+						columnFields.addItem(gridColumn.dataField);
+					}
+				}
+			}
+			
+			public function selectAllFields():void{
+				var t:Array = new Array();
+				for(var i:int=columnFields.length-1;i>=0 ; i--){
+					t.push(i);
+				}
+				columns.selectedIndices = t;
+			}
+			protected function find():void{
+				var selectedColumnFields:ArrayCollection = getSelectedColumnFields();
+				var gridDataProvider:ICollectionView = grid.dataProvider as ICollectionView;
+				var isFindAll:Boolean = false;
+				var keyword:String = keywordInput.text;
+				var direction:String = directionRBG.selectedValue as String;
+				var isMatchAllWord:Boolean = matchAllWord.selected;
+				var isIgnoreCase:Boolean = ignoreCase.selected;
+				
+				if(startPos.rowIndex < 0){
+					tip.text = '没找到匹配项';
+					startPos.rowIndex = 0;
+					return;
+				}
+				if(startPos.colIndex < 0){
+					tip.text = '没找到匹配项';
+					startPos.colIndex = 0;
+					return;
+				}
+				if(startPos.rowIndex >= gridDataProvider.length){
+					startPos.rowIndex = gridDataProvider.length - 1;
+				}
+				if(startPos.colIndex >= selectedColumnFields.length){//到头了就掉头，重头开始
+					//startPos.rowIndex++;
+					//startPos.colIndex = 0;
+				}
+				trace('startPos: rowIndex=' + startPos.rowIndex + ' colIndex=' + startPos.colIndex);
+				
+				
+				var matchItemPositions:ArrayCollection = findMatchItem(gridDataProvider, isFindAll, 
+																keyword, 
+																direction, startPos, selectedColumnFields,
+																isMatchAllWord, isIgnoreCase);
+				
+				if(matchItemPositions.length > 0){ //如果有匹配项
+					tip.text = '';
+					var pos:DataGridCellPosition = matchItemPositions.getItemAt(0) as DataGridCellPosition;
+					startPos = pos;
+					trace('find pos: rowIndex=' + pos.rowIndex + ' colIndex=' + pos.colIndex);
+					
+					//把上一个匹配项的显示恢复到原来的样子
+					if(lastMachItemPos != null){
+						grid.unhighlightAllViewableCell();
+					}
+					
+					grid.scrollToIndex(pos.rowIndex);
+					
+					//pos.colIndex是匹配项在选中的字段列表的index，高亮时，需要转换为所有字段列表的index
+					var highlightCellColIndex:int = getColumnFieldIndex(selectedColumnFields.getItemAt(pos.colIndex) as String);
+					grid.horizontalScrollPosition = highlightCellColIndex;
+					
+					if(grid.showControlColumn){
+						grid.highlightCell(pos.rowIndex, highlightCellColIndex + 1);
+					}else{
+						grid.highlightCell(pos.rowIndex, highlightCellColIndex);
+					}
+					
+					lastMachItemPos = pos;
+				}else{
+					tip.text = '没找到匹配项';
+				}
+				if(direction == "up"){
+					startPos.colIndex--;
+					if(startPos.colIndex < 0){
+						startPos.rowIndex--;
+						if(startPos.rowIndex >=0 ){
+							startPos.colIndex = selectedColumnFields.length - 1;
+						}
+					}
+				}else{
+					startPos.colIndex++;
+					if(startPos.colIndex >= selectedColumnFields.length){//到头了就掉头，重头开始
+						startPos.rowIndex++;
+						startPos.colIndex = 0;
+					}
+				}
+			}
+			/**
+			 * 根据搜索条件查找DataGrid数据源中匹配的条目
+			 * @param gridDataProvider 要查找的DataGrid数据源
+			 * @param isFindAll 是否查找全部
+			 * @param keyword	查找关键字
+			 * @param direction 查找方向，"up" -> 向上查找 ; "down" -> 向下查找
+			 * @param startPos 查找起始点的位置， 如果是从头开始:rowIndex=0, colIndex=0
+			 * @param columnFields 查找列字段
+			 * @param isMatchAllWord 是否全字匹配
+			 * @param isIgnoreCase 是否忽略大小写
+			 * @return 
+			 * 		返回匹配的DataGrid cell的位置集合, 位置表示类型为DataGridCellPosition 
+			 */
+			protected function findMatchItem(gridDataProvider:ICollectionView, isFindAll:Boolean, 
+											 keyword:String, 
+											 direction:String, startPos:DataGridCellPosition, columnFields:ArrayCollection,
+											 isMatchAllWord:Boolean, isIgnoreCase:Boolean):ArrayCollection{
+				var result:ArrayCollection = new ArrayCollection();
+				
+				var i:int = 0;
+				var fieldValue:String, tKeyword:String;
+				var cursor:IViewCursor = gridDataProvider.createCursor();
+				var colCursor:IViewCursor = columnFields.createCursor();
+				var gridData:Object;
+				var columnField:String;
+				
+				if(startPos.rowIndex < 0 || startPos.colIndex < 0){
+					return result;
+				} 
+				//先把curor移到起始点
+				cursor.seek(CursorBookmark.FIRST, startPos.rowIndex);
+				colCursor.seek(CursorBookmark.FIRST, startPos.colIndex);
+				
+				i = startPos.rowIndex;
+				
+				//开始查找
+				var pos:DataGridCellPosition;
+				while(!cursor.afterLast && !cursor.beforeFirst){
+					gridData = cursor.current;
+					
+					while(!colCursor.afterLast && !colCursor.beforeFirst){
+						columnField = colCursor.current as String;
+						
+						fieldValue = getColumnFieldValue(columnField, gridData);
+						//trace('fieldValue=' + fieldValue);
+						if(fieldValue != null){
+							
+							tKeyword = keyword;
+							//忽略大小写
+							if(isIgnoreCase){
+								fieldValue = fieldValue.toLowerCase();
+								tKeyword = tKeyword.toLowerCase();
+							}
+							//全字匹配
+							if(isMatchAllWord){
+								if(fieldValue == tKeyword){
+									var colIndex:int = columnFields.getItemIndex(columnField);
+									pos = new DataGridCellPosition(i, colIndex);
+									result.addItem(pos);
+								}
+							}else{//非全字匹配
+								if(fieldValue != null && fieldValue.indexOf(tKeyword) != -1){
+									var colIndex:int = columnFields.getItemIndex(columnField);
+									pos = new DataGridCellPosition(i, colIndex);
+									result.addItem(pos);
+								}
+							}
+						}
+						//如果只是查找一条，当找到第一条的时候就返回
+						if(!isFindAll && result.length > 0){
+							return result;
+						}
+						if(direction == 'up'){
+							colCursor.movePrevious();
+						}else{
+							colCursor.moveNext();
+						}
+					}
+					if(direction == 'up'){
+						cursor.movePrevious();
+						i--;
+						colCursor.seek(CursorBookmark.FIRST, columnFields.length - 1);
+					}else{
+						cursor.moveNext();
+						i++;
+						colCursor.seek(CursorBookmark.FIRST, 0);
+					}
+				}
+				
+				return result;
+			}
+			
+			/**
+			 * 获取data中一个字段的值（因为有可能发生级联类型的字段）
+			 */
+			private function getColumnFieldValue(columnField:String, data:Object):String{
+				var result:String;
+				if(columnField.indexOf('.') != -1){
+					var colIndex:int = getColumnFieldIndex(columnField);
+					result = getNestedColumnFieldValue(colIndex, data);
+				}else{
+					result = data[columnField];
+				}
+				return result;
+			}
+			/**
+			 * 获取data中级联字段类型列的值
+			 */
+			private function getNestedColumnFieldValue(colIndex:int, data:Object):String{
+				var result:String = null;
+				var gridColumn:DataGridColumnNested;
+				if(grid.showControlColumn){
+					colIndex += 1;
+				}
+				gridColumn = grid.columns[colIndex] as DataGridColumnNested;
+				if(gridColumn != null){
+					result = gridColumn.itemToLabel(data); 
+				}
+				return result;
+			}
+			
+			/**
+			 * 获取要查找的列范围的字段名集合
+			 */
+			private function getSelectedColumnFields():ArrayCollection{
+				var result:ArrayCollection = new ArrayCollection();
+				
+				var selectedColumns:Array = columns.selectedItems.reverse();
+				for each(var selectedColumn:Object in selectedColumns){
+					result.addItem(selectedColumn['data']);
+				}
+				
+				return result;
+			}
+			/**
+			 * 计算一个columnField是第几列
+			 */
+			private function getColumnFieldIndex(columnField:String):int{
+				return columnFields.getItemIndex(columnField);
+			}
+			private function onDirectionRBGChange():void{
+				var direction:String = directionRBG.selectedValue as String;
+				if(direction == "up"){
+					//startPos.rowIndex += 1;
+					startPos.colIndex -= 2;
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:Form width="100%" left="0" top="0">
+		<mx:HBox>
+			<mx:FormItem label="关键字：" >
+				<mx:TextInput width="191" id="keywordInput"/>
+			</mx:FormItem>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:FormItem label="列   名：" height="145">
+				<mx:List width="191" id="columns" dataProvider="{columnFieldsForDiaplay}" 
+						 allowMultipleSelection="true" height="143"/>
+			</mx:FormItem>
+			<mx:Text text="按住CTRL或SHIFT键可以多选" height="50" width="91"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:FormItem label="方向：">
+				<mx:HBox width="100%">
+					<mx:RadioButtonGroup id="directionRBG" selectedValue="down" change="onDirectionRBGChange();"/>
+					<mx:RadioButton label="上" group="{directionRBG}" value="up"/>
+					<mx:RadioButton label="下" group="{directionRBG}" value="down"/>
+				</mx:HBox>
+			</mx:FormItem>
+			<mx:Spacer width="30"/>
+			<mx:CheckBox label="全字匹配" id="matchAllWord"/>
+			<mx:CheckBox label="忽略大小写" id="ignoreCase"/>
+		</mx:HBox>
+	</mx:Form>
+	<mx:Button label="查找" right="83" bottom="10" click="find()"/>
+	<mx:Button label="关闭" right="10" bottom="10" click="closePopupDialog()"/>
+	<mx:Text id="tip" text="" width="216" height="22" top="236" left="20" color="red"/>
+</flexbase:PopupDialog>

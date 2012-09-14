@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				width="800" height="300"
+				title="选择区域" xmlns:s="library://ns.adobe.com/flex/spark"  creationComplete="init()">
+	<fx:Binding source="nzonename.text" destination="so.name"/>
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.nzone.NaturalZoneController;
+			import com.oasis.tmsv5.so.nzone.NaturalZoneSO;
+			
+			import mx.controls.treeClasses.TreeItemRenderer;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var so:NaturalZoneSO = new NaturalZoneSO();
+			
+			[Inject]
+			public var nzoneController:NaturalZoneController
+			
+			public function init():void{
+				if(so == null){
+					so = new NaturalZoneSO();
+				}
+				nzoneController.getNZoneTree(so,getTreeCallBack);
+			}
+			
+			public function getTreeCallBack(treeNode:TreeNode):void{
+				nzone.dataProvider = treeNode;
+			}
+			
+			public var clickCallBack:Function;
+			
+			protected function nzone_itemClickHandler(event:ListEvent):void
+			{
+				var target:TreeItemRenderer = TreeItemRenderer(event.itemRenderer);
+				if (clickCallBack != null){
+					var id:Number = target.data["key"] as Number;
+					clickCallBack(id);
+				}
+				PopUpManager.removePopUp(this);
+			}
+
+		]]>
+	</fx:Script>
+	<s:VGroup height="100%" width="100%">
+		<s:HGroup >
+			<s:TextInput id="nzonename" text="{so.name}"/><s:Button label="查询"/>
+		</s:HGroup>
+		<mx:Tree id="nzone" width="100%" height="100%" labelField="value" 
+				 showRoot="false"  itemClick="nzone_itemClickHandler(event)"
+				 />
+	</s:VGroup>
+	
+</fb:PopupDialog>

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:feeItem="com.oasis.tmsv5.view.bill.*" xmlns:grid="com.oasis.component.grid.*" xmlns:dropDownList="com.oasis.component.dropDownList.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.base.PredefinedCodeController;
+			import com.oasis.tmsv5.bill.FeeItemController;
+			import com.oasis.tmsv5.so.bill.FeeItemSO;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.tmsv5.vo.base.PredefinedCode;
+			import com.oasis.wolfburg.vo.bill.FeeItem;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			import mx.rpc.events.FaultEvent;
+			
+			[Inject]
+			public var feeItemController:com.oasis.tmsv5.bill.FeeItemController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var so:FeeItemSO = new com.oasis.tmsv5.so.bill.FeeItemSO();
+			
+			[Inject]
+			public var predefinedCodeController:PredefinedCodeController;
+			
+			[Bindable]
+			public var feeType:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var feeTypeList:ArrayCollection = new ArrayCollection();
+			
+			public function init():void{
+				predefinedCodeController.findByType4OtherReceivableBill(feeTypeList,feeTypeCallback);
+			}
+			private function feeTypeCallback():void{
+				var base:Object = {value:"--请选择--", code:''};
+				feeType.addItem(base);
+				feeType.addAll(feeTypeList);
+				feeTypeElement.selectedIndex = 0;
+				
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			private function interval(start:Date,end:Date):void{
+				so.billDateBegin = start;
+				so.billDateEnd = end;
+			}
+			
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+//				if(feeTypeElement.selectedItem != undefined){
+//					so.itemType = feeTypeElement.selectedItem.code;
+//				}
+				var itemTypes:ArrayCollection = new ArrayCollection();
+				if(feeTypeElement.selectedItem != undefined && feeTypeElement.selectedItem.code != ''){
+					itemTypes.addItem(feeTypeElement.selectedItem.code);
+					so.itemTypes = itemTypes;
+				}else{
+					for each(var o:Object in feeTypeList){
+						var pfc:PredefinedCode = o as PredefinedCode;
+						itemTypes.addItem(pfc.code);
+					} 
+					so.itemTypes = itemTypes;
+				}
+				feeItemController.getPageList(so, pageList,callBack);
+			}
+			
+			public function clear():void{
+				so = new com.oasis.tmsv5.so.bill.FeeItemSO();
+				feeTypeElement.selectedIndex = -1;
+				feeTypeElement.prompt = resourceManager.getString('normalResource','select');
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			[EventHandler( event="FeeItemEvent.FEE_ITEM_LIST_EVENT" )]
+			public function search():void{
+				so.pageNumber=1;
+				feeItemController.getPageList(so, pageList);
+			}
+			
+			protected function create_clickHandler():void
+			{
+				rightPanel.selectedIndex = 1;
+			}
+			
+			private function remove_clickHandler():void{
+				var selList:Array = grid.selectedItems as Array;
+				if(selList.length == 0){
+					Alert.show("请选择要删除的对象!");
+					return ;
+				}else{
+					var error:String="";
+					for each(var elm:FeeItem in selList) {
+						if (elm.flag == "1"){
+							error+=elm.licensePlate+":"+elm.itemTypeCN;
+						}
+					}
+					if(error != ""){
+						error+="已申请不能删除!";
+						Alert.show(error);
+						error = "";
+						return;
+					}
+					Alert.show("您确认要删除选中的数据？","确认删除",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								feeItemController.remove(selList,success_remove,failCallBack);
+								view.vo = new FeeItem();
+							}
+						});
+				}
+			}
+			
+			private function success_remove():void{
+				Alert.show("删除成功!");
+				search();
+			}
+			
+			private function failCallBack(event:FaultEvent):void{
+				Alert.show(event.fault.faultString);
+			}
+			
+			protected function itemClickHandle(event:ListEvent):void{
+				var itemRenderer:CopyableDataGridItemRenderer = event.itemRenderer as CopyableDataGridItemRenderer;
+				var vo:FeeItem = itemRenderer.data as FeeItem
+				feeItemController.find(vo);
+				freshViewForm(vo);
+			}
+			
+			private function freshViewForm(feeItem:FeeItem):void{
+				view.vo = feeItem;
+				rightPanel.selectedIndex=0;
+			}
+			
+			private function getText(item:Object,column:DataGridColumn):String {
+				if(item.flag == '1')
+					return "已申请";
+				return "未申请";
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="50%" height="100%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="车牌号" >
+						<mx:TextInput text="@{so.licensePlate}"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="费用发生日期：">
+						<mx:HBox>
+							<mx:DateField selectedDate="@{so.billDateBegin}"  formatString="YYYY-MM-DD"/>
+							<mx:Label htmlText="--"/>
+							<mx:DateField selectedDate="@{so.billDateEnd}" formatString="YYYY-MM-DD"/>
+						</mx:HBox>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="费用类型：">
+						<dropDownList:DropDownList dataProvider="{feeType}" labelField="value" id="feeTypeElement" searchKey="code" />
+					</fb:MultiColumnFormItem>
+					<mx:HBox width="100%">  
+						<mx:Spacer width="100%"/>
+						<fb:MultiColumnFormItem>
+							<mx:HBox>
+								<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+								<mx:Button label="清空查询" click="clear()"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+					</mx:HBox>
+				</fb:MultiColumnForm>
+			</flexlib:WindowShade>
+			<!--bl00718 reviewer
+			这一层hbox可以去掉，可以提高性能
+			-->
+			<mx:HBox paddingLeft="30" width="100%">
+				<mx:HBox>
+					<PremissionButton:PremissionButton label="新建" id="create" click="create_clickHandler()" module="DeductFee" premission="create"/>
+					<PremissionButton:PremissionButton label="删除" id="remove" click="remove_clickHandler()" module="DeductFee" premission="remove"/>
+				</mx:HBox>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}"
+								 height="100%" allowMultipleSelection="false" itemClick="itemClickHandle(event)" showControlColumn="false">
+				<grid:columns>
+					<grid:DataGridColumnNested headerText="车牌号" dataField="licensePlate" width="80"/>
+					<grid:DataGridColumnNested headerText="费用类型" dataField="itemTypeCN"  width="100"/>
+					<grid:DataGridColumnNested headerText="金额" dataField="amount" textAlign="right"/>
+					<grid:DataGridColumnNested headerText="已申请关帐" dataField="flag" textAlign="right" labelFunction="getText" width="80"/>
+					<grid:DataGridColumnNested headerText="费用发生日期" dataField="billDate" textAlign="right" width="80"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:ViewStack id="rightPanel" selectedIndex="1" width="50%" height="100%" creationPolicy="all">
+			<feeItem:FeeItemView4Settlement id="view"/>
+			<feeItem:FeeItemCreate4Settlement/>
+			<feeItem:FeeItemEdit4Settlement id="edit"/>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+</mx:VBox>

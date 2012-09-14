@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:upload="com.oasis.tmsv5.view.util.*"
+		 width="100%" height="100%" xmlns:driver="com.oasis.tmsv5.view.driver.*" title="详细信息" xmlns:PremissionButton="com.oasis.component.PremissionButton.*">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.driver.Driver;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			
+			[Bindable]
+			public var driverStatus:ArrayCollection = EnumManage.getDriverStatus();
+			[Bindable]
+			public var allowedTruck:ArrayCollection = EnumManage.getAllowedTruck();
+			[Bindable]
+			public var certType:ArrayCollection = EnumManage.getCertType();
+			
+			[Bindable]
+			public var vo:Driver = new Driver();
+			
+			protected function toEdit():void
+			{
+				var id:Number = vo.id;
+				if(isNaN(id)){
+					Alert.show("请选择数据后,再编辑!");
+				}else{
+					if(vo.status == 'FROZEN'){
+						Alert.show("已冻结的数据不能进行编辑!");
+						return;
+					}
+					/**
+					 * 跳转到edit页面
+					 */ 
+					var edit:DriverEdit = parent.getChildByName("edit") as DriverEdit;
+					edit.setId(vo.id);
+					edit.freshForm();
+				}
+			}
+			
+			public function displayText():void{
+				st.text = EnumManage.getDisplayText(vo.status,driverStatus);
+				at.text = EnumManage.getDisplayText(vo.allowedTruck,allowedTruck);
+			}
+			
+			public function getName(item:Object,column:DataGridColumn):String{
+				var name:String = item.url as String;
+				var dex1:int = name.lastIndexOf('.');
+				var dex2:int = name.lastIndexOf('.',dex1-1);
+				return name.substr(dex2+1);
+			}
+			
+			public function getType(item:Object,column:DataGridColumn):String{
+				var type:String = item.type as String;
+				return BeanUtils.getDisplayText(type,EnumManage.getCertType(),"label","data");
+			}
+			
+			public function showView():void{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex=0;
+				displayText();
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		
+		<mx:HBox paddingLeft="30" width="100%" paddingBottom="10" paddingRight="10" paddingTop="10" borderStyle="solid">
+			<PremissionButton:PremissionButton label="编辑" id="edit" click="toEdit()" enabled="{vo.status == 'NORMAL'}" module="Driver" premission="edit"/>
+		</mx:HBox>
+		<fb:MultiColumnForm  width="100%" label="基本信息">
+			<fb:MultiColumnFormItem label="编号：">
+				<s:Label text="{vo.code}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="姓名：">
+				<s:Label text="{vo.name}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="手机：" >
+				<s:Label text="{vo.mobilePhone}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="身份证：" >
+				<s:Label text="{vo.idcard}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="驾驶号：" >
+				<s:Label text="{vo.license}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="状态：" >
+				<s:Label id="st"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="家庭地址：">
+				<s:Label text="{vo.address}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="所属承运商：" >
+				<s:Label text="{vo.carrierName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="准驾车型：" >
+				<s:Label id="at"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="初次领证日期：" >
+				<s:Label text="{DateFormatterUtil.format1(vo.licenseDate)}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="有效期开始日期：" >
+				<s:Label text="{DateFormatterUtil.format1(vo.periodStart)}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="有效期截止日期：" >
+				<s:Label text="{DateFormatterUtil.format1(vo.periodEnd)}"/>
+			</fb:MultiColumnFormItem>
+			<upload:uploadView attachments="{vo.attachmentList}" attachmentType="{certType}"/>
+		</fb:MultiColumnForm>
+	</mx:VBox>
+	
+</mx:Panel>

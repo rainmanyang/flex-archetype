@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" height="100%"
+		 xmlns:v5="com.oasis.tmsv5.view.security.*"	
+		 creationComplete="init();">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.BeanUtils;
+			import com.oasis.component.menu.MenuItem;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.security.RoleController;
+			import com.oasis.tmsv5.so.security.RolePremissionSO;
+			import com.oasis.tmsv5.vo.security.RolePremission;
+			import com.oasis.utils.CRUDUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;			
+			
+			[Bindable]
+			private var pageList:PageList = new PageList();
+			
+			[Bindable]
+			private var so:RolePremissionSO = new RolePremissionSO();
+			
+			[Inject]
+			public var roleController:RoleController;
+			
+			private function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				roleController.getPageList(so, pageList);
+				
+			}
+			
+			private function view():void{
+				if(!CRUDUtil.checkIfDoView(grid)){
+					return;
+				}
+				var vo:RolePremission = RolePremission(grid.selectedItem);
+				if(vo == null){
+					return ;
+				}
+				var dialog:RolePremissionViewDialog = 
+					RolePremissionViewDialog(PopUpManager.createPopUp(root, RolePremissionViewDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.vo = vo;
+				dialog.init();
+			}
+			
+			private function getRolesLabelForView(item:RolePremission):String{
+				var result:String="";
+				if(item.premission==null){
+					return result;
+				}else{
+					result="[";
+					var i:int=0;
+					var role:MenuItem; 
+					for each(var o:Object in item.premission){											
+						role = MenuItem(o);
+						if(i<item.premission.length-1){
+							result=result + ",";
+						}else{
+							result=result;
+						}	
+						i=i+1;						
+					}
+					result=result+"]";
+					if(i==0){result="";}
+					return result;
+				}
+			}
+			
+			private function edit():void{
+				if(!CRUDUtil.checkIfDoEdit(grid)){
+					return;
+				}
+				var vo:RolePremission = RolePremission(grid.selectedItem);
+				if(vo == null){
+					return ;
+				}
+				var dialog:RolePremissionEditDialog = 
+					RolePremissionEditDialog(PopUpManager.createPopUp(root,
+						RolePremissionEditDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.vo = BeanUtils.clone(vo) as RolePremission;
+				dialog.init();
+				dialog.addEventListener(Event.COMPLETE, editDialogOnComplete);
+			}
+			
+			[EventHandler( event="RoleListEvent.ROLE_LIST_EVENT" )]
+			private function editDialogOnComplete(event:Event):void{
+				search();
+			}
+			
+			private function remove():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:RolePremission = RolePremission(o);
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要删除的对象!");
+					return ;
+				}else{
+					Alert.show("您确认要删除选中的数据？","确认删除",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								roleController.remove(ids, search);
+							}
+					});
+				}
+			}
+			
+			private function search():void{
+				so=searchForm.so;
+				getPageData(1, so.objectsPerPage);
+			}
+			private function getRolesLabel(item:RolePremission, column:DataGridColumn):String{
+				var result:String="";
+				if(item.premission==null){
+					return result;
+				}else{
+					result="【";
+					var i:int=0;
+					var role:MenuItem 
+					for each(var o:Object in item.premission){											
+						role = MenuItem(o);
+						if(i<item.premission.length-1){
+							result=result + ",";
+						}else{
+							result=result;
+						}	
+						i=i+1;	
+						if(result.length>32){
+							var lastComma:int=result.lastIndexOf(",");
+							result=result.substr(0,lastComma);
+							result=result+"...等"
+							break;
+						}
+					}					
+					result=result+"】";
+					if(i==0){result="";}
+					return result;
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<v5:RolePremissionSearchForm id="searchForm" so="{so}" searchFunction="{search}"/>
+		<mx:HBox>
+			<mx:Button label="查看" click="view();"/>
+			<mx:Button label="编辑" click="edit();"/>
+		</mx:HBox>
+		<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="800"
+			 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+			 pageSize="{so.objectsPerPage}"
+			 height="100%" allowMultipleSelection="true">
+			<fb:columns >
+				<fb:DataGridColumnNested headerText="角色名称" dataField="name"  width="100"/>
+				<fb:DataGridColumnNested headerText="备注" dataField="description" width="300"/>
+				<fb:DataGridColumnNested headerText="网络访问权限" dataField="netAuthority" width="300"/>
+			</fb:columns>
+		</fb:PageableDataGrid>
+	</mx:VBox>
+</mx:VBox>

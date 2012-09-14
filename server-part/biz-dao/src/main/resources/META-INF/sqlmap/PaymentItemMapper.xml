@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.bill.PaymentItemDAO">
+
+	<!-- crud -->
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="PaymentItem">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<select id="find" resultType="PaymentItem">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<insert id="insert" parameterType="PaymentItem">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds" />
+	</delete>
+	<select id="getModelListByPara" resultType="PaymentItem">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>		
+	
+	<sql id="pageListClause">
+		<where>
+			1=1
+			<if test="licensePlate!=null and licensePlate!='' ">
+			and t.LICENSE_PLATE like '%'||#{licensePlate}||'%'
+			</if>
+			<if test="billDateBegin!=null and billDateBegin!='' ">
+			<![CDATA[
+			and t.BILL_DATE >= #{billDateBegin}
+			]]>
+			</if>
+			<if test="billDateEnd!=null and billDateEnd!='' ">
+			<![CDATA[
+			and t.BILL_DATE <= #{billDateEnd}
+			]]>
+			</if>
+			<if test="itemType!=null and itemType!='' ">
+			and t.ITEM_TYPE like '%'||#{itemType}||'%'
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultType="PaymentItem"  parameterType="com.oasis.wolfburg.common.so.bill.PaymentItemSO">
+		select t.* from wl_payment_item t 
+		<include refid="pageListClause"/>
+	    	order by id desc
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.bill.PaymentItemSO">
+		select count(1) from wl_payment_item t 
+		<include refid="pageListClause"/>
+	</select>
+	
+	<sql id="pageListClause4Report">
+		<where>
+			 1=1 
+			<if test="licensePlate!=null and licensePlate!='' ">
+			and t.LICENSE_PLATE like '%'||#{licensePlate}||'%'
+			</if>
+			<if test="carrierName!=null and carrierName!='' ">
+			and t.CARRIER_NAME like '%'||#{carrierName}||'%'
+			</if>
+			<if test="billDateBegin!=null and billDateBegin!='' ">
+			<![CDATA[
+			and t.BILL_DATE >= #{billDateBegin}
+			]]>
+			</if>
+			<if test="billDateEnd!=null and billDateEnd!='' ">
+			<![CDATA[
+			and t.BILL_DATE <= #{billDateEnd}
+			]]>
+			</if>
+			<if test="itemType!=null and itemType!='' ">
+			and t.ITEM_TYPE like '%'||#{itemType}||'%'
+			</if>
+			<if test="trsJobCode!=null and trsJobCode!='' ">
+			and t.TRSJOB_CODE like '%'||#{trsJobCode}||'%'
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList4Report" resultType="PaymentItem"  parameterType="com.oasis.wolfburg.common.so.bill.PaymentItemSO">
+		select t.* from wl_payment_item t 
+		<include refid="pageListClause4Report"/>
+	    	order by id desc
+	</select>
+	
+	<select id="selectCount4Report" resultType="int" parameterType="com.oasis.wolfburg.common.so.bill.PaymentItemSO">
+		select count(1) from wl_payment_item t 
+		<include refid="pageListClause4Report"/>
+	</select>
+	
+	
+	<select id="selectPaymentItem4Report" resultType="PaymentItemReportVO"  parameterType="com.oasis.wolfburg.common.so.bill.PaymentItemSO">
+	select t1.license_plate as licensePlate,
+       t1.truck_id as truckId,
+       t1.carrier_name as carrierName,
+       sum(decode(t1.item_type, 'prd001', t1.amount,0)) as prd001,
+       sum(decode(t1.item_type, 'prd002', t1.amount,0)) as prd002,
+       sum(decode(t1.item_type, 'prd003', t1.amount,0)) as prd003,
+       sum(decode(t1.item_type, 'prd004', t1.amount,0)) as prd004,
+       sum(decode(t1.item_type, 'prd005', t1.amount,0)) as prd005,
+       sum(decode(t1.item_type, 'prd006', t1.amount,0)) as prd006,
+       sum(decode(t1.item_type, 'prd007', t1.amount,0)) as prd007,
+       sum(decode(t1.item_type, 'prd008', t1.amount,0)) as prd008,
+       sum(decode(t1.item_type, 'prd009', t1.amount,0)) as prd009,
+       sum(decode(t1.item_type, 'prd010', t1.amount,0)) as prd010,
+       sum(decode(t1.item_type, 'prd011', t1.amount,0)) as prd011,
+       sum(decode(t1.item_type, 'prd012', t1.amount,0)) as prd012
+  from (
+  select * from wl_payment_item t 
+  <include refid="pageListClause4Report"/>
+  ) t1 group by t1.license_plate,t1.truck_id,t1.carrier_name
+	
+	</select>
+	
+	<update id="updateFlag" parameterType="map">
+		update wl_payment_item t
+		   set t.flag    =  #{flag}
+		   where 1=1
+		   <if test="billDateBegin!=null and billDateBegin!='' ">
+			<![CDATA[
+			and t.BILL_DATE >= #{billDateBegin}
+			]]>
+			</if>
+			<if test="billDateEnd!=null and billDateEnd!='' ">
+			<![CDATA[
+			and t.BILL_DATE <= #{billDateEnd}
+			]]>
+			</if>
+	</update>
+	
+	
+</mapper>

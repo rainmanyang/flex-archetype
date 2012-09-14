@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 width="100%" height="100%" xmlns:pos="pos.*" title="详细信息" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" >
+	
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.wolfburg.vo.route.Pos;
+			import com.oasis.wolfburg.vo.route.PosView;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.resources.ResourceBundle;
+			import mx.resources.ResourceManager;
+			
+			
+			[Bindable]
+			public var posType:ArrayCollection = new ArrayCollection(
+				[   {label:"一级分拨", data:'1'}, 
+					{label:"二级分拨", data:'2'}, 
+					{label:"网点", data:'3'}
+				]);
+			
+			[Bindable]
+			public var vo:PosView = new PosView();
+			
+			protected function toEdit():void
+			{
+				/**
+				 * 跳转到edit页面
+				 */ 
+				var edit:POSEdit = parent.getChildByName("edit") as POSEdit;
+				edit.setId(vo.id);
+				edit.freshForm();
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+	
+		<mx:HBox paddingLeft="30" width="100%" paddingBottom="10" paddingRight="10" paddingTop="10" borderStyle="solid">
+			<PremissionButton:PremissionButton label="编辑" id="edit" click="toEdit()" premission="edit" module="POS"/>
+		</mx:HBox>
+		<fb:MultiColumnForm  width="100%" label="基本信息">
+			<fb:MultiColumnFormItem label="编号：" >
+				<s:Label id="code" text="{vo.code}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="名称：" >
+				<s:Label text="{vo.name}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="简称："  >
+				<s:Label text="{vo.shortName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="GPS："  >
+				<s:Label id="gps"  text="{vo.gps}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="组织："  >
+				<s:Label text="{vo.organizationName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="网点类型："  >
+				<s:Label text="{resourceManager.getString('posResource',vo.type)}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="详细地址：" >
+				<mx:Label text="{vo.privince+vo.city+vo.district+vo.address}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="负责人："  >
+				<s:Label id="chargePerson" text="{vo.chargePerson}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="负责人手机："  >
+				<s:Label id="chargePhone"  text="{vo.chargePhone}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系人："  >
+				<s:Label id="contactPerson" text="{vo.contactPerson}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系人手机："  >
+				<s:Label id="contactPhone" text="{vo.contactPhone}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="网点路书：" width="100%" >
+				<s:TextArea id="roadmap" text="{vo.roadMap}" enabled="false" width="60%"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:VBox>
+		
+</mx:Panel>

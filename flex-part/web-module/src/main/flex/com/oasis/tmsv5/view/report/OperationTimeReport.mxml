@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" height="100%"
+		 xmlns:grid="com.oasis.component.grid.*"
+		 xmlns:v5="com.oasis.tmsv5.view.report.*"	
+		 addedToStage="init();" xmlns:code="http://code.google.com/p/flexlib/">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobTimeRecordController;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.tmsv5.view.popup.AdjustRecordDialog;
+			import com.oasis.tmsv5.view.popup.ExpTrackForJobDialog;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSJobTimeRecordSO;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJobTimeRecord;
+			
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var pageList:PageList = new PageList();
+			
+			[Bindable]
+			private var so:TruckRSJobTimeRecordSO = new TruckRSJobTimeRecordSO();
+			
+			[Inject]
+			public var truckRSJobTimeRecordController:TruckRSJobTimeRecordController;
+			
+			private function init():void{
+				so.beginDate = searchForm.billDateBegin.date;
+				so.endDate = searchForm.billDateEnd.date;
+				search();
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				truckRSJobTimeRecordController.getPageList(so, pageList);
+			}
+			
+			private function search():void{
+				getPageData(1, so.objectsPerPage);
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:Boolean = item.disabled as Boolean;
+				if(status){
+					return '锁定'
+				}else{
+					return '正常'
+				}
+			}
+			
+			private function getPlanInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).planInboundTime;
+				return DateFormatterUtil.format2(date);
+			}          
+			private function getPlanOutboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).planOutboundTime;
+				return DateFormatterUtil.format2(date);
+	
+			}
+			private function getScanedInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).scanedInboundTime;
+				return DateFormatterUtil.format2(date);
+			}  
+			private function getScanedOutboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).scanedOutboundTime;
+				return DateFormatterUtil.format2(date);
+			} 
+			private function getManulInboundTime(item:Object,column:DataGridColumn):String{   
+				var date:Date = (item as TruckRSJobTimeRecord).manulInboundTime;
+				return DateFormatterUtil.format2(date);
+			}  
+			private function getManulOutboundTimeDate(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).manulOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN1PlanInboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n1PlanInboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN1PlanOutboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n1PlanOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN1ScanedInboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n1ScanedInboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN1ScanedOutboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n1ScanedOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN1ManulInboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n1ManulInboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN1ManulOutboundTimeDate(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n1ManulOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN2PlanInboundTime(item:Object,column:DataGridColumn):String{   
+				var date:Date = (item as TruckRSJobTimeRecord).n2PlanInboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN2PlanOutboundTime(item:Object,column:DataGridColumn):String{   
+				var date:Date = (item as TruckRSJobTimeRecord).n2PlanOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}  
+			private function getN2ScanedInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n2ScanedInboundTime;
+				return DateFormatterUtil.format2(date);
+			}  
+			private function getN2ScanedOutboundTime(item:Object,column:DataGridColumn):String{   
+				var date:Date = (item as TruckRSJobTimeRecord).n2ScanedOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN2ManulInboundTime(item:Object,column:DataGridColumn):String{     
+				var date:Date = (item as TruckRSJobTimeRecord).n2ManulInboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN2ManulOutboundTimeDate(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n2ManulOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			private function getN3PlanInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n3PlanInboundTime;
+				return DateFormatterUtil.format2(date);
+			}    
+			private function getN3PlanOutboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n3PlanOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN3ScanedInboundTime(item:Object,column:DataGridColumn):String{ 
+				var date:Date = (item as TruckRSJobTimeRecord).n3ScanedInboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN3ScanedOutboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n3ScanedOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN3ManulInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n3ManulInboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN3ManulOutboundTimeDate(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n3ManulOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+
+			private function getN4PlanInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n4PlanInboundTime;
+				return DateFormatterUtil.format2(date);
+			}    
+			private function getN4PlanOutboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n4PlanOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN4ScanedInboundTime(item:Object,column:DataGridColumn):String{ 
+				var date:Date = (item as TruckRSJobTimeRecord).n4ScanedInboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN4ScanedOutboundTime(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n4ScanedOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN4ManulInboundTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckRSJobTimeRecord).n4ManulInboundTime;
+				return DateFormatterUtil.format2(date);
+			}   
+			private function getN4ManulOutboundTimeDate(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).n4ManulOutboundTime;
+				return DateFormatterUtil.format2(date);
+			}
+			
+			private function getStartDate(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as TruckRSJobTimeRecord).startDate;
+				return DateFormatterUtil.format6(date);
+			}
+			private function getJobStatus(item:Object,column:DataGridColumn):String{
+				return EnumManage.getDisplayText(item.jobStatus,EnumManage.getRSJobStatus());
+			}
+			
+			public function popupExp(id:Number):void {
+				var dialog:ExpTrackForJobDialog = 
+					ExpTrackForJobDialog(PopUpManager.createPopUp(root, ExpTrackForJobDialog , true));
+				dialog.rsJobId = id;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<code:WindowShade id="ws1" styleName="linkButtonWindowShade" width="100%" label="查询" height="23%">
+			<v5:OperationTimeRecordSearchForm id="searchForm" so="{so}" searchFunction="{search}" height="125"/>
+		</code:WindowShade>
+		<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+			 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}" 
+			 pageSize="{so.objectsPerPage}" sortableColumns="false"
+			 height="100%" showControlColumn="false" horizontalScrollPolicy="on">
+			<fb:columns >
+				<fb:DataGridColumnNested headerText="异常" id='expJobId' sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:HBox>
+							<mx:LinkButton label="异常查看" color="0x3380DD" click="outerDocument.popupExp(data.expJobId);" visible="{data.hasExp}"/>
+								</mx:HBox>
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				
+				<fb:DataGridColumnNested headerText="任务单名称" dataField="truckRSJobName"  width="150" sortable="false"/>
+				<fb:DataGridColumnNested headerText="计划出发" labelFunction="getStartDate"  width="150" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="线路编号" dataField="routeCode"  width="150" sortable="false"/>
+				<fb:DataGridColumnNested headerText="线路名称" dataField="routeName"  width="150" sortable="false"/>
+				<fb:DataGridColumnNested headerText="车牌号" dataField="licensePlate"  width="100" sortable="false"/>
+				<fb:DataGridColumnNested headerText="执行状态" dataField="jobStatus"  width="100" labelFunction="getJobStatus" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="出发站站点" dataField="stopName"  width="100" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发站计划离站时间" dataField="planOutboundTime"  width="110" labelFunction="getPlanOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发站扫描离站时间" dataField="scanedOutboundTime"  width="110" labelFunction="getScanedOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="出发站手动离站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.manulOutboundTime!=null?DateFormatterUtil.format2(data.manulOutboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="出发站扫描人" dataField="scanner"  width="60" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="第二站点名称" dataField="n1StopName"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第二站计划进站时间" dataField="n1PlanInboundTime"  width="110" labelFunction="getN1PlanInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第二站扫描进站时间" dataField="n1ScanedInboundTime"  width="110" labelFunction="getN1ScanedInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第二站手动进站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n1ManulInboundTime!=null?DateFormatterUtil.format2(data.n1ManulInboundTime):null}">
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				
+				<fb:DataGridColumnNested headerText="到第二站计划运行时效(分钟)" dataField="n1PlanEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第二站实际运行时效(分钟)" dataField="n1ActualEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第二站进站延迟时间(分钟)" dataField="n1DelayInMinutes"  width="110" sortable="false"/>
+				
+				
+				<fb:DataGridColumnNested headerText="第二站计划离站时间" dataField="n1PlanOutboundTime"  width="110" labelFunction="getN1PlanOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第二站扫描离站时间" dataField="n1ScanedOutboundTime"  width="110" labelFunction="getN1ScanedOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第二站手动离站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n1ManulOutboundTime!=null?DateFormatterUtil.format2(data.n1ManulOutboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="第二站扫描人" dataField="n1Scanner"  width="60" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="第三站站点名称" dataField="n2StopName"  width="100" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第三站计划进站时间" dataField="n2PlanInboundTime"  width="110" labelFunction="getN2PlanInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第三站扫描进站时间" dataField="n2ScanedInboundTime"  width="110" labelFunction="getN2ScanedInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第三站手动进站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n2ManulInboundTime!=null?DateFormatterUtil.format2(data.n2ManulInboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				
+				<fb:DataGridColumnNested headerText="到第三站计划运行时效(分钟)" dataField="n2PlanEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第三站实际运行时效(分钟)" dataField="n2ActualEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第三站进站延迟时间(分钟)" dataField="n2DelayInMinutes"  width="110" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="第三站计划离站时间" dataField="n2PlanOutboundTime"  width="110" labelFunction="getN2PlanOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第三站扫描离站时间" dataField="n2ScanedOutboundTime"  width="110" labelFunction="getN2ScanedOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第三站手动离站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n2ManulOutboundTime!=null?DateFormatterUtil.format2(data.n2ManulOutboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="第三站扫描人" dataField="n3Scanner"  width="60" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="第四站站点名称" dataField="n3StopName"  width="100" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第四站计划进站时间" dataField="n3PlanInboundTime"  width="110" labelFunction="getN3PlanInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第四站扫描进站时间" dataField="n3ScanedInboundTime"  width="110" labelFunction="getN3ScanedInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第四站手动进站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n3ManulInboundTime!=null?DateFormatterUtil.format2(data.n3ManulInboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="到第四站计划运行时效(分钟)" dataField="n3PlanEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第四站实际运行时效(分钟)" dataField="n3ActualEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第四站进站延迟时间(分钟)" dataField="n3DelayInMinutes"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第四站计划离站时间" dataField="n3PlanOutboundTime"  width="110" labelFunction="getN3PlanOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第四站扫描离站时间" dataField="n3ScanedOutboundTime"  width="110" labelFunction="getN3ScanedOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第四站手动离站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n3ManulOutboundTime!=null?DateFormatterUtil.format2(data.n3ManulOutboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="第四站扫描人" dataField="n3Scanner"  width="60" sortable="false"/>
+				
+				<fb:DataGridColumnNested headerText="第五站站点名称" dataField="n4StopName"  width="100" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第五站计划进站时间" dataField="n4PlanInboundTime"  width="110" labelFunction="getN4PlanInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第五站扫描进站时间" dataField="n4ScanedInboundTime"  width="110" labelFunction="getN4ScanedInboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第五站手动进站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n4ManulInboundTime!=null?DateFormatterUtil.format2(data.n4ManulInboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+							
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="到第五站计划运行时效(分钟)" dataField="n4PlanEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第五站实际运行时效(分钟)" dataField="n4ActualEnrouteMinute" width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="到第五站进站延迟时间(分钟)" dataField="n4DelayInMinutes"  width="110" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第五站计划离站时间" dataField="n4PlanOutboundTime"  width="110" labelFunction="getN4PlanOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第五站扫描离站时间" dataField="n4ScanedOutboundTime"  width="110" labelFunction="getN4ScanedOutboundTime" sortable="false"/>
+				<fb:DataGridColumnNested headerText="第五站手动离站时间" width="110" sortable="false">
+					<fb:itemRenderer>
+						<fx:Component>
+							<mx:Label text="{data.n4ManulOutboundTime!=null?DateFormatterUtil.format2(data.n4ManulOutboundTime):null}" >
+								<fx:Script>
+									<![CDATA[
+										import com.oasis.utils.DateFormatterUtil;
+									]]>
+								</fx:Script>
+							</mx:Label>
+							
+						</fx:Component>
+					</fb:itemRenderer>
+				</fb:DataGridColumnNested>
+				<fb:DataGridColumnNested headerText="第五站扫描人" dataField="n4Scanner"  width="60" sortable="false"/>
+			</fb:columns>
+		</fb:PageableDataGrid>
+	</mx:VBox>
+</mx:VBox>

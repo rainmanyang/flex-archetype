@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jaxws="http://cxf.apache.org/jaxws"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/util 
+			http://www.springframework.org/schema/util/spring-util.xsd 
+			http://www.springframework.org/schema/jee 
+			http://www.springframework.org/schema/jee/spring-jee.xsd 
+			http://www.springframework.org/schema/context
+			http://www.springframework.org/schema/context/spring-context.xsd
+			http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd">
+
+	<context:annotation-config />
+	<context:spring-configured />
+	<context:component-scan base-package="com.oasis.tmsv5"/>
+	<context:component-scan base-package="com.oasis.wolfburg"/>
+	
+	<import resource="classpath*:META-INF/cxf/cxf.xml" />
+	<import resource="classpath*:META-INF/cxf/cxf-servlet.xml" />
+	
+	<bean id="aroundServiceTestInterceptor" class="com.oasis.tmsv5.service.AroundServiceTestInterceptor">
+		<property name="commitTest" value="false"/>
+	</bean>
+	
+	<bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">
+	   <property name="proxyTargetClass" value="true"/>
+       <property name="beanNames">
+           <value>*Component,*Handler</value>
+       </property>
+       <property name="interceptorNames">
+           <list>
+              <value>aroundServiceTestInterceptor</value>
+           </list>
+       </property>
+    </bean>
+    
+    <bean id="mapper" class="org.dozer.spring.DozerBeanMapperFactoryBean">
+        <property name="mappingFiles" value="classpath*:dozer/*mapping.xml"/>
+        <property name="customConvertersWithId">
+        	<map>
+        		<entry key="EnumConvert" value-ref="enumConvert"/>
+        	</map>
+        </property>
+    </bean>
+    
+    <jaxws:endpoint 
+	  id="#cxfWebServiceTestImpl" 
+	  implementor="com.oasis.wolfburg.facade.webService.CxfWebServiceTest" 
+	  address="/HelloWorld" />
+    
+</beans>

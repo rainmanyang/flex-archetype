@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:flex="http://www.springframework.org/schema/flex" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/flex 
+		http://www.springframework.org/schema/flex/spring-flex-1.5.xsd http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context.xsd">
+
+	
+   <!-- message-broker配置，设置flex 消息拦截器 -->
+	<!--  
+	<flex:message-broker id="_messageBroker" services-config-path="/WEB-INF/flex/services-config.xml">
+		<flex:exception-translator ref="webEexceptionTranslator" />
+		<flex:message-interceptor ref="webMessageInterceptor" />
+	</flex:message-broker>
+	<bean id="webEexceptionTranslator" class="com.oasis.tmsv5.facade.interceptor.WebExceptionTranslator" />
+	<bean id="webMessageInterceptor" class="com.oasis.tmsv5.facade.interceptor.WebMessageInterceptor" />
+	-->
+	<import resource="classpath:META-INF/cxf/cxf.xml" />
+	<import resource="classpath:META-INF/cxf/cxf-servlet.xml" />
+</beans>

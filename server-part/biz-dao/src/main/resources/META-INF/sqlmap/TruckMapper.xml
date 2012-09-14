@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.truck.TruckDAO">
+
+	<sql id="pageListClause">
+		<choose>  
+         <when test="(routeId!=null and routeId!=0) and (notInRouteId==null || notInRouteId==0)">  
+            from wl_truck t,wl_contract_route t1  
+            where t1.truck_id = t.id 
+            and t1.route_id = #{routeId}
+            and t.status = 'ENABLE'
+         </when>
+         <when test="(notInRouteId!=null and notInRouteId!=0) and (routeId==null || routeId==0)">  
+            from wl_truck t,wl_contract_route t1  
+            where t1.truck_id = t.id 
+            and t.status = 'ENABLE'
+            <![CDATA[ and t1.route_id <> #{notInRouteId}]]>
+         </when>
+         <when test="(notInRouteId==null || notInRouteId==0) and (routeId==null || routeId==0)">
+         	 from wl_truck t where 1=1
+         </when>
+		</choose>
+		
+		<if test="carrierId!=null and carrierId!='' ">
+		and t.carrier_id = #{carrierId}
+		</if>
+		<if test="carrierName!=null and carrierName!='' ">
+		and t.owner_name like '%'||#{carrierName}||'%'
+		</if>
+		<if test="licensePlate!=null and licensePlate!='' ">
+		and t.license_plate like '%'||#{licensePlate}||'%'
+		</if>
+		<if test="driverName!=null and driverName!='' ">
+        and (t.driver1_name like '%'||#{driverName}||'%' or t.driver2_name like '%'||#{driverName}||'%')
+        </if>
+        <if test="truckType!=null and truckType!='' ">
+        and t.truck_type = #{truckType}
+        </if>
+        <if test="status!=null and status!='' ">
+        and t.status = #{status}
+        </if>
+        <if test="truckResourceType!=null and truckResourceType!='' ">
+        and t.resource_type = #{truckResourceType}
+        </if>
+	</sql>
+	
+	<select id="selectPageList" resultType="Truck" parameterType="com.oasis.wolfburg.common.so.truck.TruckSO">
+		select distinct t.* 
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.truck.TruckSO">
+		select count(distinct (t.id))
+		<include refid="pageListClause"/>
+	</select>
+	
+    <delete id="delete">
+        <include refid="sqlmap.common.model.delete" />
+    </delete>
+
+    <update id="update" statementType="PREPARED" timeout="20000" parameterType="Truck">
+        <include refid="sqlmap.common.model.update" />
+    </update>
+    
+    <select id="find" resultType="Truck">
+        <include refid="sqlmap.common.model.find" />
+    </select>
+    
+    <insert id="insert" parameterType="Truck">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            <include refid="sqlmap.common.model.getSequence" />
+        </selectKey>
+        <include refid="sqlmap.common.model.insert" />
+    </insert>
+    <select id="getModelListByPara" resultType="Truck">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>
+    
+    <select id="checkDuplication" resultType="int" parameterType="Truck">
+        select count(1) from wl_truck t where t.license_plate = #{licensePlate}
+        <if test="id!=null">
+        	and t.id != #{id}
+        </if>
+    </select>
+    
+    <delete id="deleteByIds" parameterType="map">
+        <include refid="sqlmap.common.model.deleteByIds"/>
+    </delete>
+    
+    <select id="selectByIds" parameterType="map" resultType="Truck">
+        <include refid="sqlmap.common.model.selectListByIds"/>
+    </select>
+    
+    <select id="checkIdCard" resultType="int" parameterType="Truck">
+        select count(1) from wl_truck t where t.card_code = #{cardCode}
+        <if test="id!=null">
+        	and t.id != #{id}
+        </if>
+    </select>
+
+</mapper>

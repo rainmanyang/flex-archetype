@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				xmlns:grid="com.oasis.component.grid.*"
+				width="400" height="250"
+				title="创建临时车辆" xmlns:s="library://ns.adobe.com/flex/spark"  creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	<fx:Declarations>
+		<mx:StringValidator id="licensePlateValidator" source="{licensePlate}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="contactPersonValidator" source="{contactPerson}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator  id="contactPhone1Validator" source="{contactPhone1}" property="text" required="true" requiredFieldError="必填"/> 
+		<mx:StringValidator  id="cardCodeValidator" source="{cardCode}" property="text" required="true" requiredFieldError="必填"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.TruckEvent;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Bindable]
+			public var vo:Truck= new Truck();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			public var addTruckCallBack:Function;
+			
+			[Bindable]
+			public var truckTypeList:ArrayCollection = EnumManage.getTruckType();
+			
+			public function init():void{
+				
+			};
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([licensePlateValidator,contactPersonValidator,contactPhone1Validator,cardCodeValidator]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			protected function btnAdd(event:MouseEvent):void
+			{
+				if(!validate()){
+					return;
+				}
+				vo.truckType = truckType.selectedItem.data;
+				truckController.createTempTruck(vo,successCallBack,validationCallBack);
+			}
+			public function collectData():Boolean{
+				return true;
+			}
+			
+			private function successCallBack(truckId:Number):void{
+				//Alert.show("临时车辆创建成功!");
+				//dispatch.dispatchEvent(new TruckEvent(TruckEvent.TRUCK_LIST_EVENT));
+				var truck:Truck = new Truck();
+				truck.contactPerson = licensePlate.text;
+				truck.licensePlate = licensePlate.text;
+				truck.contactPhone1 = contactPhone1.text;
+				truck.cardCode = cardCode.text;
+				truck.id = truckId;
+				PopUpManager.removePopUp(this);
+				addTruckCallBack(truck);
+			}
+			
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="90%">
+		<fb:MultiColumnForm numColumns="1" width="100%" height="150">
+			<fb:MultiColumnFormItem label="车牌号：" required="true" >
+				<mx:TextInput  id="licensePlate" width="100" text="@{vo.licensePlate}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系人：" required="true">
+				<mx:TextInput  id="contactPerson" width="100"  text="@{vo.contactPerson}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系电话：" required="true">
+				<mx:TextInput id="contactPhone1" width="100"  text="@{vo.contactPhone1}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="卡号：" required="true">
+				<mx:TextInput  id="cardCode" width="80" text="@{vo.cardCode}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车型："  required="true">
+				<dropDownList:DropDownList dataProvider="{truckTypeList}" id="truckType" selectedIndex="0" searchKey="data" value="{vo.truckType}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<mx:HBox horizontalAlign="center" width="100%">
+			<mx:Button label="添加" id="add" click="btnAdd(event)"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

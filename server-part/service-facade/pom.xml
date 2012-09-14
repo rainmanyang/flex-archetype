@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>oasis.wolfburg</groupId>
+		<version>1.0</version>
+		<artifactId>wolfburg-server</artifactId>
+	</parent>	
+	
+	<artifactId>wolfburg-service-facade</artifactId>
+	<packaging>jar</packaging>
+	<name>client to call ejb servcie</name>
+
+	<dependencies>
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-dao</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+        <dependency>
+            <groupId>oasis.wolfburg</groupId>
+            <artifactId>wolfburg-utils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+		
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-service</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<!-- blazeds -->
+		<dependency>
+            <groupId>com.oasis.tmsv5</groupId>
+            <artifactId>blazeds-common</artifactId>
+        </dependency>
+		<dependency>
+			<groupId>backport-util-concurrent</groupId>
+			<artifactId>backport-util-concurrent</artifactId>			
+		</dependency>
+        <dependency>
+            <groupId>com.oasis.tmsv5</groupId>
+            <artifactId>blazeds-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.oasis.tmsv5</groupId>
+            <artifactId>blazeds-remoting</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.oasis.tmsv5</groupId>
+            <artifactId>blazeds-proxy</artifactId>
+        </dependency>
+		<!-- blazeds end -->
+		<!-- spring blazeds integration -->
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-core</artifactId>			
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.flex</groupId>
+			<artifactId>spring-flex</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>com.google</groupId>
+		    <artifactId>gson</artifactId>
+		    <version>1.7.1-release</version>
+        </dependency>		
+        
+        <dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jms</artifactId>
+		</dependency>
+		
+        <dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jsp-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+			
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aop</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+		</dependency>
+		<!-- spring end-->
+		<!-- aspect -->
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjrt</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.apache.cxf</groupId>
+		    <artifactId>cxf-api</artifactId>
+		</dependency>
+		
+	</dependencies>
+	
+	 	<build>
+		<pluginManagement>
+			<plugins>	
+			 
+			  <plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>jboss-packaging-maven-plugin</artifactId>
+				<version>2.0-beta-1</version>
+			  </plugin>			 
+			</plugins>
+      </pluginManagement>
+
+		<defaultGoal>install</defaultGoal>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+					<compilerArguments>
+                           <encoding>UTF8</encoding>
+                    </compilerArguments>
+
+
+				</configuration>
+			</plugin>	
+			
+			<plugin>
+                                     
+               <artifactId>maven-eclipse-plugin</artifactId>
+               <version>2.5.1</version>
+                       <configuration>
+							<projectNameTemplate>[artifactId]</projectNameTemplate>
+
+                              <useProjectReferences>true</useProjectReferences>
+
+                       </configuration>
+
+               </plugin>
+			   <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+	
+				<configuration>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			  </plugin>
+
+		</plugins>       
+    </build>   	
+</project>

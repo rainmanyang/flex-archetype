@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.track.ExpTrackDAO">
+
+    <insert id="insert" parameterType="map">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            <include refid="sqlmap.common.model.getSequence" />
+        </selectKey>
+        <include refid="sqlmap.common.model.insert" />
+    </insert>
+
+    <update id="update" parameterType="map">
+        <include refid="sqlmap.common.model.update" />
+    </update>
+
+    <delete id="delete" parameterType="map">
+        <include refid="sqlmap.common.model.delete" />
+    </delete>
+
+    <select id="find" parameterType="map" resultType="ExpTrack">
+        <include refid="sqlmap.common.model.find" />
+    </select>
+
+	<select id="selectPageList" resultType="ExpTrack" parameterType="com.oasis.wolfburg.common.so.track.ExpTrackSO">
+		select * from wl_exp_track t
+		<include refid="pageListClause"/>
+		order by t.exp_grade desc,t.id
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.track.ExpTrackSO">
+		select count(1) from wl_exp_track t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<sql id="pageListClause">
+		<where>
+		<if test="licensePlate!=null and licensePlate!='' ">
+		and t.license_plate like '%'||#{licensePlate}||'%'
+		</if>
+		<if test="expType!=null and expType!='' ">
+		and t.exp_type = #{expType}
+		</if>
+		<if test="expGrade!=null and expGrade!='' ">
+		and t.exp_grade = #{expGrade}
+		</if>
+		<if test="timeStart!=null and timeStart!='' ">
+		<![CDATA[
+		and t.createdtime >= #{timeStart}
+		]]>
+		</if>
+		<if test="timeEnd!=null and timeEnd!='' ">
+		<![CDATA[
+		and t.createdtime <= #{timeEnd}
+		]]>
+		</if>
+		</where>
+	</sql>
+	
+	<select id="getRsJobInfo" parameterType="string" resultType="ExpTrack">
+        select t.code rssJobCode,t.id rsJobId,t.status rsJobStatus,
+        	   s.name rsScheduleName,s.route_name routeName,s.id rsScheduleId
+		  from wl_truckrs_job t,wl_truckrs_schedule s
+		 where s.id=t.rs_schedule_id and t.status='ENROUTE' and t.license_plate=#{licensePlate}
+		   and t.start_date > sysdate - 7
+    </select>
+    
+    <select id="findRsJobInfo" parameterType="com.oasis.wolfburg.common.so.track.ExpTrackSO" resultType="ExpTrack">
+        select t.code rssJobCode,t.id rsJobId,t.status rsJobStatus,
+        	   s.name rsScheduleName,s.route_name routeName,s.id rsScheduleId
+		  from wl_truckrs_job t,wl_truckrs_schedule s
+		 where s.id=t.rs_schedule_id
+		   and t.start_date > sysdate - 7 and t.status in ('ENROUTE','ARRIEVED') 
+		   and t.license_plate=#{licensePlate}
+    </select>
+	
+    <select id="selectListByFKId" parameterType="long" resultType="ExpTrack">
+        
+    </select>
+
+    <select id="selectByIds" parameterType="map" resultType="ExpTrack">
+        <include refid="sqlmap.common.model.selectListByIds"/>
+    </select>
+    
+    <select id="getModelListByPara" resultType="ExpTrack">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>
+	
+    <select id="getCurDate" resultType="ExpTrack">
+		select * from wl_exp_track t where trunc(t.createdtime) = trunc(sysdate)
+	</select>
+
+</mapper>

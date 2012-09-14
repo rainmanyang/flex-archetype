@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:upload="com.oasis.tmsv5.view.util.*"
+				width="100%" height="100%" title="详细信息" verticalScrollPolicy="off" horizontalScrollPolicy="auto" xmlns:PremissionButton="com.oasis.component.PremissionButton.*">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.utils.BeanUtils;
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import com.oasis.wolfburg.enum.EnumManage;
+			
+			[Bindable]
+			public var payWayTypeArry:ArrayCollection = EnumManage.getPayWay();
+			
+			[Bindable]
+			public var invoiceArry:ArrayCollection = EnumManage.getYesNoType();
+			
+			[Bindable]
+			public var lisenceTypeArry:ArrayCollection = EnumManage.getLicenseType();
+			
+			[Bindable]
+			public var carrierTypeArry:ArrayCollection = EnumManage.getCarrierType();
+			
+			[Bindable]
+			public var carrierVO:Carrier = new Carrier();
+			
+			[Bindable]
+			public var certType:ArrayCollection = EnumManage.getCarrierCertType();
+			
+			public function setId(id:Number):void {
+				carrierVO.id=id;
+			}
+			
+			protected function toEdit():void
+			{
+				/**
+				 * 跳转到edit页面
+				 */ 
+				var edit:CarrierEdit = parent.getChildByName("edit") as CarrierEdit;
+				edit.setId(carrierVO.id);
+				edit.freshForm();
+			}
+			
+			public function displayText():void{
+				if(carrierVO.invoice == 'true'){
+					invoice.text = "是";
+				}else{
+					invoice.text = "否";
+				}
+			}
+		]]>
+	</mx:Script>
+
+	<mx:VBox width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:HBox paddingLeft="30" width="100%" paddingBottom="10" paddingRight="10" paddingTop="10" borderStyle="solid">
+			<PremissionButton:PremissionButton label="编辑" id="edit" click="toEdit()" enabled="{carrierVO.status=='NEW' || carrierVO.status=='ACTIVED'}"  premission="edit" module="Carrier" />
+		</mx:HBox>
+		<fb:MultiColumnForm  width="100%" numColumns="3" label="基本信息" >
+			<mx:Label  text="基本信息"/>
+			<fb:MultiColumnFormItem label="承运商编码：" >
+				<mx:Text id="carrierCode" text="@{carrierVO.carrierCode}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="承运商名称：" >
+				<mx:Text id="carrierName"  text="@{carrierVO.carrierName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="承运商简称：" >
+				<mx:Text id="carrierShortName" text="@{carrierVO.carrierShortName}" />
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="承运商类型：" >
+				<mx:Text id="carrierType" text="{EnumManage.getDisplayText(String(carrierVO.carrierType),carrierTypeArry)}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="证件类型：">
+				<mx:Text id="licenseType" text="{EnumManage.getDisplayText(String(carrierVO.licenseType),lisenceTypeArry)}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="证件号码：" >
+				<mx:Text id="licenseCode"  text="@{carrierVO.licenseCode}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="所属公司：" >
+				<mx:Text id="parentCompanyName"  text="@{carrierVO.parentCompanyName}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="备注：">
+				<mx:Text id="remark" text="@{carrierVO.remark}" />
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+
+		<fb:MultiColumnForm  width="100%" numColumns="3" label="联系方式">	
+			<mx:Label text="联系方式"/>
+			<fb:MultiColumnFormItem label="联系人：" >
+				<mx:Text id="contactPerson"  text="@{carrierVO.contactPerson}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="联系手机：" >
+				<mx:Text id="contactMobile"  text="@{carrierVO.contactMobile}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="联系电话：" >
+				<mx:Text id="contactPhone"  text="@{carrierVO.contactPhone}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="QQ：" >
+				<mx:Text id="contactQQ"  text="@{carrierVO.contactQQ}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="传真：" >
+				<mx:Text id="contactFX"  text="@{carrierVO.contactFX}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="电子邮件：" >
+				<mx:Text id="contactEmail"  text="@{carrierVO.contactEmail}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="联系地址：" >
+				<mx:Text id="contactAddress"  text="@{carrierVO.contactAddress}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<fb:MultiColumnForm  width="100%" numColumns="3" label="合同信息">	
+			<mx:Label text="合同信息"/>
+			
+			<fb:MultiColumnFormItem label="支付方式：" >
+				<mx:Text id="payWay" text="{EnumManage.getDisplayText(String(carrierVO.payWay),payWayTypeArry)}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="提供发票：" >
+				<mx:Text id="invoice" text="{EnumManage.getDisplayText(String(carrierVO.invoice),invoiceArry)}"/>
+			</fb:MultiColumnFormItem>
+			
+		</fb:MultiColumnForm>
+	
+		<fb:MultiColumnForm  width="100%" numColumns="3" label="账户信息">	
+			<mx:Label text="账户信息"/>
+			<fb:MultiColumnFormItem label="开户银行：">
+				<mx:Text id="bank" text="@{carrierVO.bank}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="银行账号：" >
+				<mx:Text id="bankAccount" text="@{carrierVO.bankAccount}"  />
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="结算周期（天）：" >
+				<mx:Text id="apAge" text="{carrierVO.apAge}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<mx:Label text="资质文件"/>
+		<upload:uploadView attachments="{carrierVO.attachmentList}" attachmentType="{certType}"/>
+		
+	</mx:VBox>
+</mx:Panel>

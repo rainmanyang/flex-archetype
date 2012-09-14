@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				width="750" height="600"
+				title="查看角色" xmlns:tree="com.oasis.component.tree.*"  >
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.menu.MenuItem;
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.configurePage.ConfigurePageController;
+			import com.oasis.tmsv5.security.MenuItemController;
+			import com.oasis.tmsv5.security.RoleController;
+			import com.oasis.tmsv5.vo.security.CheckedPremissionTree;
+			import com.oasis.tmsv5.vo.security.RolePremission;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var vo:RolePremission;
+			
+			[Bindable]
+			public var rolesLable:String;
+			[Bindable] 
+			public var roleTreeNode:TreeNode=new TreeNode();
+			
+			[Inject]
+			public var roleController:RoleController;
+			
+			[Inject]
+			public var menuItemController:MenuItemController;
+			[Inject]
+			public var configurePageController:ConfigurePageController;
+			[Bindable]
+			public var allPages:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var checkedPages:ArrayCollection = new ArrayCollection();
+			/**
+			 * 选中的role节点keys
+			 */
+			[Bindable]
+			private var checkedNodeKeys:ArrayCollection = new ArrayCollection();
+			
+			public function init():void{
+				if(vo == null){
+					vo = new RolePremission();
+				}
+				menuItemController.getMenuItemTree4Premission(vo.id,getRoleNodeListCallBack);
+				//加载首页信息
+				if(configurePage != null){
+					configurePageController.getAllPages(allPages);
+					configurePageController.getCheckedPages(vo.id,checkedPages);
+				}
+			}
+			private function getRoleNodeListCallBack(checkedRoleTreeVo:CheckedPremissionTree):void{
+				roleTreeNode=checkedRoleTreeVo.premissionTree;
+				for each(var role:MenuItem in checkedRoleTreeVo.checkedPremission){
+					checkedNodeKeys.addItem(role.id);
+				}
+				roles.init();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fb:MultiColumnForm width="100%" height="100%" numColumns="2">
+		<fb:MultiColumnFormItem label="名称：" width="100%" colspan="2">
+			<mx:Text text="{vo.name}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="描述：" width="100%" colspan="2">
+			<mx:Text text="{vo.description}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="网络访问权限：" width="100%" colspan="2">
+			<mx:Text text="{vo.netAuthority}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="权限：">
+			<tree:CheckTree id="roles" showRoot="true" editable="false"
+						  dataProvider="{roleTreeNode}" 
+						  labelField="value" height="300" width="240"
+						  isComputeAllCheckedNodeDescendants="true"
+						  checkedNodeKeys="{checkedNodeKeys}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="首页信息：" height="100%">
+			<fb:SearchableList id="configurePage"
+							   dataProvider="{allPages}"
+							   searchButtonStyle="searchButton2"
+							   dataField="description"	
+							   selectedItems="{checkedPages}"
+							   width="240"
+							   height="300"/>
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+	<mx:HBox width="100%"  horizontalAlign="right">
+		<mx:Button label="关闭" click="PopUpManager.removePopUp(this);"/>
+	</mx:HBox>
+</fb:PopupDialog>

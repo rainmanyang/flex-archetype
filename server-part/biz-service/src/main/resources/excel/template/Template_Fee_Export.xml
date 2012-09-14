@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template version="Template_Fee" type="singleSheet" exportVersion="false">
+    <sheet name="FeeReport" bean="com.oasis.wolfburg.common.vo.bill.PaymentItemReportVO"  nameCN="费用报表">
+        <meta>
+        	<column property="licensePlate" dataType="string" excelTitleName="车牌" />
+        	<column property="carrierName" dataType="string" excelTitleName="车主" />
+        	<column property="prd011Str" dataType="string" excelTitleName="总部应付主线费用" />
+        	<column property="mainLineTaxStr" dataType="string" excelTitleName="扣税" />
+        	<column property="prd012Str" dataType="string" excelTitleName="总部应付加班费" />
+        	<column property="overtimeTaxStr" dataType="string" excelTitleName="扣税" />
+        	
+        	<column property="truckFeeStr" dataType="string" excelTitleName="应付班车费" />
+        	<column property="overtimeFeeStr" dataType="string" excelTitleName="应付加班费" />
+        	<column property="totalPayFeeStr" dataType="string" excelTitleName="付款小计" />
+        	
+        	<column property="prd002Str" dataType="string" excelTitleName="收班车罚款" />
+        	<column property="prd003Str" dataType="string" excelTitleName="扣GPS费" />
+        	<column property="prd004Str" dataType="string" excelTitleName="收班车押金" />
+        	<column property="prd005Str" dataType="string" excelTitleName="收班车管理费" />
+        	<column property="prd006Str" dataType="string" excelTitleName="收扫描卡费" />
+        	<column property="prd007Str" dataType="string" excelTitleName="财务帐面欠款" />
+        	<column property="prd008Str" dataType="string" excelTitleName="预留1" />
+        	<column property="prd009Str" dataType="string" excelTitleName="预留2" />
+        	<column property="prd010Str" dataType="string" excelTitleName="预留3" />
+        	<column property="toatalReceiveFeeStr" dataType="string" excelTitleName="收款小计" />
+        	
+        	<column property="totalFeeStr" dataType="string" excelTitleName="总支付" />
+        	<column property="totalFeeStr" dataType="string" excelTitleName="个人合计" />
+        	
+        	<column property="temp" dataType="string" excelTitleName="发票号码" />
+        	<column property="temp" dataType="string" excelTitleName="开票时间" />
+        	<column property="temp" dataType="string" excelTitleName="发票收到时间" />
+        	<column property="temp" dataType="string" excelTitleName="付款申请用途" />
+        </meta>
+        <header>
+        </header>
+    </sheet>
+</template>

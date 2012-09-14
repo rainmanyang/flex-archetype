@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	xmlns:input="com.best.oasis.flexbase.components.selectableTextInput.*"
+	xmlns:grid="com.oasis.component.grid.*"
+	width="100%" height="100%"  xmlns:preArrange="preArrangeRS.*" creationComplete="init();">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.ArrayCollectionUtil;
+			import com.best.oasis.flexbase.util.LangUtil;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.event.TruckRsJobEvent;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSScheduleController;
+			import com.oasis.tmsv5.view.popup.RSDialog;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.view.popup.TruckDialog;
+			import com.oasis.utils.CRUDUtil;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSJobSO;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSScheduleSO;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.route.Stop;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJob;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSSchedule;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var truckVO: Truck = new Truck();
+			
+			[Bindable]
+			public var truckRSJobSO: TruckRSJobSO = new TruckRSJobSO();
+			
+			[Bindable]
+			public var dayTypeArray:ArrayCollection = EnumManage.getDayType();
+			
+			[Bindable]
+			public var tmpTruckButtonVisible:Boolean = false;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var rsJobTypeArray:ArrayCollection = EnumManage.getRSJobStatus();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			[Inject]
+			public var truckRSJobController:TruckRSJobController;
+			
+			[Inject]
+			public var truckRSScheduleController:TruckRSScheduleController;
+			
+			[Bindable]
+			public var truckdp:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var truckPageList:PageList = new PageList();
+			
+			[Bindable]
+			public var truckRSJobPageList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var usedJobList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var rsPageList:PageList = new PageList();
+			
+			[Bindable]
+			public var historyRSJobPageList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var truckStatusArray:ArrayCollection = EnumManage.getTruckStatus();
+			
+			[Bindable]
+			public var truckResourceTypeArray:ArrayCollection = EnumManage.getTruckResourceType();
+			
+			[Bindable]
+			public var statusArray:ArrayCollection = EnumManage.getRSScheduleStatus();
+			
+			[Bindable]
+			public var so:TruckRSScheduleSO = new TruckRSScheduleSO;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			public var routeId:Number;
+			
+			public var rsScheduleId:Number;
+			
+			[Bindable]
+			public var job1:TruckRSJob= new TruckRSJob();
+			
+			[Bindable]
+			public var job2:TruckRSJob= new TruckRSJob();
+			
+			public function init():void {
+				if(!isNaN(rsScheduleId)){
+					var schedule:TruckRSSchedule = new TruckRSSchedule();
+					schedule.id = rsScheduleId;
+					truckRSScheduleController.find(schedule,initCallback);
+				}
+				else{
+					search();
+				}
+			}
+			
+			private function initCallback(vo:TruckRSSchedule):void {
+				so.name = vo.name;
+				search();
+			}
+			
+			protected function addRSchdule():void
+			{
+				var dialog:RSDialog = RSDialog(PopUpManager.createPopUp(root, RSDialog , true));
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			private function getArrivalText(stop:Stop):String{
+				var str:String = '';
+				if(stop.seqNum == 1){
+					return '';
+				}else{
+					str += EnumManage.getDisplayText(String(stop.arrivalDayType),dayTypeArray);
+					if(stop.arrivalHour >=0 && stop.arrivalHour <= 9){
+						str += "0";
+					}
+					str += stop.arrivalHour;
+					str += ":";
+					if(stop.arrivalMinute >=0 && stop.arrivalMinute <= 9){
+						str += "0";
+					} 
+					str += stop.arrivalMinute;
+				}
+				return str;
+			}
+			
+			private function getLeaveText(stop:Stop):String{
+				var str:String = '';
+				if(isNaN(stop.leaveDayType)){
+					return '';
+				}else{
+					str += EnumManage.getDisplayText(String(stop.leaveDayType),dayTypeArray);
+					if(stop.leaveHour >=0 && stop.leaveHour <= 9){
+						str += "0";
+					}
+					str += stop.leaveHour;
+					str += ":";
+					if(stop.leaveMinute >=0 && stop.leaveMinute <= 9){
+						str += "0";
+					} 
+					str += stop.leaveMinute;
+				}
+				return str;
+			}
+			
+			private function displayText(stopList:ArrayCollection):void{
+				//显示时按seqNum排序
+				var seqSort:Sort = new Sort();
+				var sortField:SortField = new SortField('seqNum');
+				seqSort.fields = new Array(sortField);
+				stopList.sort = seqSort;
+				stopList.refresh();
+				
+				for(var k:int=0;k<stopList.length;k++){
+					var stop:Stop = stopList[k] as Stop;
+					stop.arrivalText = getArrivalText(stop);
+					if(k == stopList.length-1){
+						stop.leaveText = '';
+					}else{
+						stop.leaveText = getLeaveText(stop);
+					}
+				}
+			}
+			
+			private function getTruckRSJobPageData(rsScheduleId:Number,callBack:Function=null):void{
+				var truckRSJobSO:TruckRSJobSO = new TruckRSJobSO();
+				truckRSJobSO.pageNumber = 1;
+				truckRSJobSO.objectsPerPage = 32;
+				truckRSJobSO.rsScheduleId=rsScheduleId;
+				var statuses:ArrayCollection = new ArrayCollection();
+				statuses.addItem("NEW");
+				statuses.addItem("PLANED");
+				truckRSJobSO.statuses = statuses;
+				truckRSJobController.getTruckRSJobList(truckRSJobSO, truckRSJobPageList,callBack);
+			}
+			
+			private function getTruckPageData(routeId:Number, callBack:Function=null):void{
+				var truckSO:TruckSO = new TruckSO();
+				truckSO.pageNumber = 1;
+				truckSO.objectsPerPage = 10;
+				truckSO.routeId = routeId;
+				truckSO.truckResourceType="REGULAR";
+				truckController.getPopPageList(truckSO, truckPageList,callBack);
+			}
+			
+			public function add2rsJob():void{
+				var truck:Truck = truckGrid.selectedItems[0] as Truck;
+				if(rsJobGrid.selectedItems != null && rsJobGrid.selectedItems.length != 0) {
+					for (var ii:int =0;  ii <rsJobGrid.selectedItems.length; ii++) {
+						var rsJob:TruckRSJob = rsJobGrid.selectedItems[ii] as TruckRSJob;
+						rsJob.licensePlate = truck.licensePlate;
+						rsJob.truckId = truck.id;
+						rsJob.driver = truck.driver1Name;
+						rsJob.identityCard=truck.cardCode;
+						rsJob.editFlag = true;
+					}
+				} else {
+					Alert.show("请选择任务单");
+				}
+			}
+			
+			private function assignTruck2RSJob(truckRSJob:TruckRSJob,callBack:Function=null,faultCallBack:Function=null):void{
+				truckRSJobController.assignTruck2RSJob(truckRSJob,callBack,faultCallBack);
+			}
+			
+			private function addTmpTruck():void{
+				var dialog:TruckDialog = TruckDialog(PopUpManager.createPopUp(root, TruckDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.getTruckCallBack = getTmpTruckCallBack;
+			} 
+			
+			private function getTmpTruckCallBack(item:Object):void{
+				if (truckGrid.dataProvider == null) {
+					truckGrid.dataProvider = new ArrayCollection();
+				}
+				var truckList:ArrayCollection  = truckGrid.dataProvider as ArrayCollection;
+				for each(var o:Object in truckList){
+					if(o.licensePlate == item.licensePlate){
+						Alert.show("此车辆已经存在!");
+						return;
+					}
+				}
+				truckList.addItem(item);
+			}
+			
+			private function getTruckStatus(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,truckStatusArray);
+			}
+			
+			private function getTruckResourceType(item:Object,column:DataGridColumn):String{
+				var resourceType:String = item.resourceType as String;
+				return EnumManage.getDisplayText(resourceType,truckResourceTypeArray);
+			}
+			
+			private function getJobStatus(item:Object,column:DataGridColumn):String{
+				return EnumManage.getDisplayText(item.status,EnumManage.getRSJobStatus());
+			}
+			
+			public function getDate(item:Object):String{
+				return DateFormatterUtil.format6(item);
+			}
+			
+			private function getScheduleStatus(item:Object,column:DataGridColumn):String{
+				return EnumManage.getDisplayText(item.status,EnumManage.getRSScheduleStatus());
+			}
+			
+			private function arrange():void {
+				var truckList:ArrayCollection = truckGrid.dataProvider as ArrayCollection;
+				//grid取出的selectitems顺序是按照勾选的顺序加进去的
+				var selRs:Array = rsJobGrid.selectedItems;
+				var alertStr:String = "";
+				if(truckList.length == 0)
+					alertStr += "请添加待派车辆"+"\n";
+				if(selRs.length == 0)
+					alertStr += "请选择任务单";
+				if(alertStr != "") {
+					Alert.show(alertStr);
+					return;
+				}
+				//对任务单按照发班日期进行升序排列
+				var rsList:ArrayCollection =  new ArrayCollection(selRs);
+				var sortField:SortField = new SortField();
+				sortField.name = "startDate";
+				var dateSort:Sort = new Sort();
+				dateSort.fields = [sortField];
+				rsList.sort = dateSort;
+				rsList.refresh();
+				
+				var truckSize:Number = truckList.length;
+				for (var i:Number = 0; i < rsList.length; i++) {
+					var rs:TruckRSJob = rsList.getItemAt(i) as TruckRSJob;
+					var truck:Truck  = truckList.getItemAt(i % truckSize) as Truck;
+					rs.licensePlate=truck.licensePlate;
+					rs.identityCard=truck.cardCode;
+					rs.truckId=truck.id;
+					rs.driver=truck.driver1Name;
+					rs.editFlag = true;
+				}
+			}
+			
+			private function commitArrange():void {
+				var arrangedRs:ArrayCollection = new ArrayCollection();
+				for each(var elm:TruckRSJob in rsJobGrid.dataProvider){
+					if(elm.editFlag){
+						arrangedRs.addItem(elm);
+					}
+				}
+				if(arrangedRs.length == 0){
+					Alert.show("没有要提交的任务单!");
+					return;
+				}
+				truckRSJobController.batchArrange(arrangedRs,reLoadrs);
+			}
+			
+			private function reLoadrs():void {
+				var rschedule:TruckRSSchedule = schedulegrid.selectedItem as TruckRSSchedule;
+				getJob(rschedule);
+				dispatch.dispatchEvent(new TruckRsJobEvent(TruckRsJobEvent.RSJOB_LIST_EVENT));
+				Alert.show("批量指派车辆成功!");
+			}
+			
+			private function searchRS(keyword:String):void {
+				var rsSO:TruckRSScheduleSO = new TruckRSScheduleSO();
+				rsSO.status = 'PUBLISH';
+				rsSO.name =keyword;
+				getRSPageData(rsSO);
+			}
+			
+			private function getRSPageData(rsSO:TruckRSScheduleSO ,callBack:Function=null):void{
+				rsSO.pageNumber = 1;
+				rsSO.objectsPerPage = 10;
+				truckRSScheduleController.getPageList(rsSO, rsPageList,callBack);
+			}
+			
+			public function chgRoute():void{
+				so.routeId = NaN;
+			}
+			
+			public function clearRoute():void{
+				so.routeName = "";
+				so.routeId = NaN;
+			}
+			
+			protected function getRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = routeLocalFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function routeLocalFun(item:Object):void{
+				var route:Route = item as Route;
+				so.routeName = route.name;
+				so.routeId = route.id;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				if(statusId.selectedItem != null){
+					so.status = statusId.selectedItem.data;
+				}
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				var jobs:ArrayCollection = rsJobGrid.dataProvider as ArrayCollection;
+				
+				jobs.removeAll();
+				job1 = new TruckRSJob();
+				job2 = new TruckRSJob();
+				truckRSScheduleController.getPageList(so, pageList,callBack);
+			}
+			
+			public function search():void{
+				so.pageNumber=1;
+				getPageData(so.pageNumber,so.objectsPerPage);
+			}
+			
+			private function getRsJobByScheduleAndTruck():void {
+				var rschedule:TruckRSSchedule = schedulegrid.selectedItem as TruckRSSchedule;
+				getTruckPageData(rschedule.routeId);
+				getJob(rschedule);
+				getAlreadyUsedJob(rschedule);
+			}
+			
+			private function getAlreadyUsedJob(rschedule:TruckRSSchedule):void{
+				if(rschedule !=  null){
+					truckRSJobController.getAlreadyUsedRsJobBySchedule(rschedule.id,usedJobList,alreadycallback);
+				}
+			}
+			
+			private function alreadycallback ():void {
+				if (usedJobList.length == 0) {
+					job1 = new TruckRSJob();
+					job2 = new TruckRSJob();
+				}
+				if (usedJobList.length == 1) {
+					job2 = usedJobList[0] as TruckRSJob;
+					job2.formatSDate = DateFormatterUtil.format1(job2.startDate);
+					job1 = new TruckRSJob();
+				}
+				if (usedJobList.length == 2) {
+					job1 = usedJobList[0] as TruckRSJob;
+					job1.formatSDate = DateFormatterUtil.format1(job1.startDate);
+					job2 = usedJobList[1] as TruckRSJob;
+					job2.formatSDate = DateFormatterUtil.format1(job2.startDate);
+				}
+			}
+			
+			private function getJob(rschedule:TruckRSSchedule):void{
+				if(rschedule !=  null){
+					truckRSJobController.getRsJobByScheduleAfterYesterday(rschedule.id,truckRSJobPageList);
+				}
+			}
+			
+			protected function cancelArrange():void {
+				var jobList:Array = rsJobGrid.selectedItems;
+				if(jobList.length == 0){
+					Alert.show("请选择任务单!");
+					return;
+				}
+				var errors:String ="";
+				for each(var elm:TruckRSJob in jobList){
+					if(elm.status != EnumManage.RSJobStatus2.data){
+						errors += elm.code +"\n";
+					}
+				}
+				if(errors != ""){
+					errors += "不能取消派车!"
+					Alert.show(errors);
+					errors = "";
+					return;
+				}
+				truckRSJobController.cancelArrange(jobList,cancelArrangeCallback);
+			}
+			
+			protected function cancelArrangeCallback():void {
+				var rschedule:TruckRSSchedule = schedulegrid.selectedItem as TruckRSSchedule;
+				dispatch.dispatchEvent(new TruckRsJobEvent(TruckRsJobEvent.RSJOB_LIST_EVENT));
+				getJob(rschedule);
+			}
+			
+			protected function checkIfCanSelect(event:ListEvent):void {
+				var job:TruckRSJob = rsJobGrid.selectedItem as TruckRSJob;
+				if(job == null)
+					return;
+				if(job.status == EnumManage.RSJobStatus3.data){
+					if(rsJobGrid.selectedIndices.length == 1){
+						rsJobGrid.selectedIndices = new Array();
+					}
+					else{
+						var temp:Array = rsJobGrid.selectedIndices;
+						temp.shift();
+						rsJobGrid.selectedIndices = temp;
+					}
+					var itemTemp:Array = rsJobGrid.selectedItems;
+					for (var i:int=0;i<rsJobGrid.selectedItems.length;i++){
+						if(job.equals(rsJobGrid.selectedItems[i])){
+							itemTemp.splice(i,1);
+							rsJobGrid.selectedItems = itemTemp;
+							break;
+						}
+					}
+					trace(rsJobGrid.selectedItems.length as String);
+					event.stopImmediatePropagation();
+					event.stopPropagation();
+					return;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="35%" height="95%">
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%">
+				<mx:HBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm  numColumns="1" width="60%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="班次号" >
+							<mx:TextInput id="strName" text="@{so.name}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="线路名称：">
+							<fb:SelectableTextInput id="routeName" dataChange="chgRoute()" textInputEditable="true" text="@{so.routeName}" searchButtonClick="getRoute" clearButtonClick="clearRoute"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="状态：">
+							<s:DropDownList dataProvider="{statusArray}" id="statusId" selectedIndex="0"/>
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:Button label="查询" click="search();" id="searchBtn"/>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+				</mx:HBox>
+			</flexlib:WindowShade>
+			<grid:PageableDataGrid id="schedulegrid" dataProvider="{pageList.list}" width="100%"
+								   getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								   pageSize="{so.objectsPerPage}"
+								   height="100%" allowMultipleSelection="true" showControlColumn="false" itemClick="getRsJobByScheduleAndTruck()">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="班次号" dataField="name" width="80"/>
+					<grid:DataGridColumnNested headerText="线路名称" dataField="routeName"/>
+					<grid:DataGridColumnNested headerText="出发时间" dataField="departureTime" width="80"/>
+					<grid:DataGridColumnNested headerText="到达时间" dataField="arrivalTime" width="80"/>
+					<grid:DataGridColumnNested headerText="状态" labelFunction="getScheduleStatus" width="60"/>
+				</grid:columns>
+				
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:VBox width="50%" height="95%" >
+			<mx:DataGrid id="truckGrid"  horizontalScrollPolicy="auto" 
+						 width="100%" height="25%" 
+						 dataProvider="{truckPageList.list}" dropEnabled="true"
+						  >
+				<mx:columns>
+					<grid:DataGridColumnNested headerText="车牌号" dataField="licensePlate" width="80"/>
+					<grid:DataGridColumnNested headerText="联系电话" dataField="contactPhone1" width="100"/>
+					<grid:DataGridColumnNested headerText="状态" labelFunction="getTruckStatus" width="60"/>
+					<grid:DataGridColumnNested headerText="资源" labelFunction="getTruckResourceType" width="60"/>
+					<grid:DataGridColumnNested headerText="操作">
+						<grid:itemRenderer>
+							<fx:Component>
+								<mx:HBox verticalAlign="middle" horizontalAlign="center">
+									<fx:Script>
+									<![CDATA[
+										import com.best.oasis.flexbase.util.LangUtil;
+										import com.oasis.utils.BeanUtils;
+										import com.oasis.wolfburg.vo.truck.Truck;
+										import mx.collections.ArrayCollection;
+										
+										private function moveUp():void{
+											var database:ArrayCollection = outerDocument.truckPageList.list ? outerDocument.truckPageList.list:null;
+											var elm:Truck = data as Truck;
+											var index:Number = LangUtil.getObjectIndex(elm,database);
+											//第一个元素向上箭头无效
+											if(index == 0){
+												return; 
+											}
+											var temp:Object = database.getItemAt(index);
+											database.setItemAt(database.getItemAt(index-1),index);
+											database.setItemAt(temp,index-1);
+										}
+										
+										private function moveDown():void{
+											var database:ArrayCollection = outerDocument.truckPageList.list ? outerDocument.truckPageList.list:null;
+											var elm:Truck = data as Truck;
+											var index:Number = LangUtil.getObjectIndex(elm,database);
+											//最后一个元素向下箭头无效
+											if(index == database.length-1){
+												return; 
+											}
+											var temp:Object = database.getItemAt(index);
+											database.setItemAt(database.getItemAt(index+1),index);
+											database.setItemAt(temp,index+1);
+										}
+										
+										private function remove():void {
+											var database:ArrayCollection = outerDocument.truckPageList.list ? outerDocument.truckPageList.list:null;
+											var elm:Truck = data as Truck;
+											var index:Number = LangUtil.getObjectIndex(elm,database);
+											database.removeItemAt(index);
+										}
+										
+										private function innerAdd2rsJob():void{
+											outerDocument.add2rsJob();
+										}
+									]]>
+									</fx:Script>
+									<mx:LinkButton skin="@Embed(source='/assets/style/default/images/col-move-bottom.gif')" click="moveUp()" toolTip="上移"/>
+									<mx:LinkButton skin="@Embed(source='/assets/style/default/images/col-move-top.gif')" click="moveDown()" toolTip="下移"/>
+									<mx:LinkButton skin="@Embed(source='/assets/style/default/images/delete.gif')" click="remove()" toolTip="取消"/>
+									<mx:LinkButton skin="@Embed(source='/assets/style/default/images/shift.gif')"  click="innerAdd2rsJob()" toolTip="派车"/>
+								</mx:HBox>
+							</fx:Component>
+						</grid:itemRenderer>
+					</grid:DataGridColumnNested>
+				</mx:columns>
+			</mx:DataGrid>
+			<mx:HBox>
+				<mx:Button id="addTruck" click="addTmpTruck()" label="添加其他车辆"  />
+				<mx:Button id="arrangeTruck" click="arrange()" label="批量派车" />
+				<mx:Button id="cancelArrangeB" click="cancelArrange()" label="取消派车"/>
+				<mx:Button id="commitarrangeTruck" click="commitArrange()" label="提交派车" />
+			</mx:HBox>
+			
+			<mx:HBox width="35%" >
+				<mx:Text text="过往已派计划:"/>
+				<mx:Text text="任务时间:"/>
+				<mx:Text id="labelJob21" text="@{job2.formatSDate}" />
+				<mx:Text text="车牌:"/>
+				<mx:Text id="labelJob22" text="@{job2.licensePlate}" />
+				<mx:Text text="任务时间:"/>
+				<mx:Text id="labelJob11" text="@{job1.formatSDate}" />
+				<mx:Text text="车牌:"/>
+				<mx:Text id="labelJob12" text="@{job1.licensePlate}" />
+			</mx:HBox>
+			
+			<grid:SelectableDataGrid id="rsJobGrid" dataProvider="{truckRSJobPageList}" showToolBar="false" showHeadCheckBox="false"
+				 width="100%" height="70%" allowMultipleSelection="true" editable="false" change="checkIfCanSelect(event)">
+				<grid:columns>
+					<grid:DataGridColumnNested headerText="状态" dataField="status" width="40" labelFunction="getJobStatus" sortable="false"/>
+					<grid:DataGridColumnNested headerText="日期"  width="120" sortable="false">
+						<grid:itemRenderer>
+							<fx:Component>
+								<mx:Label text="{outerDocument.getDate(data.startDate)}" fontStyle="{data.identityCard == null?'italic':'normal'}" color="{data.identityCard == null?0xff0000:NaN}"/>
+							</fx:Component>
+						</grid:itemRenderer>
+					</grid:DataGridColumnNested>
+					<grid:DataGridColumnNested headerText="任务" dataField="code" sortable="false" />
+					<grid:DataGridColumnNested headerText="车牌" dataField="licensePlate" width="80" sortable="false" />
+					<grid:DataGridColumnNested headerText="车辆标示卡" dataField="identityCard" width="100" sortable="false"/>
+				</grid:columns>
+	     	</grid:SelectableDataGrid>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>
+
+

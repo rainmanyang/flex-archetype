@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				width="850" height="700"
+				xmlns:security="com.oasis.tmsv5.view.security.*"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				title="编辑用户" xmlns:tree="com.oasis.component.tree.*">
+	<fx:Declarations>
+		<mx:StringValidator id="nameCnValidator" source="{loginName}" property="text" required="true"/>
+		<mx:EmailValidator id="mailValidator" source="{email}" property="text" required="false"/>
+		<mx:PhoneNumberValidator id="phoneValidateor" source="{phone}" property="text" required="false"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.event.AccountEvent;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.tmsv5.vo.security.CheckedOrg;
+			import com.oasis.tmsv5.vo.security.CheckedRole;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Bindable]
+			public var vo:Account = new Account();
+			
+			[Inject]
+			public var accountController:AccountController;
+			
+			[Inject]
+			public var accountControler:AccountController;
+			
+			[Bindable]
+			public var checkRole:CheckedRole;
+			
+			[Bindable]
+			public var allRoles:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var checkedRoles:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var checkedOrg:ArrayCollection = new ArrayCollection();
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			public function init():void{								
+				/**
+				 *初始化角色选择控件 
+				 */
+				accountControler.getCheckedRoles(vo.id,getCheckedRoleCallBack);
+				accountControler.getCheckedOrgs(vo.id,getCheckedOrgCallBack);
+				
+			}
+			
+			/**
+			 * 
+			 * 初始化组织选择控件
+			 * 
+			 */
+			public function getCheckedOrgCallBack(_checkOrg:CheckedOrg):void{
+				
+				checkedOrg = new ArrayCollection();
+				if(_checkOrg.checkedOrg != null){
+					for each(var org:Organization in _checkOrg.checkedOrg){
+						checkedOrg.addItem(org.id);
+					}
+				}
+				asocOrg.dataProvider = _checkOrg.orgTree;
+				asocOrg.checkedNodeKeys = checkedOrg;
+				asocOrg.init();
+			}
+			
+			/**
+			 *
+			 * 初始化角色选择控件
+			 */
+			public function getCheckedRoleCallBack(checkedRoleL:CheckedRole):void{
+				/**
+				 * searchablelist有bug，只能这样改变内容
+				 */
+				allRoles.addAll(checkedRoleL.allRoles);
+				checkedRoles.addAll(checkedRoleL.checkedRoles);
+			}
+			
+			public function validate():Boolean{
+				var errors:Array = Validator.validateAll([nameCnValidator,mailValidator,phoneValidateor]);
+				if(errors.length > 0){
+					return false;
+				}
+				
+				if(vo.netAuthority != '000' 
+					&& vo.netAuthority != '001'
+					&& vo.netAuthority != '010'
+					&& vo.netAuthority != '011'
+					&& vo.netAuthority != '100'
+					&& vo.netAuthority != '101'
+					&& vo.netAuthority != '110'
+					&& vo.netAuthority != '111'){
+					netAuthority.errorString = '网络访问权限信息不合法，请填写三位信息，' +
+						'分别代表内网访问权限（0或者1），VPN访问权限（0或者1），外网访问权限（0或者1）';
+					return false;
+				}
+				
+				return true;
+			}
+			
+			/**
+			 * 
+			 *父窗口调用 
+			 * 
+			 */
+			public function collectData():void{
+				var _checkedOrg:ArrayCollection = new ArrayCollection();
+				for each(var node:TreeNode in asocOrg.checkedNodes) {
+					var item:Organization = Organization(node.data) ;
+					_checkedOrg.addItem(item);
+				}
+				vo.orgs = _checkedOrg;
+				vo.roles = asocRole.selectedItems;
+				
+				vo.expiredDate = expiredDate.date;
+				vo.passwordExpiredDate = passExpriedDate.date;
+			}
+			
+			private function onOk():void {
+				if(!validate()){
+					return;
+				}
+				collectData();
+				accountController.update(vo,successCallBack,validationCallBack);
+	        }
+			
+			private function successCallBack():void{
+				vo =new Account();
+				init();
+				Alert.show("修改成功!");
+				dispatch.dispatchEvent(new AccountEvent(AccountEvent.ACCOUNT_LIST_EVENT));
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox horizontalAlign="right" width="800" height="100%">
+			<fb:MultiColumnForm width="100%" height="100%" numColumns="2">
+				<fb:MultiColumnFormItem label="用户名称："  required="true" colspan="2">
+					<s:TextInput id="loginName" text="@{vo.loginName}" editable="false"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="中文名：" >
+					<s:TextInput id="nameCN" text="@{vo.nameCN}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="英文名：" >
+					<s:TextInput id="nameEN" text="@{vo.nameEn}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="电子邮件：" >
+					<s:TextInput id="email" text="@{vo.email}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="联系电话：" >
+					<s:TextInput id="phone" text="@{vo.phoneCode}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="用户过期时间：" >
+					<fb:DateTimeInput id="expiredDate" date="{vo.expiredDate}" showTime="false"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="密码过期时间：" >
+					<fb:DateTimeInput id="passExpriedDate" date="{vo.passwordExpiredDate}" showTime="false"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="网络访问权限：" colspan="2" required="true">
+					<s:TextInput id="netAuthority" text="@{vo.netAuthority}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="角色：">
+					<fb:SearchableList id="asocRole"
+									   dataProvider="{allRoles}"
+									   searchButtonStyle="searchButton2"
+									   dataField="name"	
+									   selectedItems="{checkedRoles}"
+									   width="240"
+									   height="300"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="组织：">
+					<tree:CheckTree id="asocOrg"
+								  width="240"
+								  height="300"
+								  labelField="value"
+								  isComputeAllCheckedNodeDescendants="true"
+								  >
+					</tree:CheckTree>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</mx:HBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+	        <mx:Button label="确定" click="onOk();"/>
+	        <mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+	    </mx:HBox>
+	</mx:VBox>
+</fb:PopupDialog>

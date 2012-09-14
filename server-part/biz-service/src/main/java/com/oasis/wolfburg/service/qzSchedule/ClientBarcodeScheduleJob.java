@@ -1,0 +1,12 @@
+package com.oasis.wolfburg.service.qzSchedule;
+
+import com.oasis.tmsv5.common.enums.type.JobCommand;
+
+public class ClientBarcodeScheduleJob extends AbstractStatefulJob {
+
+    @Override
+    protected JobCommand getCommand() {        
+        return JobCommand.CLIENT_BARCODE_SCHEDULE;
+    }
+
+}

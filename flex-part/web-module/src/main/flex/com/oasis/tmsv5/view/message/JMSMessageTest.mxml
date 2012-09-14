@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml" width="100%" height="100%"
+		 creationComplete="init()" xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.BeanUtils;
+			import com.oasis.tmsv5.utils.message.MessageConfig;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.wolfburg.vo.notification.NotifyMessage;
+			
+			import mx.messaging.ChannelSet;
+			import mx.messaging.events.MessageEvent;
+			import mx.messaging.events.MessageFaultEvent;
+			import mx.messaging.messages.AsyncMessage;		
+			
+			
+			public function init():void{
+				
+				var channelSet:ChannelSet = MessageConfig.getChannelSet();
+				
+				consumer.subscribe();
+				topicConsumer.subscribe();
+			}	
+		
+			
+			private function sendMessage():void { 					
+				
+				var message:AsyncMessage = new AsyncMessage(); 
+				message.body = new Object(); 
+				message.body = messageText.text; 
+				producer.send(message); 
+			} 
+			
+			/**
+			 * Queue
+			 * */ 
+			private function messageHandler(event:MessageEvent):void {
+				if(event.message.body is String){
+					resultText.text=String(event.message.body);
+					return;
+				}
+				var  notifyMessage:NotifyMessage=new NotifyMessage();
+				BeanUtils.copyProperties(notifyMessage,event.message.body);
+				resultText.text = notifyMessage.topic; 
+			} 
+			private function faultHandler(event:MessageFaultEvent):void { 
+				
+				resultText.text = String(event.message.body.toString()); 
+			} 			
+			/**
+			 * Topic
+			 * */
+			private function sendTopicMessage():void { 					
+				
+				var message:AsyncMessage = new AsyncMessage(); 
+				message.body = new Object(); 
+				message.body = messageText1.text; 
+				topicProducer.send(message); 
+			} 
+			
+			 
+			private function topicHandler(event:MessageEvent):void { 		
+				if(event.message.body is String){
+					resultText1.text=String(event.message.body);
+					return;
+				}
+				var  account:Account=new Account();
+				BeanUtils.copyProperties(account,event.message.body);
+				resultText1.text = account.loginName+" login."; 
+			} 
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>		
+		<mx:Producer id="producer" 					
+					 destination="msgQueue"/> 
+		<mx:Consumer id="consumer" 
+					 destination="msgQueue" 					 
+					 message="messageHandler(event);" 
+					 fault="faultHandler(event);"/> 	
+		<mx:Producer id="topicProducer" 					
+					 destination="TestJMSTopic"/> 
+		<mx:Consumer id="topicConsumer" 
+					 destination="TestJMSTopic" 					 
+					 message="topicHandler(event);" /> 
+	
+		
+	</fx:Declarations>
+	<s:HGroup id="queue"  width="100%" height="40%">
+		<mx:Label text="Queue">			
+		</mx:Label>
+		<mx:TextArea id="messageText" width="30%" height="30%"/> 
+		<mx:Button label="SendToQueue"    click="sendMessage();"/> 
+		<mx:TextArea id="resultText"  width="30%" height="30%"/> 
+	</s:HGroup>
+	<s:HGroup id="topic"  width="100%" height="40%" >
+		<mx:Label text="Topic">			
+		</mx:Label>
+		<mx:TextArea id="messageText1" width="30%" height="30%"/> 
+		<mx:Button label="SendToTopic"    click="sendTopicMessage();"/> 
+		<mx:TextArea id="resultText1"  width="30%" height="30%"/> 
+	</s:HGroup>
+	
+</mx:VBox>

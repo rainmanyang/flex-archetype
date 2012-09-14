@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%"
+		 xmlns:code="http://code.google.com/p/flexlib/" 
+		 xmlns:fb="http://flexbase.800best.com/mxml" xmlns:truckAttence="com.oasis.tmsv5.view.truckAttence.*">
+	<fx:Script>
+		
+		<![CDATA[
+			import com.oasis.tmsv5.configurePage.ConfigurePageController;
+			import com.oasis.wolfburg.vo.configurePage.ConfigurePage;
+			
+			import mx.collections.ArrayCollection;
+			
+			[Inject]
+			public var configurePageController:ConfigurePageController;
+			[Bindable]
+			public var checkedPages:ArrayCollection = new ArrayCollection();
+			
+			public function init():void{
+//				configurePageController.getCheckedPagesByAccountId(checkedPages,setVisi);
+			}
+			
+			public function setVisi(checkedPages:ArrayCollection):void{
+				if(checkedPages != null && checkedPages.length >0){
+					for each(var page:ConfigurePage in checkedPages){
+						if(page.name == 'wl_truck_attence'){
+							initTruckAttence();
+						}
+					}
+				}
+			}
+			
+			private function initTruckAttence():void{
+				ws1.visible = true;
+				ws1.includeInLayout = true;
+				truckAttenceManageForm.init();
+			}
+		]]>
+	</fx:Script>
+	<code:WindowShade id="ws1" styleName="linkButtonWindowShade" width="100%" label="日考核报表" visible="false" includeInLayout="false">
+		<truckAttence:TruckAttenceManageForm id="truckAttenceManageForm"/>
+	</code:WindowShade>
+</mx:VBox>

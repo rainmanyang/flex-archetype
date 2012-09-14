@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"  
+					  xmlns:fb="http://flexbase.800best.com/mxml"
+					  layout="absolute" width="300" height="400"
+					  title="过滤列" >
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.grid.SelectableDataGrid;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			public var grid:SelectableDataGrid;
+			
+			[Bindable]
+			/**
+			 *存储显示在list中的columns
+			 */
+			public var columnFieldsForDiaplay:ArrayCollection;
+			
+			[Bindable]
+			/**
+			 * 存储所有的columns
+			 */
+			public var allColumns:ArrayCollection;
+			
+			/**
+			 *存储处于勾选状态的columns 
+			 */
+			public var selectedColumns:ArrayCollection; 
+			
+			public function init():void{		
+				prepareColumnFields(grid);
+				setSelectAllChk();
+			}
+			/**
+			 * 把grid的column 填充到columnFieldsForDiaplay
+			 */
+			private function prepareColumnFields(grid:SelectableDataGrid):void{
+				columnFieldsForDiaplay = new ArrayCollection();
+				allColumns = new ArrayCollection();
+				var gridColumns:Array = grid.columns;
+				var gridColumn:DataGridColumn;
+				var item:Object;				
+					for(var i:int=0; i<gridColumns.length; i++){
+						gridColumn = gridColumns[i];
+						if(gridColumn.dataField != null){
+							allColumns.addItem(gridColumn);
+						}
+					}					
+						columnFieldsForDiaplay.addAll(allColumns);					
+				}
+
+			/**
+			 * 新增一个方法，根据textinput文本框的内容过滤dataprovider的内容
+			 * 在文本框内容change时调用
+			 */
+			private function filterColomns():void{
+				columnFieldsForDiaplay.removeAll();
+				if(filterText.text=="")
+					columnFieldsForDiaplay.addAll(allColumns);
+				else{			
+					var columns:DataGridColumn;
+					for(var i:int = 0; i<allColumns.length;i++){						
+						columns = allColumns.getItemAt(i) as DataGridColumn;
+						if(columns.headerText.toLowerCase().indexOf(filterText.text.toLowerCase())!=-1){
+							columnFieldsForDiaplay.addItem(columns);
+						}						
+					}
+				}	
+				setSelectAll();
+			}
+
+			/**
+			 *判断勾选的selectedColumns和allColumns是否相等 
+			 */
+			private function equals(arrayCollection1:ArrayCollection,arrayCollection2:ArrayCollection):Boolean{
+				var flag:Boolean = true;
+				var column1:DataGridColumn;
+				var column2:DataGridColumn;
+				if(arrayCollection1.length != arrayCollection2.length)
+					flag = false;
+				if(arrayCollection1.length == arrayCollection2.length){
+					for(var i:int = 0;i<arrayCollection1.length;i++){
+						column1 = arrayCollection1.getItemAt(i) as DataGridColumn;
+						column2 = arrayCollection2.getItemAt(i) as DataGridColumn;						
+						if(column1.headerText != column2.headerText)
+							flag = false;
+					}					
+				}
+				return flag;
+			}
+			
+			
+			/**
+			 * 通过判断data.visible，获取已经勾选的column，放到selectedColumns中
+			 */
+			protected function getSelectedColmuns():void{
+				selectedColumns = new ArrayCollection();
+				for each(var obj:Object in columnFieldsForDiaplay){
+					if(obj.visible == true)						
+						selectedColumns.addItem(obj);
+				}				
+			}
+			
+
+			/**
+			 *判断是否已经全部勾选，全部勾选就把selectAllChk的selected属性设为true，否则为false  
+			 */
+			public function setSelectAll():void{
+				getSelectedColmuns();
+				if(equals(selectedColumns,allColumns))
+					selectAllChk.selected = true;
+				else
+					selectAllChk.selected = false;
+			}			
+
+			
+			protected function selectAllChk_changeHandler(event:Event):void{							
+				for each (var obj:Object in columnFieldsForDiaplay){
+					obj.visible = selectAllChk.selected;
+				}
+				columnFieldsForDiaplay.refresh();
+			}
+			
+			
+			
+			public function setSelectAllChk():void{
+				var selected:Boolean = true;
+				for each (var obj:Object in columnFieldsForDiaplay){
+					if(obj.visible == false){
+						selected = false;
+					}
+				}
+				selectAllChk.selected = selected;
+			}		
+			
+			
+		]]>
+	</fx:Script>
+		<mx:VBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingBottom="2">
+			<mx:Spacer height="2"/>
+			<mx:HBox>		
+				<mx:TextInput  id="filterText" height="25" width="150"  change="filterColomns()" />	
+				<mx:Label text="忽略大小写" color="gray" fontSize="12" paddingTop="5"/>
+			</mx:HBox>
+			<mx:List width="100%" id="columnList" dataProvider="{columnFieldsForDiaplay}"
+					 allowMultipleSelection="true" height="100%" >
+				<mx:itemRenderer>
+					<fx:Component>
+						<mx:CheckBox label="{data.headerText}"  selected="{data.visible}" change="onChange(event);" width="100%">
+							<fx:Script>
+								<![CDATA[
+									private function onChange(evt:Event):void {
+										data.visible = !data.visible;
+										outerDocument.setSelectAllChk();
+										outerDocument.setSelectAll();
+									}
+								]]>
+							</fx:Script>							
+						</mx:CheckBox>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:List>
+			<mx:HBox width="100%">
+				<mx:CheckBox label="全选" id="selectAllChk" 
+							 change="selectAllChk_changeHandler(event)" />
+				<mx:Spacer width="100%" />
+				<mx:Button label="关闭"  click="closePopupDialog()" paddingRight="5" paddingBottom="5"/>
+			</mx:HBox>
+		</mx:VBox>	
+</fb:PopupDialog>

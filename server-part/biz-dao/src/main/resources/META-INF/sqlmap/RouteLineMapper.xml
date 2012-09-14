@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.route.RouteLineDAO">
+
+	<resultMap type="RouteLine" id="RouteLineMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="routeId" column="ROUTE_ID"/>
+		<result property="enrouteDays" column="enroute_days"/>
+		<result property="startStopId" column="start_stop_id"/>
+		<result property="startStopName" column="start_stop_name"/>
+		<result property="endStopId" column="end_stop_id"/>
+		<result property="endStopName" column="end_stop_name"/>
+	</resultMap>
+
+	<select id="find" resultMap="RouteLineMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="RouteLine">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<insert id="insert" parameterType="RouteLine">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<select id="selectList" parameterType="map" resultMap="RouteLineMap">
+  		select * from wl_route_line where route_id=${routeId} order by id asc
+  	</select>
+  	
+  	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds"/>
+	</delete>
+	
+</mapper>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.price.PriceDAO">
+
+	<select id="find" resultType="Price">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete" parameterType="map">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="map">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+	
+	<select id="getModelListByPara" resultType="Price">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>	
+	
+	<update id="delay" parameterType="map">
+		update wl_price t
+		   set t.period_end    = t.period_end + #{days},
+		       t.effective_end = t.period_end + #{days}
+		 where t.status = 'EFFECTIVE' and t.id in 
+		 <foreach collection="ids" index="dex" item="item" open="(" close=")" separator=",">
+  			#{item}
+  		</foreach>
+	</update>
+
+	<insert id="insert" parameterType="map">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<sql id="pageListClause">
+		where 1=1
+		<if test="routeId!=null and routeId!='' ">
+		and t.route_id = #{routeId}
+		</if>
+		<if test="routeName!=null and routeName!='' ">
+		and t.route_Name like '%'||#{routeName}||'%'
+		</if>
+		<if test="status!=null and status!='' ">
+		and t.status = #{status}
+		</if>
+		<if test="periodStart!=null and periodStart!='' ">
+		<![CDATA[
+		and t.period_end >= #{periodStart}
+		]]>
+		</if>
+		<if test="periodEnd!=null and periodEnd!='' ">
+		<![CDATA[
+		and t.period_start <= #{periodEnd}
+		]]>
+		</if>
+	</sql>
+	
+	<select id="selectPageList" resultType="Price" parameterType="com.oasis.wolfburg.common.so.price.PriceSO">
+		select * from wl_price t
+		<include refid="pageListClause"/>
+		order by t.id
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.price.PriceSO">
+		select count(1) from wl_price t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<update id="updateStatus" parameterType="list">
+		update wl_price t set t.status='FAILURE' where t.id in
+		<foreach collection="list" index="dex" item="item" open="(" close=")" separator=",">
+  			#{item}
+  		</foreach>
+	</update>
+	
+	<select id="checkDuplicate" parameterType="Price" resultType="int">
+		select count(1)
+		  from wl_price t
+		 where t.route_id = #{routeId}
+		   and t.truck_level = #{truckLevel}
+		   and t.truck_type = #{truckType}
+		   and t.status = 'EFFECTIVE'
+		   and rownum = 1
+	</select>
+</mapper>

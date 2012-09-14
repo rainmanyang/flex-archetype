@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 creationComplete="init()">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.ArrayCollectionUtil;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.mail.UserMailTargetController;
+			import com.oasis.tmsv5.so.mail.UserMailTargetSO;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.mail.UserMailTarget;
+			
+			import mx.accessibility.AccConst;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			[Bindable]
+			public var reportTypeDp : ArrayCollection = EnumManage.getReportTypeList();
+			
+			[Bingable]
+			public var so:UserMailTargetSO;
+			[Bingable]
+			public var pageList:PageList = new PageList();
+			[Bingable]
+			public var accountDp:ArrayCollection = new ArrayCollection();
+			[Bingable]
+			public var mailDp:ArrayCollection = new ArrayCollection();
+			[Bingable]
+			public var selectedAccounts:ArrayCollection = new ArrayCollection();
+			[Bingable]
+			public var vo:UserMailTarget = new UserMailTarget();
+			
+			[Inject]
+			public var userMailTargetController:UserMailTargetController;
+			
+			
+			public function init():void{
+				onSearch();
+			}
+			private function search():void{
+				getPageData(1, so.objectsPerPage);
+			}
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				userMailTargetController.getPageList(so, pageList, setDp);
+			}
+			private function setDp():void{
+				var list:ArrayCollection = pageList.list;
+				if(accountDp == null){
+					accountDp = new ArrayCollection();
+				} else {
+					accountDp.removeAll();
+				}
+				if(mailDp == null){
+					mailDp = new ArrayCollection();	
+				} else {
+					mailDp.removeAll();
+				}
+				if(list != null && list.length >0){
+					for each(var item:UserMailTarget in list){
+						if(!isNaN(item.accountId) && item.accountId != 0 ){
+							if(item.account != null){
+								accountDp.addItem(item.account);
+							}
+						} else if(item.extraEmail != null && item.extraEmail.length >0){
+							mailDp.addItem(item);
+						}
+					}
+				}
+			}
+			
+			private function onSearch():void{
+				var reportType:String = reportTypeCb.selectedItem.data as String;
+				if(so == null){
+					so = new UserMailTargetSO();
+				}
+				so.reportType = reportType;
+				search();
+			}
+			/**
+			 * 增加用户信息
+			 */
+			private function addAccount():void{
+				var dialog:selectAccountDialog = selectAccountDialog(
+					PopUpManager.createPopUp(root, selectAccountDialog,true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.oldSelectedAccounts = accountDp;
+				dialog.addEventListener(Event.COMPLETE,addAccountOnComplete);
+				dialog.init();
+			}
+			private function addAccountOnComplete(event:Event):void{
+				var target:selectAccountDialog = selectAccountDialog(event.target);
+				var selectedAccounts:ArrayCollection = target.selectedAccounts;
+				
+				if(accountDp == null){
+					accountDp = new ArrayCollection();
+				} else {
+					accountDp.addAll(selectedAccounts);
+				}
+			}
+			/**
+			 * 删除用户信息
+			 */
+			private function delAccount():void{
+				if(accountGrid.selectedItems.length==0) {
+					Alert.show("请选择要删除的用户信息。");
+					return;
+				}
+				var vos:ArrayCollection = new ArrayCollection(accountGrid.selectedItems);
+				ArrayCollectionUtil.removeItems(accountDp, accountGrid.selectedIndices); 
+			}
+			/**
+			 * 增加额外邮件信息
+			 */
+			private function addExtraEmail():void{
+				if(mailDp == null){
+					mailDp = new ArrayCollection();
+				} else {
+					var item:UserMailTarget = new UserMailTarget();
+					mailDp.addItem(item);
+				}
+					
+			}
+			/**
+			 * 删除额外邮件信息
+			 */
+			private function delExtraEmail():void{
+				if(extraEmailGrid.selectedItems.length==0) {
+					Alert.show("请选择要删除的额外邮箱。");
+					return;
+				}
+				for each(var obj:Object in extraEmailGrid.selectedItems){
+					var item:UserMailTarget = UserMailTarget(obj);
+					var index:Number = mailDp.getItemIndex(item);
+					if(index==-1){
+						continue;
+					}
+					mailDp.removeItemAt(index);
+				}
+			}
+			
+			private function save():void{
+				var list:ArrayCollection = new ArrayCollection();
+				var item:UserMailTarget;
+				var reportType:String = reportTypeCb.selectedItem.data as String;
+				if(accountDp != null && accountDp.length >0){
+					for each(var account:Account in accountDp){
+						item = new UserMailTarget();
+						item.accountId = account.id;
+						item.reportType = reportType;
+						item.extraEmail = null;
+						list.addItem(item);
+					}
+				} 
+				if(mailDp != null && mailDp.length >0){
+					for each(var obj:UserMailTarget in mailDp){
+						if(obj.extraEmail == null || obj.extraEmail == ''){
+							extraEmailGrid.errorString = '邮件地址不能为空。';
+							return;
+						}
+						item = new UserMailTarget();
+						item.extraEmail = obj.extraEmail;
+						item.reportType = reportType;
+						item.accountId = NaN;
+						list.addItem(item);
+					}
+				}
+				if(list.length == 0 ){
+					Alert.show("请添加用户信息或者额外邮件，两者不能同时为空。");
+					return;
+				}
+				userMailTargetController.batchUpdate(list, successCallBack);
+			}
+			
+			private function successCallBack():void{
+				Alert.show("保存成功！");
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<fb:MultiColumnForm width="500" numColumns="2" paddingLeft="40">
+			<fb:MultiColumnFormItem label="报表选择：">
+				<mx:ComboBox dataProvider="{reportTypeDp}" id="reportTypeCb" change="onSearch()"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		<fb:MultiColumnForm width="100%">
+			<fb:MultiColumnFormItem width="100%">
+				<mx:HBox width="100%">
+					<mx:Button label="添加" click="addAccount();"/>
+					<mx:Button label="删除" click="delAccount();"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem width="100%" label="选择收件人：">
+				<fb:PageableDataGrid width="100%" allowMultipleSelection="true" dataProvider="{accountDp}" id="accountGrid"
+									 getPageData="getPageData" horizontalScrollPolicy="auto" showToolBar="false" height="250">
+					<fb:columns >
+						<fb:DataGridColumnNested headerText="登陆名称" dataField="loginName" width="200"/>
+						<fb:DataGridColumnNested headerText="用户名称" dataField="nameCN" width="200"/>
+						<fb:DataGridColumnNested headerText="电子邮件" dataField="email" width="200"/>
+					</fb:columns>
+				</fb:PageableDataGrid>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem width="100%">
+				<mx:HBox width="100%">
+					<mx:Button label="添加" click="addExtraEmail();"/>
+					<mx:Button label="删除" click="delExtraEmail();"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem width="100%" label="输入邮件地址：">
+				<fb:PageableDataGrid width="100%" showControlColumn="true" dataProvider="{mailDp}" id="extraEmailGrid" editable="true"
+									 getPageData="getPageData" allowMultipleSelection="true" horizontalScrollPolicy="auto" showToolBar="false"
+									 height="250">
+					<fb:columns >
+						<fb:DataGridColumnNested headerText="电子邮件" width="100" dataField="extraEmail" editable="true"/>
+					</fb:columns>
+				</fb:PageableDataGrid>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		<mx:VBox width="100%" paddingLeft="120">
+			<mx:Button label="保存" click="save();"/>
+		</mx:VBox>
+	</mx:VBox>
+</mx:VBox>

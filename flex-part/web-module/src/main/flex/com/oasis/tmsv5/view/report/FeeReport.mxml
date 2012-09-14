@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	xmlns:nv="com.oasis.wolfburg.validator.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:paymentItem="com.oasis.tmsv5.view.bill.*" xmlns:grid="com.oasis.component.grid.*" xmlns:dropDownList="com.oasis.component.dropDownList.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*">
+	<fx:Declarations>
+		<mx:WipeDown id="myWD" duration="200" />
+		<mx:WipeUp id="myWU" duration="200" />
+		<nv:NumberValidator  id="minMoneyValidator" source="{minMoney}" property="text" requiredFieldError="必须为数字"/>  
+		<nv:NumberValidator  id="maxMoneyValidator" source="{maxMoney}" property="text" requiredFieldError="必须为数字"/>  
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.BeanUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.base.PredefinedCodeController;
+			import com.oasis.tmsv5.bill.PaymentItemController;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.so.bill.PaymentItemSO;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.tmsv5.view.popup.FeeReportDialog;
+			import com.oasis.tmsv5.view.popup.OrgDialog;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.vo.bill.PaymentItem;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.URLUtil;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var paymentItemController:com.oasis.tmsv5.bill.PaymentItemController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var so:PaymentItemSO = new com.oasis.tmsv5.so.bill.PaymentItemSO();
+			
+			[Bindable]
+			public var feeStatusList:ArrayCollection = EnumManage.getFeeStatusType();
+			
+			[Inject]
+			public var predefinedCodeController:PredefinedCodeController;
+			
+			[Bindable]
+			public var feeType:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var feeTypeList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			public var feeTypesList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var truckTypeList:ArrayCollection = EnumManage.getTruckType();
+			
+			[Bindable]
+			public var rsJobTypeList:ArrayCollection = EnumManage.getRsjobType();
+			[Bindable]
+			public var payTypeList:ArrayCollection = EnumManage.getPayTypes();
+			[Bindable]
+			public var feeStatus:ArrayCollection = EnumManage.getFeeStatus();
+			[Bindable]
+			public var feeTypes:ArrayCollection = EnumManage.getFeeTypes();
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+			[Bindable]
+			public var routePageList:PageList = new PageList();
+			
+			public var host:String;
+			
+			public function init():void{
+				predefinedCodeController.findByType4MainReceivableBill(feeTypeList,feeTypeCallback);
+				predefinedCodeController.findByType4ExceptionReceivableBill(feeTypesList,feeTypesCallback);
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			private function interval(start:Date,end:Date):void{
+				so.billDateBegin = start;
+				so.billDateEnd = end;
+			}
+			
+			private function feeTypeCallback():void{
+				var base:Object = {value:"--请选择--", code:''};
+				feeType.addItem(base);
+				feeType.addAll(feeTypeList);
+				feeTypeElement.selectedIndex = 0;
+			}
+			private function feeTypesCallback():void{
+				feeType.addAll(feeTypesList);
+				feeTypeElement.selectedIndex = 0;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				if(!validate()){
+					Alert.show("金额必须是数字!");
+					return;
+				}
+				so.billDateBegin = billDateBegin.date;
+				so.billDateBegin.setSeconds(0,0);
+				so.billDateEnd = billDateEnd.date;
+				so.billDateEnd.setSeconds(0,0);
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				so.flag = status.selectedItem.data;
+				so.isManualStr = feeTypeCB.selectedItem.data;
+				if(feeTypeElement.selectedItem != undefined){
+					so.itemType = feeTypeElement.selectedItem.code;
+				}
+				paymentItemController.getPageList4Report(so, pageList,callBack);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([minMoneyValidator,maxMoneyValidator]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			[EventHandler( event="PaymentItemEvent.FEE_REPORT_LIST_EVENT" )]
+			public function search():void{
+				so.pageNumber=1;
+				paymentItemController.getPageList4Report(so, pageList);
+			}
+			
+			protected function getOrg():void {
+				var dialog:OrgDialog = 
+					OrgDialog(PopUpManager.createPopUp(root, OrgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			
+			private function remove_clickHandler():void{
+				var ids:ArrayCollection = new ArrayCollection();
+				for each(var o:Object in grid.selectedItems){
+					var vo:PaymentItem = PaymentItem(o);
+					ids.addItem(vo.id);
+				}
+				if(ids.length == 0){
+					Alert.show("请选择要删除的对象!");
+					return ;
+				}else{
+					Alert.show("您确认要删除选中的数据？","确认删除",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								paymentItemController.remove(ids,search);
+							}
+						});
+				}
+			}
+			public function export():void{
+				var dialog:SelectMonthDialog = SelectMonthDialog(PopUpManager.createPopUp(root,SelectMonthDialog , true));
+				dialog.type = "PaymentItem";
+				so.flag = "0";
+				so.billDateBegin = billDateBegin.date;
+				so.billDateBegin.setSeconds(0,0);
+				so.billDateEnd = billDateEnd.date;
+				so.billDateEnd.setSeconds(0,0);
+				if(feeTypeElement.selectedItem != undefined){
+					so.itemType = feeTypeElement.selectedItem.code;
+					so.itemTypeName = feeTypeElement.selectedItem.description;
+				} 
+				so.isManualStr = feeTypeCB.selectedItem.data;
+				dialog.paymentItemSO = so;
+				PopUpManager.centerPopUp(dialog);
+				dialog.addEventListener(Event.COMPLETE, editDialogOnComplete);
+			}
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			
+			public function exportData():void{
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				so.requestUrl = getRequestURL();
+				so.billDateBegin = billDateBegin.date;
+				so.billDateBegin.setSeconds(0,0);
+				so.billDateEnd = billDateEnd.date;
+				so.billDateEnd.setSeconds(0,0);
+				so.isManualStr = feeTypeCB.selectedItem.data;
+				dialog.paymentItemSO=so;
+				dialog.reportType=Constants.PAYMENTITEM_FOR_EXPORT;
+				dialog.init();
+			}
+			
+			public function edit(data:Object):void {
+				var paymentItem:PaymentItem = grid.selectedItem as PaymentItem;
+				if(paymentItem == null){
+					return;
+				}
+				if(paymentItem.flag == "1"){
+					Alert.show("已关账的数据不能进行编辑！");
+					return;
+				}
+				var dialog:FeeReportDialog = FeeReportDialog(PopUpManager.createPopUp(root, FeeReportDialog , true));
+				dialog.vo = BeanUtils.clone(paymentItem) as PaymentItem;
+				PopUpManager.centerPopUp(dialog);
+				dialog.addEventListener(Event.COMPLETE, editDialogOnComplete);
+			}
+			public function doReCost(data:Object):void {
+				var paymentItem:PaymentItem = grid.selectedItem as PaymentItem;
+				if(paymentItem == null){
+					return;
+				}
+				if(paymentItem.flag == "1"){
+					Alert.show("已关账的数据不能进行费用重算！");
+					return;
+				}
+				if(paymentItem.isManual == 1){
+					Alert.show("手工结算的数据不能进行费用重算！");
+					return;
+				}
+				if(paymentItem.itemType == "prd011" || paymentItem.itemType == "prd012" || paymentItem.itemType == "prd013"){
+					Alert.show("您确认要进行费用重算？","确认",Alert.YES|Alert.NO,null, 
+						function(closeEvent:CloseEvent):void{
+							if (closeEvent.detail==Alert.YES){
+								paymentItemController.doReCost(paymentItem,1, so.objectsPerPage,getPageData, function(): void{
+									getPageData(1, so.objectsPerPage);
+									Alert.show("手工结算的数据不能进行费用重算！");
+								});
+							}
+						});
+				} else {
+					Alert.show("只有主线费、加班费、空驶费可以进行费用重算！");
+					return;
+				}
+			}
+			
+			private function editDialogOnComplete(event:Event):void{
+				getPageData(1, so.objectsPerPage);
+			}
+			
+			public function clear():void{
+				billDateBegin.date = null;
+				billDateEnd.date = null;
+				feeTypeElement.selectedIndex = 0;
+				feeTypeCB.selectedIndex = 0;
+				status.selectedIndex = 0;
+				route_.clear();
+				so = new PaymentItemSO();
+				feeTypeCB.selectedIndex = 0;
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			private function getFeeStatusLabel(item:Object,column:DataGridColumnNested):String{
+				var flag:String = item.flag as String;
+				return EnumManage.getDisplayText(flag,feeStatusList);
+			}
+			
+			private function getRsJobTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var rsJobType:String = item.rsJobType as String;
+				return EnumManage.getDisplayText(rsJobType,rsJobTypeList);
+			}
+			private function getPayTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var payType:String = item.payType as String;
+				return EnumManage.getDisplayText(payType,payTypeList);
+			}
+			
+			private function getTruckTypeLabel(item:Object,column:DataGridColumnNested):String{
+				var truckType:String = item.truckType as String;
+				return EnumManage.getDisplayText(truckType,truckTypeList);
+			}
+			
+			/**
+			 * 费用重算
+			 */
+			private function reCost():void{
+				if(!validate()){
+					Alert.show("金额必须是数字!");
+					return;
+				}
+				
+				so.flag = "0";//只有未关账的费用才可以进行重算
+				so.billDateBegin = billDateBegin.date;
+				so.billDateBegin.setSeconds(0,0);
+				so.billDateEnd = billDateEnd.date;
+				so.billDateEnd.setSeconds(0,0);
+				so.isManualStr = feeTypeCB.selectedItem.data;
+				if(feeTypeElement.selectedItem != undefined){
+					so.itemType = feeTypeElement.selectedItem.code;
+				}
+				Alert.show("您确认要进行费用重算吗？","确认",Alert.YES|Alert.NO,null, 
+					function(closeEvent:CloseEvent):void{
+						if (closeEvent.detail==Alert.YES){
+							paymentItemController.reCost(so,1, so.objectsPerPage,getPageData);
+						}
+					});
+			}
+			
+			public function changeRouteSelect ():void {
+				if (route_.selectedItem != null) {
+					var input:Route = route_.selectedItem as Route;
+					so.routeId = route_.selectedItem.id;
+					so.routeName = route_.selectedItem.name;
+				}  else {
+					so.routeId = NaN;
+					so.routeName = null;
+				}
+			}
+			private function searchRoute(keyword:String):void {
+				var routeSO:RouteSO = new RouteSO();
+				routeSO.name =keyword;
+				getRoutePageData(routeSO);
+			}
+			private function getRoutePageData(routeSO:RouteSO ,callBack:Function=null):void{
+				routeSO.pageNumber = 1;
+				routeSO.objectsPerPage = 10;
+				routeController.getPageList(routeSO, routePageList,callBack);
+			}
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="30%" height="95%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<mx:VBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}" numColumns="2">
+						<fb:MultiColumnFormItem label="车牌号：" >
+							<mx:TextInput text="@{so.licensePlate}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="车主：" >
+							<mx:TextInput text="@{so.carrierName}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="任务单名称：" >
+							<mx:TextInput text="@{so.trsJobCode}"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="费用发生日期：">
+							<mx:HBox>
+								<fb:DateTimeInput id="billDateBegin" date="{so.billDateBegin}" width="260"/>
+								<mx:Label htmlText="--"/>
+								<fb:DateTimeInput id="billDateEnd" date="{so.billDateEnd}" width="260"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="金额：">
+							<mx:HBox>
+								<s:TextInput id="minMoney"   text="@{so.minMoney}" width="80"/>
+								<mx:Label htmlText="--"/>
+								<s:TextInput id="maxMoney"   text="@{so.maxMoney}" width="80"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="费用类型：" >
+							<dropDownList:DropDownList dataProvider="{feeType}" labelField="value" id="feeTypeElement" searchKey="code" />
+						</fb:MultiColumnFormItem>
+					
+						<fb:MultiColumnFormItem label="状态：">
+							<mx:ComboBox dataProvider="{feeStatus}" id="status"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="线路：">
+							<fb:PopUpAutoComplete id="route_" selectedItemChanged="changeRouteSelect()"
+													 enabled="true"
+													 width="120"
+													 searchButtonVisible="false"
+													 clearButtonVisible="false"
+													 searchButtonEnabled="false"
+													 clearButtonEnabled="true"
+													 textInputEnabled="true"
+													 textInputEditable="true"
+													 dataProvider="{routePageList.list}"
+													 labelField="name,code"
+													 displayLabelField="name"
+													 searchFunction="searchRoute"
+													 allowNewValues="false"
+													 focusOut="changeRouteSelect()" dropDownWidth="200"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="计费方式" colspan="2">
+							<mx:ComboBox dataProvider="{feeTypes}" id="feeTypeCB"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem paddingTop="10" colspan="2">
+							<mx:HBox width="100%">
+								<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+								<mx:Button label="清空查询" click="clear()"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+					</fb:MultiColumnForm>
+				</mx:VBox>
+			</flexlib:WindowShade>
+			<mx:HBox>
+					<PremissionButton:PremissionButton label="关帐" click="export()" module="FeeReport" premission="close"/>
+					<PremissionButton:PremissionButton label="导出" click="exportData()" module="FeeReport" premission="export"/>
+					<PremissionButton:PremissionButton label="费用重算" click="reCost()" module="FeeReport" premission="reCost"/>
+			</mx:HBox>
+			<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								   getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								   pageSize="{so.objectsPerPage}" horizontalScrollPolicy="on"
+								   height="100%" allowMultipleSelection="false"  showControlColumn="false">
+				<fb:columns>
+					<fb:DataGridColumnNested headerText="车牌号" dataField="licensePlate" width="80"/>
+					<fb:DataGridColumnNested headerText="车型" dataField="truckType" width="80" labelFunction="getTruckTypeLabel"/>
+					<fb:DataGridColumnNested headerText="线路名称" dataField="payRouteName" width="80"/>
+					<fb:DataGridColumnNested headerText="费用类型" dataField="itemTypeCN" width="100"/>
+					<fb:DataGridColumnNested headerText="金额" dataField="payAmount" textAlign="right"/>
+					<fb:DataGridColumnNested headerText="车主" dataField="carrierName" />
+					<fb:DataGridColumnNested headerText="费用发生日期" dataField="billDateStr" width="80"/>
+					<fb:DataGridColumnNested headerText="任务单名称" dataField="trsJobCode" width="120"/>
+					<fb:DataGridColumnNested headerText="任务单类型" dataField="rsJobType" width="80" labelFunction="getRsJobTypeLabel"/>
+					<fb:DataGridColumnNested headerText="任务单支付类型" dataField="payType" width="80" labelFunction="getPayTypeLabel"/>
+					<fb:DataGridColumnNested headerText="任务开始日期" dataField="jobStartTimeStr" width="100"/>
+					<fb:DataGridColumnNested headerText="实际发车时间" dataField="actualStartTimeStr" width="120"/>
+					<fb:DataGridColumnNested headerText="任务完成日期" dataField="jobEndTimeStr" width="100"/>
+					<fb:DataGridColumnNested headerText="备注" dataField="reason" />
+					<fb:DataGridColumnNested headerText="关账时间" dataField="closeTimeStr" width="110"/>
+					<fb:DataGridColumnNested headerText="状态" dataField="flag" labelFunction="getFeeStatusLabel" width="60"/>
+					<fb:DataGridColumnNested headerText="计费方式" dataField="isManualStr" width="60"/>
+					<fb:DataGridColumnNested headerText="操作" width="200">
+						<fb:itemRenderer>
+							<fx:Component>
+								<mx:HBox>
+									<mx:LinkButton label="编辑" color="0x3380DD" click="outerDocument.edit(data);"
+												   textDecoration="underline" fontWeight="normal" />
+									<mx:LinkButton label="费用重算" color="0x3380DD" click="outerDocument.doReCost(data);"
+												   textDecoration="underline" fontWeight="normal" />
+								</mx:HBox>
+							</fx:Component>
+						</fb:itemRenderer>
+					</fb:DataGridColumnNested>
+				</fb:columns>
+			</fb:PageableDataGrid>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>

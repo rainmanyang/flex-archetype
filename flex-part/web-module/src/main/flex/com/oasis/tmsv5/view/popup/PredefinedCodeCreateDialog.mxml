@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:nv="com.oasis.wolfburg.validator.*"
+	xmlns:upload="com.oasis.tmsv5.view.util.*"
+	width="100%" height="100%" xmlns:driver="driver.*" title="创建" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	
+	
+	<fx:Declarations>
+		<mx:StringValidator id="validator1" source="{val}" property="text" required="true"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.base.PredefinedCodeController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.tmsv5.vo.base.PredefinedCode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var predefinedCodeController:PredefinedCodeController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:PredefinedCode= new PredefinedCode();
+			
+			public var passFun:Function;
+			
+			[Bindable]
+			public var type:String;
+			
+			private function create():void{
+				vo.type = type;
+				vo.description = vo.value;
+				if(!validate()){
+					return;
+				}
+				predefinedCodeController.create(vo,successCallBack,validationCallBack);
+			}
+			
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([validator1]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			private function successCallBack():void{
+				if(passFun != null){
+					passFun(vo);
+					PopUpManager.removePopUp(this);
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		
+		<fb:MultiColumnForm  width="90%" label="基本信息">
+			<fb:MultiColumnFormItem label="车辆品牌："  required="true">
+				<s:TextInput id="val" text="@{vo.value}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="create()"/>
+		<mx:Button label="取消" id="cancel" click="PopUpManager.removePopUp(this);"/>
+	</mx:HBox>
+</fb:PopupDialog>

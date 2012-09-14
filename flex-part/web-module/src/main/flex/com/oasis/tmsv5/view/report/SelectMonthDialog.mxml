@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx" 
+				width="700" height="200"
+				title="请选择月份"
+				creationComplete="init()" 
+				verticalAlign="middle" xmlns:dropDownList="com.oasis.component.dropDownList.*" >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.protocols.dict.util.CompleteResponseEvent;
+			import com.oasis.tmsv5.event.PaymentItemEvent;
+			import com.oasis.tmsv5.so.bill.FeeItemSO;
+			import com.oasis.tmsv5.so.bill.PaymentItemSO;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.utils.URLUtil;
+			
+			[Bindable]
+			public var years:ArrayCollection = EnumManage.getYear();
+			
+			[Bindable]
+			public var months:ArrayCollection = EnumManage.getMonth();
+			
+			public var host:String;
+			
+			[Bindable]
+			public var paymentItemSO:PaymentItemSO;
+			
+			[Bindable]
+			public var feeItemSO:FeeItemSO;
+			
+			public var type:String;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			public function init():void{
+				if(type == 'PaymentItem'){
+					if(paymentItemSO == null){
+						paymentItemSO = new PaymentItemSO();
+					}
+					licensePlate.text= paymentItemSO.licensePlate;
+					carrierName.text = paymentItemSO.carrierName;
+					trsJobCode.text = paymentItemSO.trsJobCode;
+					billDateBegin.text = paymentItemSO.billDateBeginStr;
+					billDateEnd.text = paymentItemSO.billDateEndStr;
+					minMoney.text = paymentItemSO.minMoney;
+					maxMoney.text = paymentItemSO.maxMoney;
+					feeTypeElement.text = paymentItemSO.itemTypeName;
+					route_.text = paymentItemSO.routeName;
+					if(paymentItemSO.isManualStr == "false"){
+						isManual.text = "自动结算";
+					} else if(paymentItemSO.isManualStr == "true"){
+						isManual.text = "手工结算";
+					} else {
+						isManual.text = ""; 
+					}
+				} else if(type == 'FeeItem'){
+					 if(feeItemSO == null){
+						 feeItemSO = new FeeItemSO(); 
+					 }
+					 licensePlate.text= feeItemSO.licensePlate;
+					 carrierName.text = feeItemSO.carrierName;
+					 trsJobCode.text = feeItemSO.trsJobCode;
+					 billDateBegin.text = feeItemSO.billDateBeginStr;
+					 billDateEnd.text = feeItemSO.billDateEndStr;
+					 feeTypeElement.text = feeItemSO.itemTypeName;
+					 route_.text = feeItemSO.routeName;
+					 minMoney.text = feeItemSO.minMoney;
+					 maxMoney.text = feeItemSO.maxMoney;
+					 if(feeItemSO.isManualStr == "false"){
+						 isManual.text = "自动结算";
+					 } else if(feeItemSO.isManualStr == "true"){
+						 isManual.text = "手工结算";
+					 } else {
+						 isManual.text = ""; 
+					 }
+				} else if(type == 'FeeCompare'){
+					if(feeItemSO == null){
+						feeItemSO = new FeeItemSO();
+					}
+					licensePlate.text= feeItemSO.licensePlate;
+					carrierName.text = feeItemSO.carrierName;
+					trsJobCode.text = feeItemSO.trsJobCode;
+					billDateBegin.text = feeItemSO.billDateBeginStr;
+					billDateEnd.text = feeItemSO.billDateEndStr;
+					feeTypeElement.text = feeItemSO.itemTypeName;
+					route_.text = feeItemSO.routeName;
+					minMoney.text = feeItemSO.minMoney;
+					maxMoney.text = feeItemSO.maxMoney;
+					if(feeItemSO.isManualStr == "false"){
+						isManual.text = "自动结算";
+					} else if(feeItemSO.isManualStr == "true"){
+						isManual.text = "手工结算";
+					} else {
+						isManual.text = ""; 
+					}
+				}
+			}
+			public function ok():void{
+				if(year.selectedIndex == -1){
+					Alert.show("年份必须选择");
+					return;
+				}
+				if(month.selectedIndex == -1){
+					Alert.show("月份必须选择");
+					return;
+				}
+				//so.billDateBegin = truckType.selectedItem.data;
+				var strYear:String = year.selectedItem.data;
+				var strMonth:String = month.selectedItem.data;
+				var yearMonth:String = strYear + "年" + strMonth + "月";
+				//var billDateEnd:Date = DateFormatter.parseDateString(strEndDate);
+				if(type == 'PaymentItem'){
+					var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+					PopUpManager.centerPopUp(dialog);
+					paymentItemSO.requestUrl = getRequestURL();
+					dialog.paymentItemSO=paymentItemSO;
+					dialog.yearMonth = yearMonth;
+					dialog.reportType=Constants.PAYMENTITEM_EXPORT;
+					dialog.init();	
+				}else if(type == 'FeeItem'){
+					var dialog1:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+					PopUpManager.centerPopUp(dialog1);
+					feeItemSO.requestUrl = getRequestURL();
+					dialog1.feeItemSO=feeItemSO;
+					dialog1.yearMonth = yearMonth;
+					dialog1.reportType=Constants.FEE_EXPORT;
+					dialog1.init();	
+				}else if(type == 'FeeCompare'){
+					var dialog2:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+					PopUpManager.centerPopUp(dialog2);
+					feeItemSO.requestUrl = getRequestURL();
+					dialog2.feeItemSO=feeItemSO;
+					dialog2.yearMonth = yearMonth;
+					dialog2.reportType=Constants.FEE_ITEM_FOR_COMPARE;
+					dialog2.init();	
+				}
+				
+				
+			}
+			
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			
+			private function close():void{
+				this.dispatchEvent(new CloseEvent(Event.COMPLETE));
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox>
+		<fb:MultiColumnForm numColumns="2" width="100%" >
+			<fb:MultiColumnFormItem label="车牌号：" >
+				<mx:Text id="licensePlate"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="车主：" >
+				<mx:Text id="carrierName"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="任务单名称：" >
+				<mx:Text id="trsJobCode"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费用发生日期：">
+				<mx:HBox>
+					<mx:Text id="billDateBegin" />
+					<mx:Label htmlText="--"/>
+					<mx:Text id="billDateEnd"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="金额：" id="money">
+				<mx:HBox>
+					<mx:Text id="minMoney" />
+					<mx:Label htmlText="--"/>
+					<mx:Text id="maxMoney" />
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="费用类型：" >
+				<mx:Text id="feeTypeElement" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="线路：">
+				<mx:Text id="route_" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="计费方式：" id="isManualFormItem">
+				<mx:Text id="isManual" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="请选择年份：" required="true">
+				<dropDownList:DropDownList dataProvider="{years}" id="year" searchKey="data"  prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="请选择月份：" required="true">
+				<dropDownList:DropDownList dataProvider="{months}" id="month" searchKey="data"  prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		<mx:HBox width="100%" horizontalAlign="right">
+			<mx:Button id="btnOK" click="ok();" label="确定" />
+			<mx:Button id="btnClose" click="close()" label="关闭" />		
+		</mx:HBox>
+	</mx:VBox>
+	
+	
+</fb:PopupDialog>
+

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>oasis.wolfburg</groupId>
+		<version>1.0</version>
+		<artifactId>wolfburg-flex</artifactId>
+	</parent>	
+	
+	<artifactId>wolfburg-flex-controller</artifactId>
+	<packaging>swc</packaging>
+	<name>flex controller</name>
+
+	<dependencies>	
+
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-flex-common</artifactId>
+			<version>${project.version}</version>
+			<type>swc</type>
+		</dependency>
+		
+		<!-- flexbase -->
+		<dependency>
+			<groupId>oasis.flexbase</groupId>
+			<artifactId>flexbase-component</artifactId>
+			<type>swc</type>
+		</dependency>
+		
+		<dependency>
+			<groupId>oasis.wolfburg</groupId>
+			<artifactId>wolfburg-flex-base</artifactId>
+			<version>1.0</version>
+			<type>swc</type>
+		</dependency>
+		
+		<!-- flexbase end -->
+
+		<!-- flex sdk -->
+		<!-- -->
+		
+		
+		<dependency>
+            <groupId>com.adobe.flex.framework</groupId>
+            <artifactId>flex-framework</artifactId>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+			<groupId>com.adobe.flex.framework</groupId>
+			<artifactId>playerglobal</artifactId>
+			<type>swc</type>
+		</dependency>
+		<!-- flex sdk end -->
+		<!-- swiz -->
+		<dependency>
+		  <groupId>org.swizframework</groupId>
+		  <artifactId>swiz-framework</artifactId>
+		  <type>swc</type>		  
+	   </dependency>
+	   
+	   <dependency>
+	   	  <groupId>com.adobe</groupId>
+	      <artifactId>as3corelib</artifactId>
+	      <version>1.0-release</version>
+	      <type>swc</type>
+	   </dependency>
+		
+			
+	</dependencies>
+	<build>
+		<sourceDirectory>src/main/flex</sourceDirectory>
+
+		<plugins>
+		  <plugin><!-- Flex (SWC and SWF) compilation -->
+			<groupId>org.sonatype.flexmojos</groupId>
+			<artifactId>flexmojos-maven-plugin</artifactId>
+			<extensions>true</extensions>
+			<configuration>
+			   <debug>true</debug>
+			   <themes>
+			       <theme>${flex-theme}</theme>
+			   </themes>
+			   <targetPlayer>${flash.version}</targetPlayer>
+			</configuration>						
+			<executions>
+			  <execution>
+				<goals>
+				  <goal>optimize</goal>
+				  <goal>generate</goal>
+				</goals>
+				<configuration>				  
+				</configuration>
+			  </execution>
+			</executions>			
+		  </plugin>
+		</plugins>
+	</build>
+
+   	
+</project>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template version="Template_OperationTimeRecord" type="singleSheet" exportVersion="false">
+    <sheet name="TruckRSJobTimeRecord" bean="com.oasis.wolfburg.common.vo.truckRSSchedule.TruckRSJobTimeRecordVO"  nameCN="运营时效报表">
+        <meta>
+        	<column property="truckRSJobName" dataType="string" excelTitleName="任务单名称" />
+        	<column property="startDate" dataType="string" excelTitleName="任务单开始时间" />
+        	
+        	<column property="licensePlate" dataType="string" excelTitleName="车牌号" />
+        	<column property="routeName" dataType="string" excelTitleName="线路名称" />
+        	
+        	<column property="stopName" dataType="string" excelTitleName="站点名称(1)" />
+        	<column property="planOutboundTime" dataType="string" excelTitleName="计划离站时间(1)" />
+        	<column property="scanedOutboundTime" dataType="string" excelTitleName="扫描离站时间(1)" />
+        	<column property="manulOutboundTime" dataType="string" excelTitleName="手动离站时间(1)" />
+        	<column property="scanner" dataType="string" excelTitleName="扫描人(1)" />
+        	
+        	<column property="n1StopName" dataType="string" excelTitleName="站点名称(2)" />
+        	<column property="n1PlanInboundTime" dataType="string" excelTitleName="计划进站时间(2)" />
+        	<column property="n1PlanOutboundTime" dataType="string" excelTitleName="计划离站时间(2)" />
+        	<column property="n1ScanedInboundTime" dataType="string" excelTitleName="扫描进站时间(2)" />
+        	<column property="n1ScanedOutboundTime" dataType="string" excelTitleName="扫描离站时间(2)" />
+        	<column property="n1ManulInboundTime" dataType="string" excelTitleName="手动进站时间(2)" />
+        	<column property="n1ManulOutboundTime" dataType="string" excelTitleName="手动离站时间(2)" />
+        	<column property="n1Scanner" dataType="string" excelTitleName="扫描人(2)" />
+        	
+        	<column property="n2StopName" dataType="string" excelTitleName="站点名称(3)" />
+        	<column property="n2PlanInboundTime" dataType="string" excelTitleName="计划进站时间(3)" />
+        	<column property="n2PlanOutboundTime" dataType="string" excelTitleName="计划离站时间(3)" />
+        	<column property="n2ScanedInboundTime" dataType="string" excelTitleName="扫描进站时间(3)" />
+        	<column property="n2ScanedOutboundTime" dataType="string" excelTitleName="扫描离站时间(3)" />
+        	<column property="n2ManulInboundTime" dataType="string" excelTitleName="手动进站时间(3)" />
+        	<column property="n2ManulOutboundTime" dataType="string" excelTitleName="手动离站时间(3)" />
+        	<column property="n2Scanner" dataType="string" excelTitleName="扫描人(3)" />
+        	
+        	<column property="n3StopName" dataType="string" excelTitleName="站点名称(4)" />
+        	<column property="n3PlanInboundTime" dataType="string" excelTitleName="计划进站时间(4)" />
+        	<column property="n3PlanOutboundTime" dataType="string" excelTitleName="计划离站时间(4)" />
+        	<column property="n3ScanedInboundTime" dataType="string" excelTitleName="扫描进站时间(4)" />
+        	<column property="n3ScanedOutboundTime" dataType="string" excelTitleName="扫描离站时间(4)" />
+        	<column property="n3ManulInboundTime" dataType="string" excelTitleName="手动进站时间(4)" />
+        	<column property="n3ManulOutboundTime" dataType="string" excelTitleName="手动离站时间(4)" />
+        	<column property="n3Scanner" dataType="string" excelTitleName="扫描人(4)" />
+        	
+        </meta>
+        <header>
+        </header>
+    </sheet>
+</template>

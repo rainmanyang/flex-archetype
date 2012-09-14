@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"       
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:fb="http://flexbase.800best.com/mxml" 
+		  xmlns:nv="com.oasis.wolfburg.validator.*"
+		  xmlns:grid="com.oasis.component.grid.*"
+		  width="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off"  height="100%" xmlns:route="route.*" title="编辑"  creationComplete="init()">
+	<fx:Declarations>
+		<mx:StringValidator id="nameValidator" source="{nameCN}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="codeValidator" source="{code}" property="text" required="true" requiredFieldError="必填"/>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->  
+		<nv:NumberValidator  id="distanceValidator" source="{distance}" property="text" fieldError="必须为数字"/>  
+		<nv:NumberValidator  id="enrouteValidator" source="{enrouteDays}" property="text" fieldError="必须为数字"/>  
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.RouteEvent;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.view.popup.POSDialog;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.vo.route.PosView;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.route.RouteLine;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+		
+		[Bindable]
+		public var stops:ArrayCollection;
+		
+		[Bindable]
+		public var vo:Route= new Route();
+		
+		[Dispatcher]
+		public var dispatch:IEventDispatcher;
+		
+		
+		[Inject]
+		public var routeController:RouteController;
+		
+		public function setId(id:Number):void {
+			vo.id=id;
+		}
+		public function freshForm():void{
+			routeController.find(vo,pageIndex);
+		}
+		
+		private function pageIndex(bean:Route):void{
+			stops = vo.routeLineList;
+			var parent:ViewStack= this.parent as ViewStack;
+			parent.selectedIndex=2;
+			if(this.initialized){
+				init();
+			}
+		}
+		
+		protected function button1_clickHandler(event:MouseEvent):void
+		{
+			var parent:ViewStack = this.parent as ViewStack;
+			parent.selectedIndex = 0;
+		}
+		protected function addPOS():void
+		{
+			var dialog:POSDialog = 
+			POSDialog(PopUpManager.createPopUp(root, POSDialog , true));
+			dialog.passFun = localFun;
+			PopUpManager.centerPopUp(dialog);
+		}
+		
+		public function localFun(item:Object):void{
+		var posVO : PosView = PosView(item);
+		addStop(posVO.name,posVO.id);
+		}
+		/**
+		* 添加站点
+		**/
+		protected function addStop(stopName:String,posId:Number):void {
+			var length:int = stops.length;
+			if(length == 0){
+				var routeLineVO:RouteLine = new RouteLine();
+				routeLineVO.startStopName = stopName;
+				routeLineVO.startPosId = posId;
+				stops.addItem(routeLineVO);
+			}else{
+				var lastVO:RouteLine = RouteLine(stops[length-1]);
+				if(length == 1 && lastVO.endStopName == null){
+					lastVO.endStopName = stopName;
+					lastVO.endPosId = posId;
+				}else{
+					var nextVO:RouteLine = new RouteLine();
+					nextVO.startStopName = lastVO.endStopName;
+					nextVO.startPosId = lastVO.endPosId;
+					nextVO.endStopName = stopName;
+					nextVO.endPosId = posId;
+					stops.addItem(nextVO);
+				}
+			}
+		
+		}
+		
+		protected function deleteStop():void {
+			var total:int = stops.length;
+			var selectedIndex:int = routeLines.selectedIndex;
+			if(selectedIndex != 0 && selectedIndex != total-1){
+				var selectedNextVO:RouteLine = stops[selectedIndex+1];
+				var selectedNextStopName:String = selectedNextVO.endStopName;
+				var selectedPreVO:RouteLine = stops[selectedIndex-1];
+				stops.removeItemAt(selectedIndex+1);
+				selectedPreVO.endStopName = selectedNextStopName;
+			}
+		stops.removeItemAt(selectedIndex);
+		}
+		public function init():void{
+			stops = vo.routeLineList;
+			if(vo.status=='ACTIVE'){
+				nameCN.enabled = false;
+				addPos.enabled = false;
+				delStop.enabled = false;
+			}else{
+				nameCN.enabled = true;
+				addPos.enabled = true;
+				delStop.enabled = true;
+			}
+		};
+		
+		/**
+		* 创建成功回调，弹出提示信息，清空表单
+		*/ 
+		private function successCallBack():void{
+			//vo = new Route();
+			//init();
+			Alert.show("线路更新成功!");
+			dispatch.dispatchEvent(new RouteEvent(RouteEvent.ROUTE_LIST_EVENT));
+			ViewUtils.clearErrorString(form);
+			routeController.find(vo,function(bean:Route):void{
+				/**
+				 * 跳转到view页面
+				 */ 
+				var view:RouteView = parent.getChildByName("view") as RouteView;
+				view.vo = bean;
+				view.freshForm();
+			});
+		}
+		
+		/**
+		* 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+		*/ 
+		private function validationCallBack(event:FaultEvent):void{
+			var error:Object = JSON.decode(event.fault.faultString);
+			ValidationUtils.showAllFieldErrors(error,this,true);
+		}
+		
+		/**
+		* 表单前台校验
+		*/ 
+		private function validate():Boolean{
+			var errors:Array = Validator.validateAll([nameValidator,codeValidator,distanceValidator,enrouteValidator]);
+			if(errors.length > 0 ){
+				return false&&validateStop();
+			}
+			return true&&validateStop();
+		}
+		
+		private function validateStop():Boolean{
+			var length:int = stops.length;
+			if(length < 1){
+				Alert.show("请添加网点!");
+				return false;
+			}else if(length == 1){
+				var routeLine:RouteLine = stops[0];
+				if(routeLine.startStopName ==  null || routeLine.startStopName == "" || routeLine.endStopName == null || routeLine.endStopName == ""){
+					//routeLines.errorString = "线路至少有一个起始站点和一个终点站点";
+					Alert.show("线路至少有一个起始网点和一个终点网点!");
+					return false;
+				}else {
+					routeLines.errorString = null;
+				}
+			}
+		
+			return true;
+		}
+		
+		protected function btnUpdate(event:MouseEvent):void
+		{
+			if(!validate()){
+				return;
+			}
+			collectData();
+			routeController.update(vo,successCallBack,validationCallBack);
+		}
+		
+		protected function btnReturn(event:MouseEvent):void
+		{
+		var parent:ViewStack = this.parent as ViewStack;
+		parent.selectedIndex = 0;
+		}
+		
+		public function collectData():void{
+			//Collect data
+			var routeLineList:ArrayCollection = ArrayCollection (routeLines.dataProvider);
+			vo.routeLineList = routeLineList;
+		}
+		
+		]]>
+	</fx:Script>
+	<fb:MultiColumnForm  width="100%" numColumns="1" label="基本信息" id="form">
+		<!--<fb:MultiColumnFormItem label="承运商编码：" required="true">
+		<mx:TextInput id="code" />
+		</fb:MultiColumnFormItem>-->
+		<fb:MultiColumnFormItem label="线路名称：" required="true" >
+			<s:TextInput id="nameCN"  text="@{vo.name}" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="线路编号：" required="true" >
+			<s:TextInput id="code"  text="@{vo.code}" />
+		</fb:MultiColumnFormItem>
+		<!--
+		<fb:MultiColumnFormItem label="费用(元)：" >
+			<s:TextInput id="charge"  text="@{vo.charge}"/>
+		</fb:MultiColumnFormItem>
+		-->
+		<fb:MultiColumnFormItem label="里程(公里)：">
+			<s:TextInput id="distance"   text="@{vo.distance}" />
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="参考时效(分钟)：">
+			<s:TextInput id="enrouteDays"   text="@{vo.enrouteDays}"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="添加网点：" required="true" width="100%" id="grid" >
+			<mx:Panel height="250"  width="90%"  title="网点维护" >
+				<mx:HBox>
+					<mx:Button label="添加网点" click="addPOS()" id="addPos"/>					
+					<mx:Button label="删除" click="deleteStop()" id="delStop"/>
+				</mx:HBox>
+				<grid:SelectableDataGrid id="routeLines"  horizontalScrollPolicy="auto"  dataProvider="{stops}"
+										 showControlColumn="false" editable="true" width="100%" height="100%"   
+										 verticalScrollPolicy="auto" doubleClickEnabled="true" sortableColumns="false">
+					<grid:columns>
+						<grid:DataGridColumnNested headerText="起点" dataField="startStopName"    width="100" editable="false"/>
+						<grid:DataGridColumnNested headerText="终点 " dataField="endStopName"  width="100" editable="false"/>
+						<grid:DataGridColumnNested headerText="里程(公里) " dataField="distance"  width="80" editable="true" itemEditor="com.best.oasis.flexbase.components.number.NumberInput" />
+						<grid:DataGridColumnNested headerText="参考时效(分钟)" dataField="enrouteDays"  width="95" editable="true" itemEditor="com.best.oasis.flexbase.components.number.NumberInput"/>
+					</grid:columns>
+				</grid:SelectableDataGrid>
+			</mx:Panel>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="备注：" width="90%">
+			<s:TextArea id="remark"   text="@{vo.remark}" height="40" width="100%"/>
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+	
+	<mx:HBox horizontalAlign="center" width="100%">
+		<mx:Button label="保存" click="btnUpdate(event)"/>
+		<mx:Button label="取消" click="button1_clickHandler(event)"/>
+	</mx:HBox>
+</mx:Panel>
+
+

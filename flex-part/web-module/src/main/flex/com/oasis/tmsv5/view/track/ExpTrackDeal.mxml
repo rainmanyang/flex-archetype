@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:fb="http://flexbase.800best.com/mxml"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:grid="com.oasis.component.grid.*"
+		  xmlns:flexlib="http://code.google.com/p/flexlib/"
+		  width="100%" height="100%" xmlns:track="track.*" title="异常处理">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="validator1" source="{expDealContent}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+	</fx:Declarations>	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.ExpTrackEvent;
+			import com.oasis.tmsv5.track.ExpTrackController;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.track.ExpTrack;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Bindable]
+			public var vo:ExpTrack = new ExpTrack();
+			
+			[Inject]
+			public var expTrackController:ExpTrackController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var expGrades:ArrayCollection = EnumManage.getExpGrade();
+			[Bindable]
+			public var expTypes:ArrayCollection = EnumManage.getExpType();
+			
+			protected function cancel_clickHandler(event:MouseEvent):void{
+				vo = new ExpTrack();
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([validator1]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			private function update():void{
+				if(!validate()){
+					return;
+				}
+				
+				vo.suggestList = new ArrayCollection();
+				//更新方法需要传两个回调函数
+				expTrackController.process(vo,successCallBack,validationCallBack);
+			}
+			
+			private function successCallBack():void{
+				Alert.show("异常处理成功!");
+				dispatch.dispatchEvent(new ExpTrackEvent(ExpTrackEvent.EXPTRACK_LIST_EVENT));
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			public function displayText():void{
+				expType.text = EnumManage.getDisplayText(vo.expType,expTypes);
+				expGrade.text = EnumManage.getDisplayText(vo.expGrade,expGrades);
+				reportTime.text = DateFormatterUtil.format2(vo.reportTime);
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<mx:Form id="form"  width="90%" label="异常处理">
+			<mx:FormItem label="车牌号码：">
+				<s:Label text="{vo.licensePlate}"/>
+			</mx:FormItem>
+			<mx:FormItem label="任务单号：">
+				<s:Label text="{vo.rssJobCode}"/>
+			</mx:FormItem>
+			<mx:FormItem label="班次：">
+				<s:Label text="{vo.rsScheduleName}"/>
+			</mx:FormItem>
+			<mx:FormItem label="运营线路：">
+				<s:Label text="{vo.routeName}"/>
+			</mx:FormItem>
+			<mx:FormItem label="异常类型：">
+				<s:Label id="expType"/>
+			</mx:FormItem>
+			<mx:FormItem label="异常级别：">
+				<s:Label id="expGrade"/>
+			</mx:FormItem>
+			<mx:FormItem label="异常内容：">
+				<s:Label text="{vo.expContent}" />
+			</mx:FormItem>
+			<mx:FormItem label="预计延误：">
+				<mx:HBox>
+					<s:Label text="{vo.delayTime}"/>
+					<s:Label text="分钟"/>
+				</mx:HBox>
+			</mx:FormItem>
+			<mx:FormItem label="报告人：">
+				<s:Label text="{vo.reporter}"/>
+			</mx:FormItem>
+			<mx:FormItem label="报告时间：">
+				<s:Label id="reportTime"/>
+			</mx:FormItem>
+			<mx:FormItem label="联系电话：">
+				<s:Label text="{vo.contactPhone}"/>
+			</mx:FormItem>
+			<mx:FormItem label="异常处理内容：" required="true">
+				<s:TextArea id="expDealContent" text="@{vo.expDealContent}" heightInLines="4"/>
+			</mx:FormItem>
+		</mx:Form>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="update()"/>
+		<mx:Button label="取消" id="cancel" click="cancel_clickHandler(event)"/>
+	</mx:HBox>
+	<flexlib:WindowShade id="ws"
+						 tabChildren="{ws.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="历史异常处理记录"
+						 width="99%" >	
+		<grid:SelectableDataGrid id="grid" dataProvider="{vo.suggestList}" allowMultipleSelection="false" height="100%" showControlColumn="false">
+			<grid:columns>
+				<mx:DataGridColumn headerText="异常处理内容" dataField="expDealContent" width="300"/>
+				<mx:DataGridColumn headerText="异常处理人员" dataField="expDealer"/>
+			</grid:columns>
+		</grid:SelectableDataGrid>
+	</flexlib:WindowShade>
+</mx:Panel>

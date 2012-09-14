@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:fb="http://flexbase.800best.com/mxml" creationComplete="init()">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.LangUtil;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.route.Stop;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.formatters.DateFormatter;
+			
+			[Bindable]	
+			public var datas:ArrayCollection = new ArrayCollection();
+			
+			public var obj:Object;
+			
+			//type="leave"表示离开,type="arrival"表示到达
+			public var type:String;
+			
+			[Bindable]
+			public var allTimeStr:String;
+			
+			public function init():void {
+				if(type == "arrival"){
+					date.selectedDate = obj.arrivalDate;
+				}
+				else{
+					date.selectedDate = obj.leaveDate;
+				}
+			}
+			
+			public function toggleShow(stop:Object):Boolean {
+				var _stop:Stop = stop as Stop;
+				if(type == "arrival"){
+					if(LangUtil.getObjectIndex(_stop,datas)==0){
+						return false;
+					}
+				}
+				else if(type == "leave"){
+					if(LangUtil.getObjectIndex(_stop,datas)==datas.length-1){
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			protected function date_changeHandler(event:Event):void
+			{
+				if(type == "arrival"){
+					obj.arrivalHour = Number(hour.value);
+					obj.arrivalMinute = Number(min.value);
+				}else{
+					obj.leaveHour = Number(hour.value);
+					obj.leaveMinute = Number(min.value);
+				}
+			}
+			
+			protected function date_changeHandler1(event:Event):void
+			{
+				if(type == "arrival"){
+					obj.arrivalDate = DateFormatter.parseDateString(date.text);
+				}else{
+					obj.leaveDate = DateFormatter.parseDateString(date.text) ;
+				}
+			}
+			
+			
+			
+			override public function set data(value:Object):void{
+				obj = value;
+				if(obj.arrivalDate == null){
+					obj.arrivalDate = new Date();
+				}
+				if(obj.leaveDate == null) {
+					obj.leaveDate = new Date();
+				}
+				if(type == "arrival"){
+					if(!isNaN(obj.arrivalHour)){
+						date.text = DateFormatterUtil.format1(obj.arrivalDate);
+						hour.value = obj.arrivalHour;
+						min.value = obj.arrivalMinute;
+					}
+				}else{
+					if(!isNaN(obj.leaveHour)){
+						date.text = DateFormatterUtil.format1(obj.leaveDate);
+						hour.value  = obj.leaveHour ;
+						min.value = obj.leaveMinute;
+					}
+				}
+				date.visible = toggleShow(obj);
+				hour.visible = toggleShow(obj);
+				min.visible = toggleShow(obj);
+				sep.visible = toggleShow(obj);
+			}
+		]]>
+	</fx:Script>
+	<mx:DateField id="date"  formatString="YYYY-MM-DD" change="date_changeHandler1(event)"/>
+	<s:NumericStepper id="hour" minimum="0" maximum="23" change="date_changeHandler(event)" value="0"/>
+	<s:Label text=":" id="sep"/>
+	<s:NumericStepper id="min" minimum="0" maximum="59" change="date_changeHandler(event)" value="0"/>
+</mx:HBox>

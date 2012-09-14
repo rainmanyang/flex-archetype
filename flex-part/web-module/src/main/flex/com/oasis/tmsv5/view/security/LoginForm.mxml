@@ -1,0 +1,84 @@
+<mx:VBox  initialize="init()" textAlign="center" horizontalAlign="center" verticalAlign="middle"
+	      xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="init();"
+	      xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.security.Cookie;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.security.MenuItemController;
+			import com.oasis.tmsv5.vo.security.Authentication;
+			
+			[Inject]
+			public var accountController:AccountController;
+			
+			[Inject]
+			public var menuItemController:MenuItemController;
+			
+			public var authenticationVo:Authentication;
+			
+			public var callBackFunction:Function;
+			
+			public function init():void
+			{
+				var isSave:Boolean = Cookie.getCookie(Cookie.SAVE_PASSWORD) as Boolean;
+				if(isSave){
+					userid.text = Cookie.getCookie(Cookie.LOGIN_USERNAME) as String;
+					savePassword.selected = isSave;
+					password.text = Cookie.getCookie(Cookie.PASSWORD) as String;
+				}
+			}
+			
+			
+			
+			private function login():void
+			{
+				authenticationVo = new Authentication();
+				authenticationVo.username = userid.text;
+				authenticationVo.password = password.text;
+				authenticationVo.domian = domain.text;
+				accountController.login(authenticationVo,login_callBack);
+			}
+			
+			private function login_callBack():void{
+				Cookie.setCookie(Cookie.SAVE_PASSWORD,savePassword.selected);
+				Cookie.setCookie(Cookie.LOGIN_USERNAME,userid.text);
+				if(savePassword.selected){
+					Cookie.setCookie(Cookie.PASSWORD,password.text);
+				}
+				else{
+					password.text = null;
+				}
+				if(callBackFunction != null){
+					callBackFunction();
+				}
+			}
+			
+			private function clearPassword():void {
+				password.text = null;
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:Panel id="loginPanel" title="用户登录" layout="horizontal" width="300" color="0x000000" borderAlpha="0.15" 
+			  paddingTop="10" paddingRight="10" paddingBottom="10" paddingLeft="10" horizontalAlign="center" verticalAlign="middle" height="220">
+		
+		<mx:Form width="100%" textAlign="left">
+			<mx:FormItem label="用户: ">
+				<s:TextInput id="userid" change="clearPassword()"/>
+			</mx:FormItem>
+			<mx:FormItem label="密码: ">
+				<s:TextInput id="password" displayAsPassword="true" />
+			</mx:FormItem>		
+			<mx:FormItem label="登录域: ">
+				<s:TextInput id="domain" text="800best" editable="false"/>
+			</mx:FormItem>
+			<mx:FormItem label="保存密码: ">
+				<s:CheckBox id="savePassword" selected="false"/>
+			</mx:FormItem>
+		    <mx:FormItem>
+				<s:Button label="登录" click="login()" />
+			</mx:FormItem>
+		</mx:Form>
+    </mx:Panel>
+</mx:VBox>

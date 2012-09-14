@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		 xmlns:myView="com.oasis.tmsv5.view.truckAttence.*">
+	<fx:Script>
+		
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.so.truckAttence.TruckAttenceSO;
+			import com.oasis.tmsv5.truckAttence.TruckAttenceController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.report.ReportDownloadMsgDialog;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.vo.truckAttence.TruckAttence;
+			
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			import mx.utils.URLUtil;
+			[Bindable]
+			public var so:TruckAttenceSO;
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Inject]
+			public var truckAttenceController:TruckAttenceController;
+			
+			public var searchFunction:Function;
+			
+			public var host:String;
+			
+			public function init():void{
+				if(so == null){
+					so = new TruckAttenceSO();
+				}
+				search();
+			}
+			private function search():void{
+				getPageData(1, so.objectsPerPage);
+			}
+			private function getPageData(pageNum:int, pageSize:int):void{
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				truckAttenceController.getPageList(so, pageList);
+			}
+
+			protected function export():void{
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				so.requestUrl = getRequestURL();
+				dialog.truckAttenceSO=so;
+				dialog.reportType=Constants.TRUCK_ATTENCE;
+				dialog.init();	
+			}
+
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			private function getStartPlanTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckAttence).startPlanTime;
+				return DateFormatterUtil.format7(date);
+			}  
+			private function getStartActualTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckAttence).startActualTime;
+				return DateFormatterUtil.format7(date);
+			}  
+			private function getEndPlanTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckAttence).endPlanTime;
+				return DateFormatterUtil.format7(date);
+			}  
+			private function getEndActualTime(item:Object,column:DataGridColumn):String{  
+				var date:Date = (item as TruckAttence).endActualTime;
+				return DateFormatterUtil.format7(date);
+			}  
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" width="100%">
+		<mx:HBox>
+			<mx:Button label="导出" click="export()"/>
+		</mx:HBox>
+		<fb:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+							 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}" 
+							 pageSize="{so.objectsPerPage}" horizontalScrollPolicy="on" verticalScrollPolicy="auto"
+							 height="100%" showControlColumn="false">
+			<fb:columns >
+				<fb:DataGridColumnNested headerText="线路名称" dataField="routeName" width="160" />
+				<fb:DataGridColumnNested headerText="车牌号码" dataField="licensePlate" width="80"/>
+				<fb:DataGridColumnNested headerText="区域" dataField="area" width="100"/>
+				<fb:DataGridColumnNested headerText="调度分区" dataField="dispatchArea" width="100"/>
+				<fb:DataGridColumnNested headerText="运行日历" dataField="startDate" width="80"/>
+				<fb:DataGridColumnNested headerText="新线" dataField="newLine" width="50"/>
+				<fb:DataGridColumnNested headerText="里程" dataField="distance" width="50"/>
+				<fb:DataGridColumnNested headerText="线段" dataField="routeLine" width="160"/>
+				<fb:DataGridColumnNested headerText="发车站" dataField="startStop" width="80"/>
+				<fb:DataGridColumnNested headerText="规定发车时间" labelFunction="getStartPlanTime" width="160" showDateTime="true"/>
+				<fb:DataGridColumnNested headerText="实际发车时间" labelFunction="getStartActualTime" width="160" showDateTime="true"/>
+				<fb:DataGridColumnNested headerText="到达站" dataField="endStop" width="80"/>
+				<fb:DataGridColumnNested headerText="规定到车时间" labelFunction="getEndPlanTime" width="160" showDateTime="true"/>
+				<fb:DataGridColumnNested headerText="实际到车时间" labelFunction="getEndActualTime" width="160" showDateTime="true"/>
+				<fb:DataGridColumnNested headerText="到车延误" dataField="arrvialDelay" width="160"/>
+				<fb:DataGridColumnNested headerText="行驶延误" dataField="enrouteDelay" width="160"/>
+			</fb:columns>
+		</fb:PageableDataGrid>
+	</mx:VBox>
+</mx:VBox>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<client-configs>
+
+	<params>
+		<!--value=1:静态加载菜单 -->
+		<!--value=2:动态加载菜单 -->
+		<paramName>menuLoadMethod</paramName>
+		<paramValue>1</paramValue>
+	</params>
+
+</client-configs>

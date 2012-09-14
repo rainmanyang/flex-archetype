@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.truck.ContractRouteDAO">
+
+    <resultMap type="ContractRoute" id="ContractRouteMap">
+        <result property="truckId" column="truck_id"/>
+        <result property="routeId" column="route_id"/>
+        <result property="domainId" column="domain_id"/>
+        <result property="creatorId" column="CREATOR_ID"/>
+        <result property="updatorId" column="UPDATOR_ID"/>
+    </resultMap> 
+    
+    <resultMap type="Route" id="RouteMap">
+        <result property="domainId" column="domain_id"/>
+        <result property="creatorId" column="CREATOR_ID"/>
+        <result property="updatorId" column="UPDATOR_ID"/>
+    </resultMap>
+
+	<insert id="insert" parameterType="ContractRoute">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<select id="find" resultMap="ContractRouteMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<select id="listContractRoute4truckId" resultMap="RouteMap">
+        select t2.* from
+        wl_contract_route t1,wl_route t2
+        where t1.truck_id =#{truckId}
+         and t1.route_id = t2.id
+    </select>
+    
+    <select id="listContractRoute4truckIdList" resultMap="RouteMap">
+        select t2.* from
+        wl_contract_route t1,wl_route t2
+        where t1.truck_id in
+         <foreach collection="truckIdList" index="dex" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+        and t1.route_id = t2.id
+    </select>
+	
+	<sql id="pageListClause">
+		where t1.id= t2.route_id
+		<if test="truckId!=null">
+		and t2.truck_id =#{truckId}
+		</if>
+	</sql>
+	
+	<select id="selectPageList" resultMap="RouteMap" parameterType="com.oasis.wolfburg.common.so.truck.TruckSO">
+		select t1.* from wl_route t1, wl_contract_route t2 
+		
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.truck.TruckSO">
+		select count(1) from wl_route t1, wl_contract_route t2 
+		<include refid="pageListClause"/>
+	</select>
+	
+    <select id="deleteContractRoute" resultMap="ContractRouteMap">
+        delete from
+        from wl_contract_route t
+        where t.truck_id =#{truckId}
+        and t.route_id = #{routeId}
+    </select>
+
+    <update id="update" statementType="PREPARED" timeout="20000" parameterType="ContractRoute">
+        <include refid="sqlmap.common.model.update" />
+    </update>
+</mapper>

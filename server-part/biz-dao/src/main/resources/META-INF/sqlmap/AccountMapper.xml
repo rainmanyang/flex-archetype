@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.account.AccountDAO">
+
+	<resultMap type="Account" id="AccountMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="loginToken" column="LOGIN_TOKEN"/>
+	</resultMap>	
+	
+	<select id="getModelListByPara" resultType="Account">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>
+
+	<select id="find" resultMap="AccountMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+	<!---->
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="Account">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<insert id="insert" parameterType="Account">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+
+	<select id="getAccountByLoginNameAndDomainCode" resultMap="AccountMap">
+		select ac.*
+		from gt_accounts ac 
+		where ac.loginname =#{loginname}
+	</select>
+	
+	<sql id="pageListClause">
+		<where> 
+			t.domain_id = a.id and a.id = #{domainId} and t.disabled = 0
+			<if test="loginName!=null and loginName!='' ">
+				and t.loginName like '%'||#{loginName}||'%'
+			</if>
+			<if test="disabled != null ">
+				and t.disabled = #{disabled}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultMap="AccountMap" parameterType="com.oasis.tmsv5.common.so.security.AccountSO">
+		select t.* from gt_accounts t,gt_domains a
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.tmsv5.common.so.security.AccountSO">
+		select count(1) from gt_accounts t,gt_domains a
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="checkDuplication" resultMap="AccountMap" parameterType="com.oasis.tmsv5.common.so.security.AccountSO">
+		select * from gt_accounts ac where ac.loginname = #{loginName}
+	</select>
+	
+	
+	
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds"/>
+	</delete>
+	
+</mapper>

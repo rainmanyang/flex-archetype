@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.menuItem.MenuItemDAO">	
+
+	<select id="getMenuItemByAccount" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+        
+         <![CDATA[
+         select distinct me.* 
+		  from gt_accounts      a,
+		       gt_roles         r,
+		       gt_account_role  ar,
+		       gt_role_menuitem rm,
+		       gt_menu_item     me
+		 where a.id = ar.account_id
+		   and r.id = ar.role_id
+		   and r.id = rm.role
+		   and me.id = rm.menuitem
+		   and a.id=#{id}
+		   ]]>
+    </select>
+	
+	<insert id="insert" parameterType="com.oasis.tmsv5.model.menuItem.MenuItem">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="com.oasis.tmsv5.model.menuItem.MenuItem">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+	
+	<select id="find" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+    
+	<select id="getParentMenuItemByAccount" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+         <![CDATA[
+         select distinct *
+			  from gt_menu_item m
+			  where m.id in (select me.parentid
+							  from gt_accounts      a,
+							       gt_roles         r,
+							       gt_account_role  ar,
+							       gt_role_menuitem rm,
+							       gt_menu_item     me
+							 where a.id = ar.account_id
+							   and r.id = ar.role_id
+							   and r.id = rm.role
+							   and me.id = rm.menuitem
+							   and a.id=#{id} and me.type <> 'PERMISSION')
+		 ]]>
+    </select>
+    
+    <select id="getRootMenuItem" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+         select * from gt_menu_item mi where mi.parentid is null
+    </select>
+    
+    <select id="getMenuItemsByRole" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+         <![CDATA[
+         select me.*
+		  from  gt_roles         r,
+		        gt_role_menuitem rm,
+		        gt_menu_item     me
+		 where r.id = rm.role
+		   and me.id = rm.menuitem
+		   and r.id=#{id} and not exists (select 1 from gt_menu_item m where me.id = m.parentid and m.type <> 'PERMISSION')
+		 ]]>
+    </select>
+    
+    <select id="getAllMenuItem" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+         select * from gt_menu_item mi
+    </select>
+    
+    <select id="getAllPreMenuItemByAccount" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+         select distinct me.* 
+		  from gt_accounts      a,
+		       gt_roles         r,
+		       gt_account_role  ar,
+		       gt_role_menuitem rm,
+		       gt_menu_item     me
+		 where a.id = ar.account_id
+		   and r.id = ar.role_id
+		   and r.id = rm.role
+		   and me.id = rm.menuitem
+		   and a.id=#{id} and me.type='PERMISSION'
+    </select>
+    
+    <select id="getModelListByPara" resultType="com.oasis.tmsv5.model.menuItem.MenuItem">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>
+	
+	<select id="checkDuplication" resultType="com.oasis.tmsv5.model.menuItem.MenuItem" parameterType="map">
+		select * from gt_menu_item o 
+			<where>
+				
+				<if test="name!=null and name!='' ">
+					o.name = #{name}
+				</if>
+				<if test="parentid!=null">
+					and o.parentid = #{parentid}
+				</if>
+				
+				<if test="id!=null and id!='' ">
+					and id != #{id}
+				</if>
+			</where>
+	</select>
+	
+</mapper>

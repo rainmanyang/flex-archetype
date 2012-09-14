@@ -1,0 +1,38 @@
+<swiz:BeanProvider 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:swiz="http://swiz.swizframework.org"
+	 xmlns:mx="library://ns.adobe.com/flex/mx">	
+	<fx:Declarations>	   	
+	   <mx:RemoteObject id="accountServiceFacade" destination="accountServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="menuItemFacade" destination="menuItemFacade" showBusyCursor="true" />
+	   <mx:RemoteObject id="roleServiceFacade" destination="roleServiceFacade" showBusyCursor="true"/>		
+	   <mx:RemoteObject id="organizationServiceFacade" destination="organizationServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="customerServiceFacade" destination="customerServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="nzoneServiceFacade" destination="naturalZoneServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="posServiceFacade" destination="posServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="routeServiceFacade" destination="routeServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="priceServiceFacade" destination="priceServiceFacade" showBusyCursor="true"/>
+	   <mx:RemoteObject id="driverServiceFacade" destination="driverServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="bankServiceFacade" destination="bankServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="carrierServiceFacade" destination="carrierServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="parentCompanyServiceFacade" destination="parentCompanyServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="insureServiceFacade" destination="insureServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="truckServiceFacade" destination="truckServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="truckStatusRecordServiceFacade" destination="truckStatusRecordServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="truckRSScheduleServiceFacade" destination="truckRSScheduleServiceFacade" showBusyCursor="true"/>
+		<mx:RemoteObject id="truckRSJobServiceFacade" destination="truckRSJobServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="trackRecordServiceFacade" destination="trackRecordServiceFacade"  showBusyCursor="true"/>
+   		<mx:RemoteObject id="attachmentServiceFacade" destination="attachmentServiceFacade"/>
+		<mx:RemoteObject id="truckRSJobTimeRecordServiceFacade" destination="truckRSJobTimeRecordServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="paymentItemServiceFacade" destination="paymentItemServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="feeItemServiceFacade" destination="feeItemServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="predefinedCodeServiceFacade" destination="predefinedCodeServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="downloadInfoServiceFacade" destination="downloadInfoServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="expTrackServiceFacade" destination="expTrackServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="clientBarcodeRecordServiceFacade" destination="clientBarcodeRecordServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="truckAttenceServiceFacade" destination="truckAttenceServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="userMailTargetServiceFacade" destination="userMailTargetServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="configurePageServiceFacade" destination="configurePageServiceFacade"  showBusyCursor="true"/>
+		<mx:RemoteObject id="operationStateServiceFacade" destination="operationStateServiceFacade"  showBusyCursor="true"/>
+ </fx:Declarations>
+</swiz:BeanProvider>

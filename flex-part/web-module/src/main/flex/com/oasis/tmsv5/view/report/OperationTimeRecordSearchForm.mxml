@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" borderStyle="solid"
+		 initialize="init()" height="100%"
+		 verticalScrollPolicy="off" xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSJobTimeRecordSO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			import mx.utils.URLUtil;
+			[Bindable]
+			public var so:TruckRSJobTimeRecordSO;
+			
+			public var searchFunction:Function;
+			
+			public var host:String;
+			
+			private static const millisecondsPerDay:int = 1000 * 60 * 60 * 24;
+			
+			[Bindable]
+			private var statusList:ArrayCollection = new ArrayCollection(
+				[ {label:"正常", data:false},{label:"锁定", data:true}
+				]);
+			
+			public function init():void{
+				if(so == null){
+					so = new TruckRSJobTimeRecordSO();
+				}
+				interval();
+			}
+			
+			private function interval():void{
+				var current:Date = new Date();
+				so.beginDate = current;
+				so.endDate = new Date(current.getFullYear(), current.getMonth(), current.getDate()+1, 18,0,0,0);
+				billDateBegin.date = so.beginDate;
+				billDateEnd.date = so.endDate;
+			}
+			
+			private function getRequestURL():String{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+				return host;
+			}
+			public function search(val:String=null):void{
+				if(val != null){
+					var days:int = new int(val);
+					var date:Date = new Date();
+					var newBeginDate:Date = new Date(date.time+millisecondsPerDay*days);
+					var newEndDate:Date = new Date(date.time+millisecondsPerDay*(days));
+					newBeginDate.setHours(0,0,0,0);
+					newEndDate.setHours(23,59,59,999);
+					so.beginDate = newBeginDate;
+					so.endDate = newEndDate;
+					billDateBegin.date = newBeginDate;
+					billDateEnd.date = newEndDate;
+				}else{
+					var beginDateNew:Date = new Date(billDateBegin.date);
+					beginDateNew.setSeconds(0,0);
+					so.beginDate = beginDateNew;
+					var endDateNew:Date = new Date(billDateEnd.date);
+					endDateNew.setSeconds(0,0);
+					so.endDate = endDateNew;
+				}
+				so.truckRSJobName = truckRSJobName.text;
+				so.routeName = routeName.text;
+				so.licensePlate = licensePlate.text;
+				if(jobStatus.selectedItem != undefined){
+					so.jobStatus = jobStatus.selectedItem.data;
+				}
+				
+				searchFunction();
+			}
+			
+			public function export():void{
+//				if(pageList.list.length==0){
+//					Alert.show("当前搜索条件对应的记录为零，没有记录可以进行导出操作。");
+//					return;
+//				}
+				var dialog:ReportDownloadMsgDialog = ReportDownloadMsgDialog(PopUpManager.createPopUp(root,ReportDownloadMsgDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				so.requestUrl = getRequestURL();
+				so.beginDate = billDateBegin.date;
+				so.endDate = billDateEnd.date;
+				dialog.truckRSJobTimeRecordSO=so;
+				dialog.reportType=Constants.TRUCK_RSJOB_TIME_RECORD_EXPORT;
+				dialog.init();	
+			}
+			
+		]]>
+	</fx:Script>
+	<fb:MultiColumnForm height="100%" numColumns="2" width="100%" defaultButton="{searchBtn}">
+		<fb:MultiColumnFormItem label="任务单名称：">
+			<mx:TextInput id="truckRSJobName" />
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="线路名称：">
+			<mx:TextInput id="routeName" />
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="车牌：">
+			<mx:TextInput id="licensePlate" />
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="状态：">
+			<s:DropDownList id="jobStatus" dataProvider="{EnumManage.getRSJobStatusr4OperationTimeReport()}" selectedIndex="0"/>
+		</fb:MultiColumnFormItem >
+		<fb:MultiColumnFormItem label="任务单发班日期：" colspan="2">
+			<mx:HBox>
+				<fb:DateTimeInput allowDatePick="true" id="billDateBegin"/>
+				<mx:Label htmlText="--"/>
+				<fb:DateTimeInput allowDatePick="true" id="billDateEnd"/>
+			</mx:HBox>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem colspan="2">
+			<mx:HBox>
+				<mx:Button label="昨天发班" click="search('-1');"/>
+				<mx:Button label="今天发班" click="search('0');"/>
+				<mx:Button label="明天发班" click="search('1');"/>
+				<mx:Button label="查询" click="search();" id="searchBtn"/>
+				<mx:Button label="导出" click="export();"/>
+			</mx:HBox>
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+</mx:VBox>
+

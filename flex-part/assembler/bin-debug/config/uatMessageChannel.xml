@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<channels>
+	<channel id="my-amf">
+		<endpoint url="http://localhost:8081/tmsv5-war/messagebroker/amf" />
+	</channel>
+
+	<channel id="my-polling-amf">
+		<endpoint url="http://localhost:8081/tmsv5-war/messagebroker/amfpolling" />
+	</channel>
+
+	<channel id="my-streaming-amf">
+		<endpoint url="http://localhost:8081/tmsv5-war/messagebroker/streamingamf" />
+	</channel>
+	
+	<channel id="my-amf1">
+		<endpoint url="http://localhost:8081/tmsv5-war/messagebroker/amf" />
+	</channel>
+
+	<channel id="my-polling-amf1">
+		<endpoint url="http://localhost:8081/tmsv5-war/messagebroker/amfpolling" />
+	</channel>
+
+	<channel id="my-streaming-amf1">
+		<endpoint url="http://localhost:8081/tmsv5-war/messagebroker/streamingamf" />
+	</channel>
+
+</channels>

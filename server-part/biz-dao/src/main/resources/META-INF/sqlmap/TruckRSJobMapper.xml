@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.truckRSSchedule.TruckRSJobDAO">
+
+	<!-- crud -->
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="TruckRSJob">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<select id="find" resultType="TruckRSJob">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<insert id="insert" parameterType="TruckRSJob">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds" />
+	</delete>
+	<select id="getModelListByPara" resultType="TruckRSJob">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>
+	<!-- business  -->
+	<select id="getTruckRSJobByCardCode" resultType="TruckRSJob" parameterType="string">
+		select t.* from WL_TRUCKRS_JOB t where t.identity_Card=#{cardCode}
+		and t.status in('PLANED','DISPATCHED','ENROUTE') and t.rsjob_type in('REGULAR','TEMP')		
+		and (t.START_DATE between trunc(sysdate-1) and trunc(sysdate+3))		
+		order by t.start_date
+	</select>
+	
+	<update id="updateStatus" parameterType="map">
+        update WL_TRUCKRS_JOB t set t.status= #{status} where t.id in
+        <foreach collection="ids" index="dex" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+    </update>
+	
+	<select id="getTruckRSJobListBySO" resultType="TruckRSJob" parameterType="com.oasis.wolfburg.common.so.truckRSSchedule.TruckRSJobSO">
+		select distinct * from (select t.*
+			  from WL_TRUCKRS_JOB t
+			 where 1=1 
+		<if test="rsScheduleId != null and rsScheduleId != 0 ">
+			and t.RS_SCHEDULE_ID = #{rsScheduleId}
+		</if>
+		<if test="code!=null and code!='' ">
+			and (t.code like '%'||#{code}||'%')
+		</if>
+		<if test="startDate!=null and endDate!=null ">
+			<![CDATA[
+			and t.START_DATE >= trunc(#{startDate}) and t.START_DATE <= trunc(#{endDate})
+			]]>
+		</if>
+		<if test="licensePlate!=null and licensePlate!='' ">
+			and (t.license_plate like '%'||#{licensePlate}||'%')
+		</if>
+		<if test="driver!=null and driver!='' ">
+			and (t.driver like '%'||#{driver}||'%')
+		</if>
+		<if test="identityCard!=null and identityCard!='' ">
+			and (t.IDENTITY_CARD like '%'||#{identityCard}||'%')
+		</if>
+		<if test="pinCode!=null and pinCode!='' ">
+			and (t.PIN_CODE like '%'||#{pinCode}||'%')
+		</if>
+		<if test="scanCode!=null and scanCode!='' ">
+			and (t.SCAN_CODE like '%'||#{scanCode}||'%')
+		</if>
+		<if test="sealCode!=null and sealCode!='' ">
+			and (t.SEAL_CODE like '%'||#{sealCode}||'%')
+		</if>
+		<if test="statuses!=null and statuses.size()>0">
+			 and t.status in
+			<foreach collection="statuses" index="dex" item="item" open="(" close=")" separator=",">
+	  			#{item}
+	  		</foreach>
+		</if>
+		<if test="status != null and status != '' ">
+			and t.status = #{status}
+		</if>
+		<if test="routeId != null and routeId != 0 ">
+			and t.ROUTE_ID = #{routeId}
+		</if>
+		<if test="routeName!=null and routeName!='' ">
+			and (t.ROUTE_NAME like '%'||#{routeName}||'%')
+		</if>
+		<if test="contrackPrice!=null and contrackPrice!='' ">
+			and (t.CONTRACK_PRICE like '%'||#{contrackPrice}||'%')
+		</if>
+		<if test="emptyPrice!=null and emptyPrice!='' ">
+			and (t.EMPTY_PRICE like '%'||#{emptyPrice}||'%')
+		</if>
+		<if test="overTimePrice!=null and overTimePrice!='' ">
+			and (t.OVERTIME_PRICE like '%'||#{overTimePrice}||'%')
+		</if>
+		<if test="priceCode!=null and priceCode!='' ">
+			and (t.PRICE_CODE like '%'||#{priceCode}||'%')
+		</if>
+		<if test="exactLicensePlate!=null and exactLicensePlate!='' ">
+            and (t.license_plate = #{exactLicensePlate})
+        </if>
+		<if test="startPos!=null and startPos!=0 ">
+			and exists(select 1 from wl_stop s where s.route_id=t.route_id and s.seq_num=1 and s.pos_id = #{startPos})
+        </if>
+		<if test="endPos!=null and endPos!=0 ">
+			and exists(select 1 from (select rank() over(partition by s.route_id order by s.seq_num desc) num,s.* from wl_stop s) 
+							   where pos_id = #{endPos} and num=1 and route_id=t.route_id)
+        </if>
+		 ) order by id asc
+	</select>
+	
+	<select id="selectIdsByParam" parameterType="map" resultType="long">
+		select t.id
+		  from wl_truckrs_job t
+		 where t.status = 'NEW'
+		   and t.start_date >= trunc(#{startDate})
+		   and t.rs_schedule_id = #{rssId}
+	</select>
+	
+	<select id="selectByIds" parameterType="map" resultType="TruckRSJob">
+        <include refid="sqlmap.common.model.selectListByIds"/>
+        order by t.start_date 
+    </select>
+    
+    <select id="onedayTempJobCount" parameterType="map" resultType="int">
+         select count(*)
+         from WL_TRUCKRS_JOB t
+         where  t.RS_SCHEDULE_ID = #{rsScheduleId} and to_char(t.START_DATE,'yymmdd') = to_char(trunc(#{startDate}),'yymmdd') and t.RSJOB_TYPE = 'TEMP'
+    </select>    
+   
+    <select id="getPOSJobs" parameterType="long" resultType="POSRSJobView">
+		select t1.code,t.plan_inbound_time,t.plan_outbound_time,t1.route_name,t3.contact_phone1,t1.driver,t1.license_plate
+		from wl_trsjob_time_record t,wl_truckrs_job t1,wl_truck t3
+		where t.pos_id=#{posId}
+		and t1.id=t.trs_job_id and t1.truck_id=t3.id(+)
+		and (trunc(t.plan_inbound_time) between trunc(sysdate) and trunc(sysdate+2))
+		and t1.status in ('NEW','PLANED','DISPATCHED','ENROUTE')
+	</select>
+	
+	 <select id="onedayEmJobCount" parameterType="map" resultType="int">
+         select count(*)
+         from WL_TRUCKRS_JOB t
+         where  t.RS_SCHEDULE_ID = #{rsScheduleId} and to_char(t.START_DATE,'yymmdd') = to_char(trunc(#{startDate}),'yymmdd') and t.RSJOB_TYPE = 'EMERGENCY'
+    </select>
+    
+    <select id="getNotificationJobs" resultType="TruckRSJob"  parameterType="map">
+	    select t.* from wl_truckrs_job t ,wl_trsjob_time_record t1
+		where t.id=t1.trs_job_id and t1.stop_seq=1 and t.status='PLANED' 		 
+		and (t1.plan_outbound_time between #{curTime} and #{notifyDate})
+    </select>
+</mapper>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		   xmlns:fb="http://flexbase.800best.com/mxml"
+		   width="100%" height="100%" 
+		   xmlns:s="library://ns.adobe.com/flex/spark">
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.tab.BestSuperTabNavigator;
+			import com.oasis.component.menu.MenuItem;
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.layout.ModuleManager;
+			import com.oasis.layout.StaticModuleManager;
+			import com.oasis.security.ClientContext;
+			import com.oasis.security.ModelLocator;
+			import com.oasis.tmsv5.event.CloseCalendarEvent;
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.security.MenuItemController;
+			
+			import flexlib.controls.tabBarClasses.SuperTab;
+			
+			import mx.controls.Alert;
+			import mx.controls.treeClasses.TreeItemRenderer;
+			import mx.events.ListEvent;
+			import mx.messaging.messages.AsyncMessage;
+			import mx.modules.ModuleLoader;
+			import mx.resources.ResourceManager;		
+			
+			[Bindable]
+			private var menuLoadMethod:int=0;
+			
+			[Inject]
+			private var accountController:AccountController;
+			
+			[Inject]
+			public var menuItemController:MenuItemController;
+			
+			[Inject]
+			public var staticModuleManager:StaticModuleManager;
+			
+			[Inject]
+			public var moduleManager:ModuleManager;
+			
+			private var msg:AsyncMessage = new AsyncMessage();
+			
+			[EventHandler( event="CloseCalendarEvent.CALENDAR_CLOSE_EVENT" )]
+			public function openPreArrange(event:CloseCalendarEvent):void{
+				var moduleClass:Class = ModuleClass.getModuleClass("PreArrangeRS");
+				if(moduleClass != null){
+					label = "班次计划"; 
+					var tabNavigator:BestSuperTabNavigator = BestSuperTabNavigator( 
+						staticModuleManager.content); 
+					var tab:SuperTab; 
+					var idx:uint; 
+					var find:Boolean; 
+					var len:uint = tabNavigator.numChildren; 
+					for (idx=0; idx<len; idx++) { 
+						tab = tabNavigator.getTabAt(idx) as SuperTab; 
+						if ( tab.label == label ) { 
+							tabNavigator.selectedIndex = idx; 
+							find=true; 
+						} 
+					} 
+					
+					if ( !find ) {
+						staticModuleManager.loadModule(moduleClass, label,event.rsId); 
+					} 
+					
+				} 
+			}
+			
+			public function init():void{
+				leftMenuTree.dataProvider=null;
+				
+				if(menuItemController != null)
+					menuItemController.getMenuItemTree(menuItemCallback);
+				
+				loadClientConfigs();
+			}
+			
+			/**
+			 *载入客户端配置文件			
+			 */
+			public function loadClientConfigs():void{
+				var clientConfigXMLList:XMLList = clientConfig.params;
+				menuLoadMethod=new int(clientConfigXMLList.(paramName == "menuLoadMethod").paramValue);
+				if(isNaN(menuLoadMethod)){
+					menuLoadMethod=1;
+				}
+			}
+			private function menuItemCallback(allMenuTreeData:TreeNode):void{
+				leftMenuTree.dataProvider=allMenuTreeData;
+			}
+			
+			/**
+			 * 校验用户的网络访问权限
+			 * 0:0:0:0:0:0:0:1为本地
+			 * 以172.16开头的为内网
+			 * 已172.18开头的为VPN
+			 * 其余为外网
+			 */
+			public function checkNetAuthority(menuItem:MenuItem):Boolean{
+				var clientContext:ClientContext = ModelLocator.getInstance().getContext();
+				var inSegment:String = clientContext.ip.slice(0, 3);
+				var vpnSegment:String = clientContext.ip.slice(0, 9);
+				//本地
+				if(clientContext.ip == resourceManager.getString('normalResource','LOCAL')){
+					return true;
+				}else if(inSegment == resourceManager.getString('normalResource','IN')
+					&& vpnSegment != resourceManager.getString('normalResource','VPN1')
+					&& vpnSegment != resourceManager.getString('normalResource','VPN2')){//内网
+					if(menuItem.netAuthority.charAt(0) == "0"){
+						Alert.show("你无权在内网环境下使用系统！");
+						return false;
+					}
+				} else if(vpnSegment == resourceManager.getString('normalResource','VPN1')
+					|| vpnSegment == resourceManager.getString('normalResource','VPN2')){//VPN
+					if(menuItem.netAuthority.charAt(1) == "0"){
+						Alert.show("你无权在VPN环境下使用系统！");
+						return false;
+					}
+				} else {//外网
+					if(menuItem.netAuthority.charAt(2) == "0"){
+						Alert.show("你无权在公网环境下使用系统！");
+						return false;
+					}
+				}
+				return true;
+			}
+			
+ 			public function onItemClick(event:ListEvent):void{
+				var staticMenuLayout:StaticMenuLayout = this.parent.parent.parent.parent as StaticMenuLayout;
+				staticMenuLayout.viewStack.selectedIndex = 1;
+				staticModuleManager.content = staticMenuLayout.rightContent;
+				moduleManager.content = staticMenuLayout.rightContent;
+				
+				var target:TreeItemRenderer = TreeItemRenderer(event.itemRenderer);
+				var label:String;
+				var menuItem:MenuItem = (target.data as TreeNode).data as MenuItem;
+				if(checkNetAuthority(menuItem)){
+					if(menuLoadMethod==1){
+						//静态加载菜单
+						var moduleClass:Class = ModuleClass.getModuleClass(target.data.data["location"]);
+						if(moduleClass != null){
+							label = target.data.data["title"]; 
+							
+							var tabNavigator:BestSuperTabNavigator = BestSuperTabNavigator( 
+								staticModuleManager.content); 
+							var tab:SuperTab; 
+							var idx:uint; 
+							var find:Boolean; 
+							var len:uint = tabNavigator.numChildren; 
+							for (idx=0; idx<len; idx++) { 
+								tab = tabNavigator.getTabAt(idx) as SuperTab; 
+								if ( tab.label == label ) { 
+									tabNavigator.selectedIndex = idx; 
+									find=true; 
+								} 
+							} 
+							
+							if ( !find ) {
+								//用户点击菜单记录点击事件
+								msg.headers.operation = "LOGMENU";
+								msg.body = {"loginName":ModelLocator.getInstance().clientContext.loginName,"loginId":ModelLocator.getInstance().getContext().accountId,"ip":ModelLocator.getInstance().clientContext.ip,"module":menuItem.action};
+								logProducer.send(msg);
+								staticModuleManager.loadModule(moduleClass, label); 
+							} 
+							
+						} 
+					}else if(menuLoadMethod==2){
+						//动态加载菜单					
+						var moduleLocation:String = target.data.data["location"];
+						if(moduleLocation != null){
+							label = target.data.data["title"]; 
+							moduleManager.loadModule(moduleLocation, label);
+						}
+					}
+	
+	 				var item:Object = Tree(event.currentTarget).selectedItem;
+	             	if (leftMenuTree.dataDescriptor.isBranch(item)) {
+	                 	leftMenuTree.expandItem(item, !leftMenuTree.isItemOpen(item), true);
+	             	}
+				}
+			} 
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<fx:XML id="clientConfig" source="/../resources/clientConfig.xml" />
+		<mx:XMLListCollection id="clientConfigXMLList" source="{clientConfig.params}" />
+		<mx:Producer id="logProducer"  
+					 destination="LogQueue"/>
+	</fx:Declarations>
+	<mx:Tree id="leftMenuTree" width="100%" height="100%" labelField="value" 
+                showRoot="false" itemClick="onItemClick(event);"
+                />
+</mx:Canvas>

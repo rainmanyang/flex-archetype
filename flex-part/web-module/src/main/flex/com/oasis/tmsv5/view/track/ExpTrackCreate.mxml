@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:nv="com.oasis.wolfburg.validator.*"
+	xmlns:input="com.best.oasis.flexbase.components.selectableTextInput.*"
+	width="100%" height="100%" xmlns:track="track.*" title="创建" xmlns:dropDownList="com.oasis.component.dropDownList.*"
+	creationComplete="init()">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="validator1" source="{expContent}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.event.ExpTrackEvent;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.track.ExpTrackController;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.tmsv5.view.popup.RSJob4ExpTrackDialog;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.track.ExpTrack;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.ObjectUtil;
+			import mx.validators.Validator;
+			
+			
+			[Bindable]
+			public var truckPageList:PageList = new PageList();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			[Inject]
+			public var expTrackController:ExpTrackController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:ExpTrack= new ExpTrack();
+			[Bindable]
+			public var autoExpTrack:ExpTrack = new ExpTrack();
+			
+			[Bindable]
+			public var expDealStatus:ArrayCollection = EnumManage.getExpDealStatus();
+			[Bindable]
+			public var expGrades:ArrayCollection = EnumManage.getExpGrade();
+			[Bindable]
+			public var expTypes:ArrayCollection = EnumManage.getExpType();
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+			[Bindable]
+			public var routePageList:PageList = new PageList();
+			
+			public function init():void{
+				reportTime.date = new Date();
+			}
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new ExpTrack();
+				feedBackFlag.selected = false;
+				rsJobStatus.text = "";
+				expType.selectedIndex = 0;
+				expGrade.selectedIndex = 0;
+				truck_.clear();
+				ViewUtils.clearErrorString(form);
+				reportTime.date = new Date();
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				vo = new ExpTrack();
+				feedBackFlag.selected = false;
+				rsJobStatus.text = "";
+				expType.selectedIndex = 0;
+				expGrade.selectedIndex = 0;
+				truck_.clear();
+				ViewUtils.clearErrorString(form);
+				reportTime.date = new Date();
+				Alert.show("异常录入成功!");
+				dispatch.dispatchEvent(new ExpTrackEvent(ExpTrackEvent.EXPTRACK_LIST_EVENT));
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见ExpTrackComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([validator1]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			private function create():void{
+				if(vo.licensePlate == null){
+					Alert.show("车牌号码不能为空");
+					return;
+				}
+				if(!validate()){
+					return;
+				}
+				
+				if(vo.delayTime != null){
+					var reg:RegExp = /^[1-9]\d*$/; 
+					if(!reg.test(vo.delayTime)){
+						Alert.show("若填写预计延误的时间,请输入数字,最少为1分钟!");
+						return;
+					}
+				}
+				
+				vo.expGrade = expGrade.selectedItem.data;
+				vo.expType = expType.selectedItem.data;
+				vo.feedBackFlag = feedBackFlag.selected;
+				vo.reportTime = reportTime.date;
+				//创建方法需要传两个回调函数
+				expTrackController.create(vo,successCallBack,validationCallBack);
+			}
+			
+			private function callBack():void{
+				autoFill(autoExpTrack);
+			}
+			
+			public function changeTruckSelect ():void {
+				if (truck_.selectedItem != null) {
+					var input:Truck = truck_.selectedItem as Truck;
+					vo.licensePlate = truck_.selectedItem.licensePlate;
+					expTrackController.getRsJobInfoByLicensePlate(vo.licensePlate,autoExpTrack,callBack);
+				}  else {
+					vo.licensePlate = null;
+					clear();
+				}
+			}
+			
+			private function searchTruck(keyword:String):void {
+				var truckSO:TruckSO = new TruckSO();
+				truckSO.licensePlate =keyword;
+				getTruckPageData(truckSO);
+			}
+			
+			private function getTruckPageData(truckSO:TruckSO ,callBack:Function=null):void{
+				truckSO.pageNumber = 1;
+				truckSO.objectsPerPage = 10;
+				truckController.getPageList(truckSO, truckPageList,callBack);
+			}
+			
+			private function getRSSJob():void{
+				if(vo.licensePlate == null){
+					Alert.show("请先选择车牌号码");
+					return;
+				}
+				var dialog:RSJob4ExpTrackDialog = 
+					RSJob4ExpTrackDialog(PopUpManager.createPopUp(root, RSJob4ExpTrackDialog , true));
+				dialog.licensePlate = vo.licensePlate;
+				dialog.passFun = autoFill;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function autoFill(item:Object):void{
+				var et:ExpTrack = item as ExpTrack;
+				vo.rsScheduleId = et.rsScheduleId;
+				vo.rsScheduleName = et.rsScheduleName;
+				if(et.routeName != null){
+					routeController.findReturnRoute(et.routeName, setRoute);
+				}
+				vo.rsJobId = et.rsJobId;
+				vo.rssJobCode = et.rssJobCode;
+				vo.rsJobStatus = et.rsJobStatus;
+				rsJobStatus.text = EnumManage.getDisplayText(vo.rsJobStatus,EnumManage.getRSJobStatus());
+			}
+			
+			private function setRoute(route:Route):void{
+				route_.selectedItem = route;
+			}
+			
+			private function clear():void{
+				vo.rsScheduleId = NaN;
+				vo.rsScheduleName = "";
+				vo.routeName = "";
+				
+				vo.rsJobId = NaN;
+				vo.rssJobCode = "";
+				vo.rsJobStatus = "";
+				rsJobStatus.text = "";
+				route_.clear();
+			}
+			
+			public function changeRouteSelect ():void {
+				if (route_.selectedItem != null) {
+					var input:Route = route_.selectedItem as Route;
+					vo.routeName = route_.selectedItem.name;
+				}  else {
+					vo.routeName = null;
+				}
+			}
+			private function searchRoute(keyword:String):void {
+				var routeSO:RouteSO = new RouteSO();
+				routeSO.name =keyword;
+				getRoutePageData(routeSO);
+			}
+			private function getRoutePageData(routeSO:RouteSO ,callBack:Function=null):void{
+				routeSO.pageNumber = 1;
+				routeSO.objectsPerPage = 10;
+				routeController.getPageList(routeSO, routePageList,callBack);
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<fb:MultiColumnForm id="form"  width="90%" label="基本信息">
+			<fb:MultiColumnFormItem label="车辆号码 ：" required="true">
+				<input:PopUpAutoComplete id="truck_" selectedItemChanged="changeTruckSelect()"
+										 enabled="true"
+										 width="120"
+										 searchButtonVisible="false"
+										 clearButtonVisible="false"
+										 searchButtonEnabled="false"
+										 clearButtonEnabled="true"
+										 textInputEnabled="true"
+										 textInputEditable="true"
+										 dataProvider="{truckPageList.list}"
+										 labelField="licensePlate,ownerName"
+										 displayLabelField="licensePlate"
+										 searchFunction="searchTruck"
+										 allowNewValues="false"
+										 dropDownWidth="200"/>
+			</fb:MultiColumnFormItem >
+			<fb:MultiColumnFormItem label="任务单号：">
+				<fb:SelectableTextInput id="job" textInputEditable="false" text="@{vo.rssJobCode}" searchButtonClick="getRSSJob" clearButtonClick="clear"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="任务单状态：">
+				<mx:TextInput id="rsJobStatus" editable="false"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="班次：">
+				<mx:TextInput id="schedule" text="@{vo.rsScheduleName}" editable="false"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="运营线路：">
+				<fb:PopUpAutoComplete id="route_" selectedItemChanged="changeRouteSelect()"
+									  enabled="true"
+									  width="120"
+									  searchButtonVisible="false"
+									  clearButtonVisible="false"
+									  searchButtonEnabled="false"
+									  clearButtonEnabled="true"
+									  textInputEnabled="true"
+									  textInputEditable="true"
+									  dataProvider="{routePageList.list}"
+									  labelField="name,code"
+									  displayLabelField="name"
+									  searchFunction="searchRoute"
+									  allowNewValues="false"
+									  focusOut="changeRouteSelect()" dropDownWidth="200"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="异常类型：">
+				<mx:ComboBox dataProvider="{expTypes}" id="expType"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="异常级别：">
+				<mx:ComboBox dataProvider="{expGrades}" id="expGrade"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="反馈给调度：">
+				<s:CheckBox id="feedBackFlag"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="异常内容：" required="true">
+				<s:TextArea id="expContent" text="@{vo.expContent}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="预计延误：">
+				<mx:HBox>
+					<mx:TextInput id="delay" text="@{vo.delayTime}"/>
+					<s:Label text="分钟"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="报告时间：">
+				<fb:DateTimeInput id="reportTime" allowDatePick="true" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="报告人：">
+				<mx:TextInput id="reporter" text="@{vo.reporter}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系电话：">
+				<mx:TextInput id="contactPhone" text="@{vo.contactPhone}"/>
+			</fb:MultiColumnFormItem>
+			
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="create()"/>
+		<mx:Button label="取消" id="cancel" click="cancel_clickHandler(event)"/>
+	</mx:HBox>
+</mx:Panel>

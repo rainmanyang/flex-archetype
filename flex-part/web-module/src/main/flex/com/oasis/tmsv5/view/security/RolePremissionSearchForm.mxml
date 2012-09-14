@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" borderStyle="solid"
+		 initialize="init()" 
+		 verticalScrollPolicy="off">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.so.security.RolePremissionSO;
+			
+			[Bindable]
+			public var so:RolePremissionSO;
+			public var searchFunction:Function;
+			
+			public function init():void{
+				if(so == null){
+					so = new RolePremissionSO();
+				}
+			}
+			public function search():void{
+				so.name = tname.text;
+				so.description = description.text;
+				searchFunction();
+			}
+			
+		]]>
+	</fx:Script>
+	<fb:MultiColumnForm height="100%" numColumns="3" defaultButton="{searchBtn}">
+		<fb:MultiColumnFormItem label="角色名称：" >
+			<mx:TextInput id="tname" text="{so.name}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="备注：" >
+			<mx:TextInput id="description" text="{so.description}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem>
+			<mx:Button label="查询" click="search();" id="searchBtn"/>
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+</mx:VBox>
+

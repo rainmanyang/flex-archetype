@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.route.StopDAO">
+
+	<resultMap type="Stop" id="StopMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="loginToken" column="LOGIN_TOKEN"/>
+	</resultMap>
+
+	<select id="find" resultMap="StopMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="Stop">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<insert id="insert" parameterType="Stop">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds"/>
+	</delete>
+	
+	<select id="getModelListByPara" resultType="Stop" >
+		<include refid="sqlmap.common.model.searchListByPara" />
+		
+		order by seq_num asc
+	</select>	
+	
+</mapper>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:fb="http://flexbase.800best.com/mxml" 
+		 xmlns:grid="com.oasis.component.grid.*"
+		 width="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off" height="100%" xmlns:route="route.*" 
+		 title="详细信息" xmlns:PremissionButton="com.oasis.component.PremissionButton.*" >
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			
+			[Bindable]
+			public var vo:Route= new Route();
+			
+			[Bindable]
+			public var routeStatus:ArrayCollection = EnumManage.getRouteStatus();
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function create_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 1;
+			}
+			
+			
+			protected function edit_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 2;
+			}
+			
+			protected function toEdit():void
+			{
+				/**
+				 * 跳转到edit页面
+				 */ 
+				var edit:RouteEdit = parent.getChildByName("edit") as RouteEdit;
+				edit.setId(vo.id);
+				edit.freshForm();
+			}
+			
+			public function displayText():void{
+				if(this.initialized){
+					stStatus.text = EnumManage.getDisplayText(vo.status,routeStatus);
+				}
+			}
+			public function freshForm():void{
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=0;
+			}
+			
+		]]>
+		
+		
+	</mx:Script>
+	<mx:HBox paddingLeft="30" width="100%" paddingBottom="10" paddingRight="10" paddingTop="10" borderStyle="solid">
+		<PremissionButton:PremissionButton label="编辑" id="edit" click="toEdit()"  enabled="{vo.status == 'NEW' || vo.status=='ACTIVE'}" premission="edit" module="Route" />
+	</mx:HBox>
+	<fb:MultiColumnForm  width="100%" numColumns="1" label="基本信息">
+		<!--<fb:MultiColumnFormItem label="承运商编码：" required="true">
+		<mx:TextInput id="code" />
+		</fb:MultiColumnFormItem>-->
+		<fb:MultiColumnFormItem label="线路名称：" required="true" >
+			<s:Label id="nameCN" text="{vo.name}"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="线路编号：" required="true" >
+			<s:Label id="code" text="{vo.code}"/>
+		</fb:MultiColumnFormItem>
+		<!--
+		<fb:MultiColumnFormItem label="费用(元)："  >
+			<s:Label id="tname1"  text="{vo.charge}"/>
+		</fb:MultiColumnFormItem>
+		-->
+		<fb:MultiColumnFormItem label="里程(公里)：" >
+			<s:Label id="tname2" text="{vo.distance}" />
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="参考时效(分钟)：" >
+			<s:Label id="tname3"  text="{vo.enrouteDays}"/>
+		</fb:MultiColumnFormItem>
+		<fb:MultiColumnFormItem label="线路状态：">
+			<s:Label id="stStatus" text="{EnumManage.getDisplayText(vo.status,routeStatus)}"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="网点信息：" required="true" width="100%" >
+			<mx:Panel height="250"  width="90%"  title="网点列表" >
+				<grid:SelectableDataGrid id="stopGrid"  horizontalScrollPolicy="auto"  dataProvider="{vo.routeLineList}"
+									  width="100%" height="100%"  showControlColumn="false" verticalScrollPolicy="auto" doubleClickEnabled="true" sortableColumns="false" allowMultipleSelection="false" allowDragSelection="false" enabled="false">
+					<grid:columns>
+						<grid:DataGridColumnNested headerText="起点" dataField="startStopName"    width="100"/>
+						<grid:DataGridColumnNested headerText="终点 " dataField="endStopName"  width="100"/>
+						<grid:DataGridColumnNested headerText="里程(公里) " dataField="distance"  width="80" />
+						<grid:DataGridColumnNested headerText="参考时效(分钟)" dataField="enrouteDays" width="95"/>
+					</grid:columns>
+				</grid:SelectableDataGrid>
+			</mx:Panel>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="备注：" >
+			<s:Label id="remark"  text="{vo.remark}"/>
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+</mx:Panel>
+
+

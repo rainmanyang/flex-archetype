@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.base.DownloadInfoDAO">
+
+	<!-- crud -->
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="DownloadInfo">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<select id="find" resultType="DownloadInfo">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<insert id="insert" parameterType="DownloadInfo">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds" />
+	</delete>
+	<select id="getModelListByPara" resultType="DownloadInfo">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>		
+	
+	<sql id="pageListClause">
+		<where>
+		   1=1
+			<if test="code!=null and code!='' ">
+			and t.codeE like '%'||#{code}||'%'
+			</if>
+			<if test="beginTime!=null and beginTime!='' ">
+			<![CDATA[
+			and t.time >= #{beginTime}
+			]]>
+			</if>
+			<if test="endTime!=null and endTime!='' ">
+			<![CDATA[
+			and t.time <= #{endTime}
+			]]>
+			</if>
+			<if test="operator!=null and operator!='' ">
+			and t.operator like '%'||#{operator}||'%'
+			</if>
+			<if test="fileType!=null and fileType!='' ">
+			and t.file_type like '%'||#{fileType}||'%'
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultType="DownloadInfo"  parameterType="com.oasis.tmsv5.common.so.base.DownloadInfoSO">
+		select t.* from WL_REPORT_DOWNLOAD t 
+		<include refid="pageListClause"/>
+	    	order by id desc
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.tmsv5.common.so.base.DownloadInfoSO">
+		select count(1) from WL_REPORT_DOWNLOAD t 
+		<include refid="pageListClause"/>
+	</select>
+	
+	
+	
+</mapper>

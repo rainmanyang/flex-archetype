@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:input="com.best.oasis.flexbase.components.selectableTextInput.*"
+				width="800" height="450"
+				xmlns:grid="com.oasis.component.grid.*"
+				xmlns:feeItemReportForm="com.oasis.tmsv5.view.report.*"
+				title="编辑实际线路"  creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*"   >
+
+	
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.components.grid.SelectableDataGrid;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.event.TruckRsJobEvent;
+			import com.oasis.tmsv5.route.PosController;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.so.route.PosSO;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobController;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.vo.route.Pos;
+			import com.oasis.wolfburg.vo.route.PosView;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			[Bindable]
+			public var vo:TruckRSJob= new TruckRSJob();
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Inject]
+			public var truckRSJobController:TruckRSJobController;
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+			[Bindable]
+			public var routeSO:RouteSO = new RouteSO();
+			
+			[Bindable]
+			public var realRoutePageList:PageList = new PageList();
+			
+			[Bindable]
+			public var posPageList:PageList = new PageList();
+			[Inject]
+			public var posController:PosController;
+			[Bindable]
+			public var so:PosSO = new PosSO();
+			
+			public function init():void{
+				if(vo.realRouteName != null){
+					routeController.getByName(vo.realRouteName, initRoute);
+				} else {
+					realrouteFormItem.includeInLayout = true;
+					realrouteFormItem.visible = true;
+					POSFormItem.includeInLayout = false;
+					POSFormItem.visible = false;
+					chLine.selected = true;
+					chPos.selected = false;
+					posPanel.visible = false;
+					posPanel.includeInLayout = false;
+				}
+				
+			}
+			
+			private function initRoute(route:Route):void{
+				if(route != null && !isNaN(route.id)){
+					realroute_.selectedItem = route;
+					realrouteFormItem.includeInLayout = true;
+					realrouteFormItem.visible = true;
+					POSFormItem.includeInLayout = false;
+					POSFormItem.visible = false;
+					chLine.selected = true;
+					chPos.selected = false;
+					posPanel.includeInLayout = false;
+					posPanel.visible = false;
+				} else {
+					realrouteFormItem.includeInLayout = false;
+					realrouteFormItem.visible = false;
+					POSFormItem.includeInLayout = true;
+					POSFormItem.visible = true;
+					chLine.selected = false;
+					chPos.selected = true;
+					posController.getByRouteName(vo.realRouteName, initPos);
+					posPanel.includeInLayout = true;
+					posPanel.visible = true;
+				}
+			}
+			
+			private function initPos(posList : ArrayCollection):void{
+				if(posList != null && posList.length > 0){
+					posPageList.list = posList;
+				}
+			}
+			
+			private function onOk():void {
+				if(POSFormItem.visible && POSFormItem.includeInLayout){
+					vo.realRouteId = NaN;
+					if(posPageList.list.length > 0){
+						if(posPageList.list.length == 1){
+							Alert.show("至少应该有两个网点！");
+							return;
+						}
+						
+						vo.realRouteName = '';
+						for each(var pos : PosView in posPageList.list){
+							vo.realRouteName += pos.name + "-";
+						}
+						vo.realRouteName = vo.realRouteName.substr(0, vo.realRouteName.length-1);
+					}
+				}
+				truckRSJobController.updateJob4realRoute(vo,successCallBack);
+				this.dispatchEvent(new CloseEvent(Event.COMPLETE));
+			}
+			
+			private function successCallBack():void{
+				Alert.show("修改成功!");
+				//刷新列表页面
+				dispatch.dispatchEvent(new TruckRsJobEvent(TruckRsJobEvent.RSJOB_LIST_EVENT));
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function changeRealRouteSelect ():void {
+				if (realroute_.selectedItem != null) {
+					var input:Route = realroute_.selectedItem as Route;
+					vo.realRouteId = realroute_.selectedItem.id
+					vo.realRouteName=realroute_.selectedItem.name
+				}  else {
+					routeSO.name = null;
+					vo.realRouteId = NaN;
+					vo.realRouteName = null;
+				}
+			}
+			
+			private function searchRealRoute(keyword:String):void {
+				var routeSO:RouteSO = new RouteSO();
+				routeSO.name =keyword;
+				getRealRoutePageData(routeSO);
+			}
+			
+			private function getRealRoutePageData(routeSO:RouteSO ,callBack:Function=null):void{
+				routeSO.pageNumber = 1;
+				routeSO.objectsPerPage = 10;
+				routeController.getPageList(routeSO, realRoutePageList,callBack);
+			}
+		
+			public function clearRouteBtn():void {
+				realroute_.clear();
+				vo.payRouteName = null;
+				vo.payRouteId = NaN;
+			}
+			public function getRouteBtn():void {
+				var dialog:RouteDialog = RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.passFun = editDialogOnComplete;
+			}
+			
+			private function editDialogOnComplete(item:Object):void{
+				vo.payRouteId = item.id;
+				vo.payRouteName = item.name;
+				realroute_.selectedItem = item;
+			}
+			
+			protected function toggle(event:Event):void
+			{
+				var check:CheckBox = event.target as CheckBox;
+				id = check.id;
+				if(id=="chLine"){
+					if(chLine.selected){
+						chPos.selected=false;
+						realrouteFormItem.includeInLayout = true;
+						realrouteFormItem.visible = true;
+						POSFormItem.includeInLayout = false;
+						POSFormItem.visible = false;
+						realroute_.clear();
+						vo.realRouteId = NaN;
+						vo.realRouteName = null;
+						posPanel.includeInLayout = false;
+						posPanel.visible = false;
+						posPageList = new PageList();
+						
+					} else {
+						chPos.selected=true;
+						realrouteFormItem.includeInLayout = false;
+						realrouteFormItem.visible = false;
+						POSFormItem.includeInLayout = true;
+						POSFormItem.visible = true;
+						realroute_.clear();
+						vo.realRouteId = NaN;
+						vo.realRouteName = null;
+						posPanel.includeInLayout = true;
+						posPanel.visible = true;
+						posPageList = new PageList();
+					}
+				} else {
+					if(chLine.selected){
+						chLine.selected=false;
+						realrouteFormItem.includeInLayout = false;
+						realrouteFormItem.visible = false;
+						POSFormItem.includeInLayout = true;
+						POSFormItem.visible = true;
+						realroute_.clear();
+						vo.realRouteId = NaN;
+						vo.realRouteName = null;
+						posPanel.includeInLayout = true;
+						posPanel.visible = true;
+						posPageList = new PageList();
+					} else {
+						chLine.selected=true;
+						realrouteFormItem.includeInLayout = true;
+						realrouteFormItem.visible = true;
+						POSFormItem.includeInLayout = false;
+						POSFormItem.visible = false;
+						realroute_.clear();
+						vo.realRouteId = NaN;
+						vo.realRouteName = null;
+						posPanel.includeInLayout = false;
+						posPanel.visible = false;
+						posPageList = new PageList();
+					}
+				}
+			}
+			
+			protected function addPOS():void {
+				var dialog:POSDialog = 
+					POSDialog(PopUpManager.createPopUp(root, POSDialog , true));
+				dialog.passFun = localFunStart;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFunStart(item:Object):void{
+				var posStart:PosView = item as PosView;
+				if(posPageList.list == null || posPageList.list.length == 0){
+					posPageList.list = new ArrayCollection();
+				}
+				posPageList.list.addItem(posStart);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				posController.getPageList(so, posPageList,callBack);
+			}
+			public function delPos(data:Object):void {
+				var pos:PosView = grid.selectedItem as PosView;
+				if(pos == null){
+					return;
+				}
+				if(posPageList.list.length == 2){
+					Alert.show("此线路上只有两站，不能继续删除!");
+					return;
+				}
+				posPageList.list.removeItemAt(posPageList.list.getItemIndex(pos));
+			}
+			
+		]]>
+		
+		
+		
+	</mx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox width="100%" height="100%">
+			<fb:MultiColumnForm id="form" width="50%" label="基本信息">
+				<fb:MultiColumnFormItem label="任务单名称："  >
+					<s:TextInput id="trsJobCode" text="@{vo.code}" editable="false" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="车牌号："  required="true">
+					<s:TextInput id="licensePlate" text="@{vo.licensePlate}" editable="false" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="计划线路：" >
+					<mx:TextInput text="{vo.routeName}" editable="false" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="实际运行站点：" >
+					<mx:TextInput text="{vo.realPOSName}" editable="false" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem>
+					<mx:HBox>
+						<mx:CheckBox id="chLine" label="线路" selected="true" click="toggle(event)" />
+						<mx:CheckBox id="chPos" label="网点" click="toggle(event)"/>
+					</mx:HBox>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="实际线路：" id="realrouteFormItem" includeInLayout="true" visible="true">
+					<input:PopUpAutoComplete id="realroute_" selectedItemChanged="changeRealRouteSelect()"
+											 enabled="true"
+											 width="160"
+											 searchButtonVisible="true"
+											 clearButtonVisible="true"
+											 searchButtonEnabled="true"
+											 clearButtonEnabled="true"
+											 textInputEnabled="true"
+											 textInputEditable="true"
+											 dataProvider="{realRoutePageList.list}"
+											 labelField="name,code"
+											 displayLabelField="name"
+											 searchFunction="searchRealRoute"
+											 allowNewValues="false"
+											 clearButtonClick="clearRouteBtn"
+											 searchButtonClick="getRouteBtn" 
+											 focusOut="changeRealRouteSelect()" dropDownWidth="200"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="网点：" id="POSFormItem" includeInLayout="true" visible="true">
+					<s:Button id="posBtn" label="增加网点" click="addPOS()" />					
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="备注："  >
+					<s:TextInput id="remark" text="@{vo.remark}" editable="false"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="异常备注："  >
+					<s:TextInput id="exceptionalRemark" text="@{vo.exceptionalRemark}" />
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+			<mx:Panel id="posPanel" includeInLayout="false" visible="false" width="100%" title="网点">
+				<mx:DataGrid id="grid" dataProvider="{posPageList.list}" width="100%" sortableColumns="false">
+					<mx:columns>
+						<mx:DataGridColumn headerText="站点名称" dataField="name" sortable="false"/>
+						<mx:DataGridColumn headerText="编辑" sortable="false">
+							<mx:itemRenderer>
+								<mx:Component>
+									<mx:HBox verticalAlign="middle" horizontalAlign="center">
+										<mx:LinkButton skin="@Embed(source='/assets/style/default/images/delete.gif')" click="outerDocument.delPos(data)" toolTip="删除"/>
+									</mx:HBox>
+								</mx:Component>
+							</mx:itemRenderer>
+
+						</mx:DataGridColumn>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:Panel>
+		</mx:HBox>	
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="onOk();"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

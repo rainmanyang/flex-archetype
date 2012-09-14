@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				xmlns:grid="com.oasis.component.grid.*"
+				width="800" height="500"
+				title="查找加班车" xmlns:s="library://ns.adobe.com/flex/spark"  creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var itemList:Array = new Array();
+			
+			[Bindable]
+			public var ret:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var routeId:Number;
+			
+			[Bindable]
+			public var truckSO:TruckSO = new TruckSO();
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var tmpTruckdp:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var truckStatusArray:ArrayCollection = EnumManage.getTruckStatus();
+			
+			[Bindable]
+			public var truckResourceTypeArray:ArrayCollection = EnumManage.getTruckResourceType4List();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			public var getTruckCallBack:Function;
+			
+			[Bindable]
+			public var showOtherTruck:Boolean = false;;
+			
+			public function init():void{
+				getPageData(truckSO.pageNumber, truckSO.objectsPerPage);
+			};
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				if(typeId.selectedIndex != -1){
+					truckSO.truckResourceType = typeId.selectedItem.data;
+				}
+				else{
+					truckSO.truckResourceType = null;
+				}
+				truckSO.notInRouteId = routeId;
+				truckSO.pageNumber = pageNum;
+				truckSO.objectsPerPage = pageSize;
+				truckSO.status = EnumManage.truckStatus1.data;
+				truckController.getPopPageList(truckSO, pageList,callBack);
+			}
+			
+			protected function btnOK(event:MouseEvent=null):void
+			{
+				var obj:Object = tmpTruckGrid.selectedItem;
+				if(obj == null){
+					Alert.show("请选择车辆!");
+					return;
+				}
+				if(getTruckCallBack != null){
+					getTruckCallBack(obj as Truck);
+				}
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function getTruckStatus(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,truckStatusArray);
+			}
+			
+			private function getTruckResourceType(item:Object,column:DataGridColumn):String{
+				var resourceType:String = item.resourceType as String;
+				return EnumManage.getDisplayText(resourceType,truckResourceTypeArray);
+			}
+			
+			protected function search_clickHandler(event:MouseEvent):void
+			{
+				if(typeId.selectedItem != null){
+					truckSO.truckResourceType = typeId.selectedItem.data;
+				}
+				getPageData(1, truckSO.objectsPerPage);
+			}
+			
+			protected function reset_clickHandler(event:MouseEvent):void
+			{
+				truckSO = new TruckSO();
+				typeId.selectedIndex = -1;
+				getPageData(1, truckSO.objectsPerPage);
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="95%">
+		<fb:MultiColumnForm numColumns="3" width="100%" height="80" defaultButton="{searchBtn}">
+			<fb:MultiColumnFormItem label="车牌">
+				<s:TextInput id="licensePlate" text="@{truckSO.licensePlate}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="司机">
+				<s:TextInput id="driverName" text="@{truckSO.driverName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="资源">
+				<dropDownList:DropDownList dataProvider="{truckResourceTypeArray}" labelField="label" id="typeId" 
+								prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="其他车辆"  visible="{showOtherTruck}" colspan="3">
+				<s:CheckBox id="otherTruck"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem colspan="2">
+				<mx:HBox>
+					<mx:Button label="查询" id="searchBtn" click="search_clickHandler(event)"/>
+					<mx:Button label="重置" id="reset"  click="reset_clickHandler(event)"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		<grid:PageableDataGrid id="tmpTruckGrid" dataProvider="{pageList.list}" width="780"
+							 getPageData="getPageData"  currentPageNum="{truckSO.pageNumber}" totalItemNum="{pageList.fullListSize}"
+							 pageSize="{truckSO.objectsPerPage}"
+							 height="100%" allowMultipleSelection="false" showControlColumn="false"
+							 doubleClickEnabled="true" doubleClick="btnOK(event)">
+			<grid:columns>
+				<grid:DataGridColumnNested headerText="车牌" dataField="licensePlate" width="80"/>
+				<grid:DataGridColumnNested headerText="手机" dataField="driver1Phone" width="100"/>
+				<mx:DataGridColumn headerText="状态" labelFunction="getTruckStatus" width="60"/>
+				<mx:DataGridColumn headerText="资源" labelFunction="getTruckResourceType" width="60"/>
+				<grid:DataGridColumnNested headerText="司机" dataField="driver1Name" width="100"/>
+			</grid:columns>
+		</grid:PageableDataGrid>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button id="ok" click="btnOK()" label="确定"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

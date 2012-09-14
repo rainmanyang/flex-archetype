@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				width="800" height="450"
+				xmlns:grid="com.oasis.component.grid.*"
+				xmlns:feeReportForm="com.oasis.tmsv5.view.report.*"
+				title="编辑费用"  creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*"   >
+
+	
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.bill.PaymentItemController;
+			import com.oasis.tmsv5.event.PaymentItemEvent;
+			import com.oasis.wolfburg.vo.bill.PaymentItem;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			[Bindable]
+			public var vo:PaymentItem= new PaymentItem();
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Inject]
+			public var paymentItemController:PaymentItemController;
+			
+			public function init():void{								
+				form.init();
+			}
+			
+			private function onOk():void {
+				if(!form.validate()){
+					return;
+				}
+				form.collectData();
+				paymentItemController.update(form.vo,successCallBack,validationCallBack);
+				this.dispatchEvent(new CloseEvent(Event.COMPLETE));
+			}
+			
+			private function successCallBack():void{
+				form.vo =new PaymentItem();
+				//清空页面元素
+				form.init();
+				Alert.show("修改成功!");
+				//刷新列表页面
+				dispatch.dispatchEvent(new PaymentItemEvent(PaymentItemEvent.FEE_REPORT_LIST_EVENT));
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,form,true);
+			}
+		
+		]]>
+		
+		
+		
+	</mx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<feeReportForm:FeeReportForm id="form" vo="{vo}" />			
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="onOk();"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

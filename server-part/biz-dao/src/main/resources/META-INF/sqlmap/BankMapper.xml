@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.bank.BankDAO">
+
+    <resultMap type="Bank" id="BankMap">
+    	<result property="bankName" column="bank_name"/>
+    	<result property="branchName" column="branch_name"/>
+    </resultMap> 
+
+	<insert id="insert" parameterType="Bank">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<select id="find" resultMap="BankMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<sql id="pageListClause">
+		where 1=1
+		<if test="bankName!=null and bankName!='' ">
+        and t.bank_name like '%'||#{bankName}||'%'
+        </if>
+		<if test="branchName!=null and branchName!='' ">
+		and t.branch_name like '%'||#{branchName}||'%'
+		</if>
+	</sql>
+	
+	<select id="selectPageList" resultMap="BankMap" parameterType="com.oasis.wolfburg.common.so.bank.BankSO">
+        select * from wl_bank t
+        <include refid="pageListClause"/>
+    </select>
+    
+    <select id="selectCount" resultType="int" parameterType="com.oasis.wolfburg.common.so.bank.BankSO">
+        select count(1) from wl_bank t
+        <include refid="pageListClause"/>
+    </select>
+	
+    <delete id="delete">
+        <include refid="sqlmap.common.model.delete" />
+    </delete>
+
+    <update id="update" statementType="PREPARED" timeout="20000" parameterType="Bank">
+        <include refid="sqlmap.common.model.update" />
+    </update>
+    
+     <select id="checkDuplication" resultMap="BankMap" parameterType="com.oasis.wolfburg.common.so.bank.BankSO">
+        select * from wl_bank t where t.branch_name = #{branchName}
+    </select>
+    
+    <delete id="deleteByIds" parameterType="map">
+        <include refid="sqlmap.common.model.deleteByIds"/>
+    </delete>
+
+</mapper>

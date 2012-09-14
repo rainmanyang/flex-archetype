@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"       
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:fb="http://flexbase.800best.com/mxml" 
+		  xmlns:nv="com.oasis.wolfburg.validator.*"
+		  xmlns:dropDownList="com.oasis.component.dropDownList.*"
+		  xmlns:flexlib="http://code.google.com/p/flexlib/"
+		  width="100%" horizontalScrollPolicy="auto"  height="100%" xmlns:route="route.*" title="创建"  creationComplete="init()" xmlns:truckRSSchedule="com.oasis.tmsv5.view.truckRSSchedule.*">
+	<fx:Declarations>
+		<mx:StringValidator id="nameValidator" source="{nameCN}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="opOrgValidator" source="{opOrg}" property="text" required="true" requiredFieldError="必填"/>
+		<nv:SelectValidator id="truckValidator" source="{truckType}" property="selectedIndex" required="true" fieldError="{resourceManager.getString('errorResource','requireSelect')}"/>
+		<mx:StringValidator id="beginDateValidator" source="{beginDate}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="endDateValidator" source="{endDate}" property="text" required="true" requiredFieldError="必填"/>
+		<mx:StringValidator id="routeNameValidator" source="{routeName}" property="text" required="true" requiredFieldError="必填"/>
+		<nv:StartEndDateValidator id="dateValidator" startDate="{beginDate}" endDate="{endDate}"/>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->  
+		
+		<nv:NumberValidator  id="timeValidate" source="{allTime}" property="text" requiredFieldError="必须为数字"/>  
+		<nv:DateValidator id="validator1" source="{beginDate}" property="text"/>
+		<nv:DateValidator id="validator2" source="{endDate}" property="text"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.LangUtil;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.TruckRSScheduleEvent;
+			import com.oasis.tmsv5.route.RouteController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSScheduleController;
+			import com.oasis.tmsv5.view.popup.OrgDialog;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.route.Stop;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TruckRSSchedule;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Bindable]
+			public var stops:ArrayCollection = new ArrayCollection();//DataGenarator.getAccount();
+			
+			[Bindable]
+			public var dayTypeArray:ArrayCollection = EnumManage.getDayType();
+			
+			[Bindable]
+			public var vo:TruckRSSchedule= new TruckRSSchedule();
+			
+			[Bindable]
+			public var dp:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable]
+			public var type:ArrayCollection = EnumManage.getTruckType();
+			
+			[Bindable]
+			public var totalSpendTime:String;
+			
+			[Inject]
+			public var routeController:RouteController;
+			
+			[Inject]
+			public var truckRSScheduleController:TruckRSScheduleController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			
+			[Bindable]
+			public var allTimeStr:String ;
+			
+			
+			protected function getRoute():void {
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				dialog.passFun = localFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFun(item:Object):void{
+				var route:Route = item as Route;
+				vo.routeId = route.id;
+				vo.routeName = route.name;
+				
+				stops = new ArrayCollection();
+				routeController.findStopsByRouteId(stops,route.id);
+			}
+			
+			public function init():void{
+			};
+			
+			
+			protected function getOrg():void {
+				var dialog:OrgDialog = 
+					OrgDialog(PopUpManager.createPopUp(root, OrgDialog , true));
+				dialog.closeCallBack = orgPopUpHandle;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function orgPopUpHandle(org:Organization):void{
+				vo.opOrgId = org.id;
+				vo.orgTreePath = org.treePath;
+				vo.opOrgName = org.name;
+				opOrg.text = org.name;
+			}
+			
+			protected function cleaeOrg():void {
+				vo.opOrgId = Number.NaN;
+				vo.opOrgName = null;
+				vo.orgTreePath = null;
+				opOrg.text = null;
+			}
+			[Bindable]
+			public var datas:ArrayCollection = new ArrayCollection();
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(excludingDates.text == ""){
+					Alert.show("日期不能为空");
+					return ;
+				}
+				var exist:Boolean =  false;
+				for( var i:Number = 0;i<datas.length;i++ ){
+					var str:String = datas.getItemAt(i).label;
+					if(str == excludingDates.text){
+						Alert.show("日期已经存在");
+						exist = true;
+						break;
+					}
+				}
+				if(!exist){
+					datas.addItem({label:excludingDates.text});
+				}
+			}
+			public function remove(obj:Object):void
+			{
+				datas.removeItemAt( datas.getItemIndex(obj) );
+			}
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([nameValidator,opOrgValidator,beginDateValidator,endDateValidator,routeNameValidator,truckValidator,timeValidate,dateValidator,validator1,validator2]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(!validate()){
+					return;
+				}
+				collectData();
+				if(vo.includingDates == "0000000"){
+					Alert.show("请选择开班日!");
+					return;
+				}
+				vo.allTime = allTime.text;
+				truckRSScheduleController.create(vo,successCallBack,validationCallBack);
+			}
+			
+			private function validteDate():Boolean{
+				var d1:Number =  Date.parse(beginDate.selectedDate);
+				var d2:Number =  Date.parse(endDate.selectedDate);
+				if(d1 >= d2) {
+					endDate.errorString = "结束日期必须大于开始日期";
+					return false;
+				}
+				return true;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				vo = new TruckRSSchedule();
+				stops = new ArrayCollection();
+				datas = new ArrayCollection();
+				cleaeOrg();
+				excludingDates.text = "";
+				truckType.selectedIndex = -1;
+				Alert.show("时刻表新增成功!");
+				dispatch.dispatchEvent(new TruckRSScheduleEvent(TruckRSScheduleEvent.TRUCK_RS_SCHEDULE_LIST_EVENT));
+				ViewUtils.clearErrorString(form);
+				allTime.text = "";
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			public function collectExcludingDates():String{
+				var excludingDates : String = "";
+				var excludingDateDS:ArrayCollection = ArrayCollection(excludingDateDS.dataProvider);
+				for(var i:Number = 0;i<excludingDateDS.length;i++ ){
+					var excludingStr:String = excludingDateDS.getItemAt(i).label as String;
+					excludingDates += excludingStr;
+					if( i != excludingDateDS.length-1 ){
+						excludingDates += ";";
+					}
+				}
+				return excludingDates;
+			}
+			
+			public function collectIncludingDates():String{
+				var includingDates:String = "";
+				if(vo.sunday){
+					includingDates += "1";
+				}else{
+					includingDates += "0";
+				}
+				if(vo.monday){
+					includingDates += "2";
+				}else{
+					includingDates += "0";
+				}
+				if(vo.tuesday){
+					includingDates += "3";
+				}else{
+					includingDates += "0";
+				}
+				if(vo.wednesday){
+					includingDates += "4";
+				}else{
+					includingDates += "0";
+				}
+				if(vo.thursday){
+					includingDates += "5";
+				}else{
+					includingDates += "0";
+				}
+				if(vo.friday){
+					includingDates += "6";
+				}else{
+					includingDates += "0";
+				}
+				if(vo.saturday){
+					includingDates += "7";
+				}else{
+					includingDates += "0";
+				}
+				return includingDates;
+			}
+			
+			public function collectData():void{
+				//Collect data
+				vo.stops = stops;
+				vo.excludingDates = collectExcludingDates();
+				vo.includingDates = collectIncludingDates();
+				vo.truckType = truckType.selectedItem.data;
+			}
+			
+			public function toggleShow(flag:String,stop:Object):Boolean {
+				var _stop:Stop = stop as Stop;
+				var array:ArrayCollection = stopGrid.dataProvider as ArrayCollection ;
+				if(flag == "arrival"){
+					if(LangUtil.getObjectIndex(_stop,array)==0){
+						return false;
+					}
+				}
+				else if(flag == "leave"){
+					if(LangUtil.getObjectIndex(_stop,array)==array.length){
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			public function cancle():void {
+				vo = new TruckRSSchedule();
+				excludingDates.dataProvider = null;
+				stopGrid.dataProvider = null;
+				truckType.selectedIndex = -1;
+				ViewUtils.clearFrom(form);
+				cleaeOrg();
+				datas = new ArrayCollection();
+				cleaeOrg();
+				excludingDates.text = "";
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+				
+				allTime.text = "";
+			}
+			
+			private function showArrivalTime(item:Object,column:DataGridColumn):String {
+				var stop:Stop = item as Stop;
+				if(stop.seqNum == 1){
+					return "";
+				}
+				var showString:String = getDaytypeString(stop.arrivalDayType)+" ";
+				showString+=stop.arrivalHour+":"+stop.arrivalMinute;
+				return showString;
+			}
+			
+			private function showLeaveTime(item:Object,column:DataGridColumn):String{
+				var stop:Stop = item as Stop;
+				if(stop.seqNum == stops.length){
+					return "";
+				}
+				var showString:String= getDaytypeString(stop.leaveDayType)+" ";
+				showString+=stop.leaveHour+":"+stop.leaveMinute;
+				return showString;
+			}
+			
+			private function getDaytypeString(index:Number):String{
+				for each(var elm:Object in EnumManage.getDayType()){
+					if(elm.data == index as Number)
+						return elm.label;
+				}
+				return "";
+			}
+
+		]]>
+	</fx:Script>
+	<flexlib:WindowShade id="ws1"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="基本信息"
+						 width="99%">
+		<fb:MultiColumnForm  width="100%" numColumns="2" id="form">
+			<fb:MultiColumnFormItem label="班次号：" required="true" colspan="2">
+				<s:TextInput id="nameCN"  text="@{vo.name}" />
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="组织：" required="true" colspan="2">
+				<fb:SelectableTextInput id="opOrg" textInputEditable="false" searchButtonClick="getOrg" clearButtonClick="cleaeOrg"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="车型：" required="true" colspan="2">
+				<dropDownList:DropDownList dataProvider="{type}" id="truckType" searchKey="data" value="{vo.truckType}" prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="开始日期：" required="true" >
+				<mx:DateField id="beginDate" selectedDate="@{vo.beginDate}" formatString="YYYY-MM-DD" editable="true" minWidth="110"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="结束日期：" required="true" >
+				<mx:DateField id="endDate" selectedDate="@{vo.endDate}" formatString="YYYY-MM-DD" editable="true" minWidth="110"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="线路名称：" required="true" colspan="2">
+				<fb:SelectableTextInput id="routeName" textInputEditable="false" text="@{vo.routeName}" searchButtonClick="getRoute"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		<mx:Panel title="网点" height="100%" width="100%" id="vehiclePanel">
+			<mx:DataGrid id="stopGrid"  horizontalScrollPolicy="auto"  dataProvider="{stops}" 
+							   editable="true" width="100%" height="100%"   verticalScrollPolicy="auto">
+				<mx:columns>
+					<mx:DataGridColumn headerText="网点名称" dataField="posName" editable="false" width="80"/>
+					<mx:DataGridColumn headerText="预计到达时间" width="220" editable="true" labelFunction="showArrivalTime" editorDataField="value">
+						<mx:itemEditor>
+							<fx:Component>
+								<mx:HBox>
+									<fx:Script>
+										<![CDATA[
+											import com.oasis.wolfburg.vo.route.Stop;
+											
+											import mx.collections.ArrayCollection;
+											
+											public function get value():Stop{
+												return timeSelecter.value as Stop;
+											}
+											
+											override public function set data(value:Object):void {
+												timeSelecter.data = value;
+											}
+										]]>
+									</fx:Script>
+									<truckRSSchedule:SelectTime id="timeSelecter" dayTypeArray="{outerDocument.dayTypeArray}" type="arrival" datas="{outerDocument.stops}" allTimeStr="@{outerDocument.allTimeStr}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="预计离开时间"  width="220" editable="true" labelFunction="showLeaveTime" editorDataField="value">
+						<mx:itemEditor>
+							<fx:Component>
+								<mx:HBox>
+									<fx:Script>
+										<![CDATA[
+											import com.oasis.wolfburg.vo.route.Stop;
+											
+											import mx.collections.ArrayCollection;
+											
+											public function get value():Stop{
+												return timeSelecter as Stop;
+											}
+											
+											override public function set data(value:Object):void {
+												timeSelecter.data = value;
+											}
+										]]>
+									</fx:Script>
+									<truckRSSchedule:SelectTime id="timeSelecter" dayTypeArray="{outerDocument.dayTypeArray}" type="leave" datas="{outerDocument.stops}" allTimeStr="@{outerDocument.allTimeStr}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+				</mx:columns>
+			</mx:DataGrid>
+		</mx:Panel>
+		<mx:Form>
+			<mx:FormItem label="时效（分钟）：">
+				<s:TextInput id="allTime"  text="@{allTimeStr}" />
+			</mx:FormItem>
+		</mx:Form>
+	</flexlib:WindowShade>
+	<flexlib:WindowShade id="ws2"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="开班日"
+						 width="99%">
+		<fb:MultiColumnForm numColumns="1">
+			<fb:MultiColumnFormItem label="请选择：" required="true">
+			<mx:HBox>
+				<mx:CheckBox label="星期日" id="sunday" selected="@{vo.sunday}" />
+				<mx:CheckBox label="星期一" id="monday" selected="@{vo.monday}" />
+				<mx:CheckBox label="星期二" id="tuesday" selected="@{vo.tuesday}" />
+				<mx:CheckBox label="星期三" id="wednesday" selected="@{vo.wednesday}" />
+				<mx:CheckBox label="星期四" id="thursday" selected="@{vo.thursday}" />
+				<mx:CheckBox label="星期五" id="friday" selected="@{vo.friday}" />
+				<mx:CheckBox label="星期六" id="saturday" selected="@{vo.saturday}" />
+			</mx:HBox>
+			</fb:MultiColumnFormItem>	
+		</fb:MultiColumnForm>
+	</flexlib:WindowShade>
+	<flexlib:WindowShade id="ws3"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="停开日期"
+						 width="99%">
+		<fb:MultiColumnFormItem label="停开日期：" >
+			<mx:HBox>
+				<mx:DateField id="excludingDates"  formatString="YYYY-MM-DD"/>
+				<mx:Button label="添加" click="button1_clickHandler(event)" />
+			</mx:HBox>
+			<mx:List id="excludingDateDS" dataProvider="{datas}" height="100%" minHeight="1" >
+				<mx:itemRenderer>
+					<fx:Component>
+						<mx:HBox>
+							<fx:Script>
+								<![CDATA[
+									protected function deleteExcludingDates_clickHandler():void
+									{
+										outerDocument.remove(data);
+									}
+								]]>
+							</fx:Script>
+							<mx:Text text="{data.label}" />
+							<mx:LinkButton id="deleteExcludingDates" click="deleteExcludingDates_clickHandler()" skin="@Embed(source='/assets/style/default/images/DESTROYED.gif')"/>
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:List>
+		</fb:MultiColumnFormItem>
+	</flexlib:WindowShade>
+	<mx:HBox horizontalAlign="center" width="100%">
+		<mx:Button label="保存" click="save_clickHandler(event)"/>
+		<mx:Button label="取消" click="cancle()" />
+	</mx:HBox>
+</mx:Panel>
+
+

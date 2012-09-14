@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.base.PredefinedCodeDAO">
+
+	<!-- crud -->
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="PredefinedCode">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+
+	<select id="find" resultType="PredefinedCode">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<insert id="insert" parameterType="PredefinedCode">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds" />
+	</delete>
+	<select id="getModelListByPara" resultType="PredefinedCode">
+		<include refid="sqlmap.common.model.searchListByPara" />
+	</select>		
+	
+	<select id="findByPara" resultType="PredefinedCode" parameterType="com.oasis.wolfburg.common.so.predefinedCode.PredefinedCodeSO">
+		select t.* from gt_predefinedcode t where t.type=#{type} 
+		<if test="value!=null and value!='' ">
+			and (t.value like '%'||#{value}||'%' or t.description like '%'||#{value}||'%')
+		</if>
+	</select>
+	
+	<select id="getListByPara" resultType="PredefinedCode" parameterType="map">
+		select t.* from gt_predefinedcode t where t.type=#{type} and t.value=#{value}
+	</select>
+	
+</mapper>

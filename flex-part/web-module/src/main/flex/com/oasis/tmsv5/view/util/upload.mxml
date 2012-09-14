@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 fontSize="12" xmlns:flexbase="http://flexbase.800best.com/mxml"  
+		 width="620" height="300" creationComplete="initApp()">
+	<mx:NumberFormatter id="filesizeFormatter" useThousandsSeparator="true"/>
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.attachment.AttachmentController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.attachment.Attachment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.ProgressBar;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.utils.URLUtil;
+			
+			[Inject]
+			public var attachmentController:AttachmentController;
+			
+			[Bindable]
+			public var attachmentType:ArrayCollection;
+			
+			[Bindable]
+			public var attachments:ArrayCollection = new ArrayCollection();
+			
+			private var fileWapper:Attachment;
+			
+			private var fileReference:FileReference=new FileReference();
+			
+			public var host:String;
+			
+			private function initApp():void{
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var fullUrl:String = URLUtil.getFullURL(url, url);
+				var serverNameWithPort:String = URLUtil.getServerNameWithPort(url);
+				
+				var sdex:int = fullUrl.indexOf(serverNameWithPort);
+				sdex = fullUrl.indexOf("/",sdex);
+				host = fullUrl.substr(0,sdex);
+			}
+			
+			public function clearContent():void {
+				fileType.selectedIndex = -1;
+				tfile.text = null;
+				pbrUploadProgress.setProgress(0, 100);
+			}
+			
+			/**
+			 * 上传流程
+			 */
+			private function browseFile():void{
+				tfile.text = null;
+				pbrUploadProgress.label = "%3%%";
+				pbrUploadProgress.setProgress(0, 100);
+				
+				fileReference.browse(getTypeFilter());
+				fileReference.addEventListener(Event.SELECT, fileSelectHandler);
+				fileReference.addEventListener(Event.OPEN, openHandler);
+				fileReference.addEventListener(ProgressEvent.PROGRESS, progressHandler);
+				fileReference.addEventListener(Event.COMPLETE, completeHandler)
+			}
+			
+			private function getTypeFilter():Array{
+				return [new FileFilter("Images (*.jpg, *.jpeg, *.gif, *.png)", "*.jpg;*.jpeg;*.gif;*.png;"),
+						new FileFilter("所有文件(*.*)", "*.*")
+					    ];
+			}
+			
+			private function fileSelectHandler(event: Event): void{
+				if(checkDuplicate(fileReference)){
+					Alert.show("选中的上传已经上传过");
+				}else{
+					tfile.text = fileReference.name;
+					uploadImage.enabled = true;
+				}
+			}
+			//判断文件是否重复
+			private function checkDuplicate(file:FileReference):Boolean{
+				var result:Boolean=false;
+				for each(var fw:Attachment in attachments){
+					if(fw.fileType == file.type.toUpperCase() && fw.size == file.size && fw.time == file.modificationDate.time){
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			private function openHandler(event:Event):void{
+				
+			}
+			
+			private function completeHandler(event:Event):void{
+				//读取文件
+				var filedata:ByteArray = new ByteArray();
+				fileReference.data.readBytes(filedata,0,fileReference.data.length);
+				fileWapper.fileBytes = filedata;
+				
+				attachmentController.doUpload(fileWapper,successCallBack);
+			}
+			
+			//进度条
+			public  function progressHandler(event:ProgressEvent):void{
+				pbrUploadProgress.label = "%3%%";
+				pbrUploadProgress.setProgress(0, 100);
+				pbrUploadProgress.setProgress(event.bytesLoaded, event.bytesTotal);                             
+			}
+			
+			private function uploadFile(): void{
+				var obj:Object = fileType.selectedItem;
+				if(obj == null){
+					Alert.show("请选择附件类型后再上传");
+					return;
+				}
+				
+				fileWapper = new Attachment();
+				fileWapper.type = obj.data;
+				fileWapper.fileType = fileReference.type.toUpperCase().substring(1);
+				fileWapper.size = fileReference.size;
+				fileWapper.time = fileReference.modificationDate.time;
+				//从本地读取文件
+				fileReference.load();
+			}
+			
+			private function successCallBack():void{
+				attachments.addItem(fileWapper);
+				fileReference = new FileReference();
+				uploadImage.enabled = false;
+				Alert.show("上传成功");
+			}
+			
+			//删除操作
+			public function removeFile(data:Object): void{
+				var fw:Attachment = data as Attachment;
+				var index: int = attachments.getItemIndex(fw);
+				if (index != -1){
+					attachments.removeItemAt(index);
+				}
+			}
+			
+			public function download(data:Object): void{
+				var fw:Attachment = data as Attachment;
+				var type:String = EnumManage.getDisplayText(fw.type,attachmentType);
+				try {
+					var file:FileReference=new FileReference();
+					file.addEventListener(Event.COMPLETE, saveComplete);
+					if(fw.fileBytes == null){
+						var url:String = encodeURI(host+fw.fileUrl);
+						var request:URLRequest = new URLRequest(url);
+						file.download(request,type+"."+fw.fileType);
+					}else{
+						file.save(fw.fileBytes,type+"."+fw.fileType);
+					}
+				}catch(errObject:Error) {
+					Alert.show("文件下载失败！\n 原因："+errObject.message);
+					return;
+				}
+			}
+			
+			public function saveComplete(event:Event):void{
+				Alert.show("下载完成");
+			}
+			
+			public function getType(item:Object,column:DataGridColumn):String{
+				var type:String = item.type as String;
+				return EnumManage.getDisplayText(type,attachmentType);
+			}
+			
+			public function clearPage():void{
+				attachments.removeAll();
+				fileType.selectedIndex = -1;
+				tfile.text = "";
+				pbrUploadProgress.label = "%3%%";
+				pbrUploadProgress.setProgress(0, 100);
+			}
+			public function clearPageForEdit():void{
+				fileType.selectedIndex = -1;
+				tfile.text = "";
+				pbrUploadProgress.label = "%3%%";
+				pbrUploadProgress.setProgress(0, 100);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		<fb:MultiColumnForm width="100%" height="100%">
+			<fb:MultiColumnFormItem label="附件类型：" >
+				<mx:ComboBox dataProvider="{attachmentType}" id="fileType" prompt="--请选择--"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="文件上传：" >
+				<mx:HBox>
+					<mx:TextInput id="tfile"  enabled="false"/>
+					<mx:Button label="浏览" click="browseFile();"/>
+					<mx:Button id="uploadImage" label="上传" enabled="false" click="uploadFile()"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="上传进度：" >
+				<mx:ProgressBar id="pbrUploadProgress" verticalCenter="true" width="100%" paddingLeft="5" paddingRight="5"
+								maximum="100" minimum="0" labelPlacement="center" mode="manual"
+								label="%3%%" textAlign="left"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		
+		<mx:DataGrid id="files" dataProvider="{attachments}">
+			<mx:columns>
+				<mx:DataGridColumn width="120" headerText="文件格式" dataField="fileType"/>
+				<mx:DataGridColumn width="150" headerText="附件类型" dataField="type" labelFunction="getType"/>
+				<mx:DataGridColumn headerText="删除" sortable="false" width="80">
+					<mx:itemRenderer> 
+						<mx:Component> 
+							<mx:Button label="删除" click="outerDocument.removeFile(data)"/>
+						</mx:Component> 
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="操作" sortable="false" width="80">
+					<mx:itemRenderer> 
+						<mx:Component> 
+							<mx:Button label="下载" click="outerDocument.download(data)"/>
+						</mx:Component> 
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:VBox>
+</mx:VBox> 

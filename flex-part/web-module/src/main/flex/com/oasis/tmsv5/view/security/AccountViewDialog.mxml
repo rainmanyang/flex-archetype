@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				width="800" height="500"
+				title="查看用户" xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="init()" xmlns:tree="com.oasis.component.tree.*">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.security.AccountController;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			import com.oasis.tmsv5.vo.security.Account;
+			import com.oasis.tmsv5.vo.security.CheckedOrg;
+			import com.oasis.tmsv5.vo.security.CheckedRole;
+			import com.oasis.utils.DateFormatterUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;			 
+			
+			[Inject]
+			public var accountControler:AccountController;
+			
+			[Bindable]
+			public var tVo:Account = new Account();
+			
+			[Bindable]
+			public var checkRole:CheckedRole;
+			
+			[Bindable]
+			public var allRoles:ArrayCollection = new ArrayCollection;
+			
+			[Bindable]
+			public var checkedRoles:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var checkedOrg:ArrayCollection = new ArrayCollection();
+			
+			public function init():void{
+				
+				/**
+				 *初始化角色选择控件 
+				 */
+				accountControler.getCheckedRoles(tVo.id,getCheckedRoleCallBack);
+				accountControler.getCheckedOrgs(tVo.id,getCheckedOrgCallBack);
+				
+			}
+			
+			/**
+			 * 
+			 * 初始化组织选择控件
+			 * 
+			 */
+			public function getCheckedOrgCallBack(_checkOrg:CheckedOrg):void{
+				
+				checkedOrg.removeAll();
+				if(_checkOrg.checkedOrg != null){
+					for each(var org:Organization in _checkOrg.checkedOrg){
+						checkedOrg.addItem(org.id);
+					}
+				}
+				asocOrg.dataProvider = _checkOrg.orgTree;
+				asocOrg.checkedNodeKeys = checkedOrg;
+				asocOrg.init();
+			}
+			
+			/**
+			 *
+			 * 初始化角色选择控件
+			 */
+			public function getCheckedRoleCallBack(checkedRoleL:CheckedRole):void{
+				/**
+				 * Bindable的变量不能改变变量引用，只能改变变量内容
+				 */
+				allRoles.removeAll();
+				checkedRoles = new ArrayCollection();
+				allRoles.addAll(checkedRoleL.allRoles);
+				checkedRoles.addAll(checkedRoleL.checkedRoles);
+			}
+			
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+
+		]]>
+	</fx:Script>
+	<s:HGroup horizontalAlign="right" width="100%" height="100%">
+		<fb:MultiColumnForm width="100%" height="100%" numColumns="2">
+			<fb:MultiColumnFormItem label="用户名称：" colspan="2">
+				<s:Label id="loginName" text="{tVo.loginName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="中文名：" >
+				<s:Label id="nameCN" text="{tVo.nameCN}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="英文名：" >
+				<s:Label id="nameEN" text="{tVo.nameEn}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="电子邮件：" >
+				<s:Label id="email" text="{tVo.email}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系电话：" >
+				<s:Label id="phone" text="{tVo.phoneCode}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="用户过期时间：" >
+				<s:Label id="expiredDate" text="{DateFormatterUtil.format1(tVo.expiredDate)}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="密码过期时间：" >
+				<s:Label id="passExpriedDate" text="{DateFormatterUtil.format1(tVo.passwordExpiredDate)}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="网络访问权限：" >
+				<s:Label id="netAuthority" text="{tVo.netAuthority}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="角色：">
+				<fb:SearchableList id="asocRole"
+								   dataProvider="{allRoles}"
+								   searchButtonStyle="searchButton2"
+								   dataField="name"
+								   selectedItems="{checkedRoles}"
+								   width="240"
+								   height="300"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="组织：">
+				<tree:CheckTree id="asocOrg"
+							  width="240"
+							  height="300"
+							  labelField="value"
+							  isComputeAllCheckedNodeDescendants="true"
+							  >
+				</tree:CheckTree>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</s:HGroup>
+	<s:Button label="关闭" click="button1_clickHandler(event)" />
+</fb:PopupDialog>

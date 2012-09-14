@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:upload="com.oasis.tmsv5.view.util.*"
+	xmlns:nv="com.oasis.wolfburg.validator.*"
+	width="100%" height="100%" xmlns:driver="driver.*" title="编辑" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="validator1" source="{nameCn}" property="text" required="true"/>
+		<mx:StringValidator id="validator2" source="{mobilePhone}" property="text" required="true"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.driver.DriverController;
+			import com.oasis.tmsv5.event.DriverEvent;
+			import com.oasis.tmsv5.view.popup.CarrierDialog;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.wolfburg.vo.driver.Driver;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var driverController:DriverController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:Driver= new Driver();
+			
+			[Bindable]
+			public var driverStatus:ArrayCollection = EnumManage.getDriverStatus(); 
+			
+			[Bindable]
+			public var allowedTruckData:ArrayCollection = EnumManage.getAllowedTruck();
+			
+			[Bindable]
+			public var certType:ArrayCollection = EnumManage.getCertType();
+			
+			public var getDriverCallBack:Function;
+			
+			public function freshForm():void{
+				driverController.find(vo,temp);
+			}
+			
+			private function temp():void{
+				var parent:ViewStack= this.parent as ViewStack;
+				parent.selectedIndex=2;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			public function setId(id:Number):void {
+				vo.id=id;
+			}
+			
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new Driver();
+				//				provice.selectedIndex = 0;
+				//				city.selectedIndex = 0;
+				//				district.selectedIndex = 0;
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				if(getDriverCallBack != null){
+					getDriverCallBack(vo);
+				}
+				PopUpManager.removePopUp(this);
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见DriverComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([validator1,validator2]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			private function update():void{
+				if(!validate()){
+					return;
+				}
+				//更新方法需要传两个回调函数
+				var files:ArrayCollection = upload.attachments;
+				if(files is String){
+					Alert.show(files as String);
+					return;
+				}
+				vo.allowedTruck = allowedTruck.selectedItem.data;
+				driverController.update(vo,files,successCallBack,validationCallBack);
+				//upload.getFileWapper();
+			}
+			
+			protected function getCarrier():void {
+				var dialog:CarrierDialog = 
+					CarrierDialog(PopUpManager.createPopUp(root, CarrierDialog , true));
+				dialog.passFun = localFun;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFun(item:Object):void{
+				var carrier:Carrier = Carrier(item);
+				vo.carrierId = carrier.id;
+				vo.carrierName = carrier.carrierName;
+			}
+			
+			private function clearCarrier():void{
+				vo.carrierId = NaN;
+				vo.carrierName = "";
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+	
+		<fb:MultiColumnForm  width="90%" label="基本信息">
+			<fb:MultiColumnFormItem label="编号：">
+				<s:TextInput id="code" text="@{vo.code}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="姓名：" required="true">
+				<s:TextInput id="nameCn" text="@{vo.name}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="手机：" required="true">
+				<s:TextInput id="mobilePhone" text="@{vo.mobilePhone}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="身份证："  >
+				<s:TextInput id="idcard" text="@{vo.idcard}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="驾驶号："  >
+				<s:TextInput id="license" text="@{vo.license}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="家庭地址：">
+				<s:TextInput text="@{vo.address}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="所属承运商：" >
+				<fb:SelectableTextInput id="carrierName" textInputEditable="false" text="@{vo.carrierName}" searchButtonClick="getCarrier" clearButtonClick="clearCarrier"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="准驾车型：" >
+				<dropDownList:DropDownList dataProvider="{allowedTruckData}" id="allowedTruck" searchKey="data" value="{vo.allowedTruck}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="初次领证日期：" >
+				<mx:DateField selectedDate="@{vo.licenseDate}" formatString="YYYY-MM-DD"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="有效期开始日期：" >
+				<mx:DateField id="periodStart" selectedDate="@{vo.periodStart}" formatString="YYYY-MM-DD"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="有效期截止日期：" >
+				<mx:DateField id="periodEnd" selectedDate="@{vo.periodEnd}" formatString="YYYY-MM-DD"/>
+			</fb:MultiColumnFormItem>
+			<!--
+			<upload:uploadMultiple id="upload" url="http://localhost/wolfburg-war/upload" attachmentType="{certType}" width="100%" />
+			-->
+			<upload:upload id="upload" attachmentType="{certType}" attachments="{vo.attachmentList}" width="100%"/>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="update()"/>
+		<mx:Button label="取消" id="cancel" click="PopUpManager.removePopUp(this);"/>
+	</mx:HBox>
+		
+</fb:PopupDialog>

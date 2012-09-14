@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				width="740" height="400"
+				creationComplete="init()"
+				title="选择司机" xmlns:grid="com.oasis.component.grid.*">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.driver.DriverController;
+			import com.oasis.tmsv5.so.driver.DriverSO;
+			import com.oasis.wolfburg.vo.driver.Driver;
+			import com.oasis.wolfburg.vo.route.Route;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var driverController:DriverController;
+			[Bindable]
+			public var so:DriverSO = new DriverSO();
+			[Bindable]
+			public var item:Driver = new Driver();
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var dp:ArrayCollection;
+			
+			[Bindable]
+			public var type:ArrayCollection = new ArrayCollection(
+				[   {label:"公司", data:'COMPANY'}, 
+					{label:"个体", data:'PERSON'}
+				]);
+			[Bindable]
+			public var st:ArrayCollection = new ArrayCollection(
+				[   {label:"新建", data:'NEW'}, 
+					{label:"激活", data:'ACTIVED'}, 
+					{label:"冻结", data:'FROZEN'},
+					{label:"作废", data:'DESABLED'} 
+				]);
+			
+			private var _passFun:Function;
+			
+			public function set passFun(fun:Function):void{
+				_passFun = fun
+			}
+			
+			protected function btnOK(event:MouseEvent=null):void{
+				var arrs:Array = grid.selectedItems;
+				if(arrs.length == 0){
+					Alert.show("请选择司机!");
+				}else{
+					var items:ArrayCollection = new ArrayCollection;
+						if(arrs.length > 2){
+							Alert.show("选择的司机不能超过两个!");
+							return;
+						}
+						for each(var obj:Object in arrs){
+							items.addItem(obj as Driver);
+						}
+						if(_passFun!=null)
+							_passFun(items);
+						PopUpManager.removePopUp(this);
+					}
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				if(status == "NEW"){
+					return '新建';
+				} else if (status == "ACTIVED"){
+					return '激活';
+				} else if (status == "DISABLED"){
+					return '失效';
+				} else if (status == "FROZEN"){
+					return '冻结';
+				}
+				return '';
+			}
+			
+			public function search():void{
+				getPageData(1,so.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.status = 'NORMAL';
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				driverController.getPageList(so, pageList,callBack);
+			}
+			
+			public function init():void{
+				getPageData(so.pageNumber, so.objectsPerPage);
+			};
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox  width="100%" borderStyle="solid">
+				<fb:MultiColumnForm  numColumns="3" defaultButton="{searchBtn}">
+					<fb:MultiColumnFormItem label="编号/姓名" >
+						<mx:TextInput text="@{so.name}"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem label="执照：">
+						<mx:TextInput id="license" text="@{so.license}"/>
+					</fb:MultiColumnFormItem>
+					<fb:MultiColumnFormItem>
+						<mx:Button label="查询" click="search();" id="searchBtn"/>
+					</fb:MultiColumnFormItem>
+				</fb:MultiColumnForm>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid"  horizontalScrollPolicy="auto"
+								 width="100%" height="100%" allowMultipleSelection="true" dataProvider="{pageList.list}"
+								 getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								 pageSize="{so.objectsPerPage}" showControlColumn="false"
+								 doubleClickEnabled="true" doubleClick="btnOK(event)">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="编号" dataField="code"/>
+					<grid:DataGridColumnNested headerText="司机名称" dataField="name" width="210" />
+					<grid:DataGridColumnNested headerText="执照" dataField="license" />
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="btnOK()"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>
+

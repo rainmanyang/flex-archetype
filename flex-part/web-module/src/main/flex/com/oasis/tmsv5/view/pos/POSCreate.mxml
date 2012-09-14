@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"      
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+	 	 xmlns:fb="http://flexbase.800best.com/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:flexlib="http://code.google.com/p/flexlib/"
+		 width="100%" height="100%" xmlns:pos="pos.*" title="创建" creationComplete="init()" xmlns:dropDownList="com.oasis.component.dropDownList.*" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+	
+	<fx:Declarations>
+		<mx:StringValidator id="nameValidator" source="{nameCn}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="codeValidator" source="{code}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="orgValidator" source="{organizationName}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="typeValidator" source="{type}" property="selectedItem" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		
+		<mx:StringValidator id="proviceValidator" source="{provice}" property="selectedItem" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="cityValidator" source="{city}" property="selectedItem" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="districtValidator" source="{district}" property="selectedItem" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="addressValidator" source="{address}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.PosEvent;
+			import com.oasis.tmsv5.nzone.NaturalZoneController;
+			import com.oasis.tmsv5.route.PosController;
+			import com.oasis.tmsv5.view.popup.OrgDialog;
+			import com.oasis.tmsv5.vo.naturalZone.NaturalZone;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			import com.oasis.utils.ViewUtils;
+			import com.oasis.wolfburg.vo.route.Pos;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var posController:PosController;
+			
+			[Inject]
+			public var nZoneController:NaturalZoneController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var vo:Pos= new Pos();
+			
+			[Bindable]
+			public var proDb:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var cityDb:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var distDb:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			//bl00718 review
+			//放到enummananger中去
+			public var posType:ArrayCollection = new ArrayCollection(
+					[{label:"一级分拨", data:'F'}, 
+					{label:"二级分拨", data:'S'}, 
+					{label:"网点", data:'N'}
+				]);
+			
+			public function orgPopUpHandle(org:Organization):void{
+				vo.organizationId = org.id;
+				vo.organizationTreePath = org.treePath;
+				organizationName.text = org.name;
+			}
+			
+			public function init():void{
+				var id:Number = 1001;
+				nZoneController.getNaturalZoneByParent(id,proDb);
+			}
+			
+			public function clearForm():void {
+				if(this.initialized){
+					init();
+					organizationName.text = "";
+					cityDb = null;
+					distDb = null;
+				}
+			}
+			
+			/**
+			 * 初始化市
+			 */ 
+			public function refreshCity():void{
+				var pro:NaturalZone = provice.selectedItem as NaturalZone;
+				nZoneController.getNaturalZoneByParent(pro.id,cityDb,refreshCityCallback);
+			}
+			
+			private function refreshCityCallback():void {
+				city.selectedIndex=-1;
+			}
+			
+			/**
+			 * 初始化地区
+			 */
+			public function refreshDist():void{
+				var city:NaturalZone = city.selectedItem as NaturalZone;
+				nZoneController.getNaturalZoneByParent(city.id,distDb,refreshDistCallBack);
+			}
+			
+			private function refreshDistCallBack():void{
+				district.selectedIndex=0;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+
+			protected function save_clickHandler(event:MouseEvent):void
+			{
+				
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new Pos();
+				ViewUtils.clearFrom(form);
+				type.selectedIndex = -1;
+				provice.selectedIndex = -1;
+				city.selectedIndex = -1;
+				district.selectedIndex = -1;
+				cleaeOrg();
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				vo = new Pos();
+				cleaeOrg();
+				type.selectedIndex = -1;
+				provice.selectedIndex = -1;
+				city.selectedIndex = -1;
+				district.selectedIndex = -1;
+				Alert.show("网点新增成功!");
+				ViewUtils.clearErrorString(form);
+				dispatch.dispatchEvent(new PosEvent(PosEvent.POS_LIST_EVENT));
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([nameValidator,codeValidator,orgValidator,proviceValidator,cityValidator,districtValidator,addressValidator,typeValidator]);
+				if(errors.length > 0 ){
+					return false&&validateAddress();
+				}
+				return true&&validateAddress();
+			}
+			
+			private function validateAddress():Boolean{
+				if(provice.selectedItem){
+					if(!city.selectedItem){
+						city.errorString = "请选择市!";
+						return false;
+					}
+					if(!district.selectedItem){
+						district.errorString = "请选择地区!";
+						return false;
+					}
+					if(address.text == "") {
+						address.errorString = "请输入地址!"
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			private function create():void{
+				if(!validate()){
+					return;
+				}
+				collectData();
+				//创建方法需要传两个回调函数
+				posController.create(vo,successCallBack,validationCallBack);
+			}
+			
+			/**
+			 * 设置非绑定属性
+			 */ 
+			private function collectData():void {
+				vo.privince = provice.selectedItem.name;
+				vo.privinceId = provice.selectedItem.id;
+				vo.city = city.selectedItem.name;
+				vo.cityId = city.selectedItem.id;
+				vo.district = district.selectedItem.name;
+				vo.districtId = district.selectedItem.id;
+				vo.type = type.selectedItem.data;
+			}
+			
+			protected function getOrg():void {
+				var dialog:OrgDialog = 
+					OrgDialog(PopUpManager.createPopUp(root, OrgDialog , true));
+				dialog.closeCallBack = orgPopUpHandle;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			protected function cleaeOrg():void {
+				vo.organizationId = Number.NaN;
+				vo.organizationTreePath = null;
+				organizationName.text = null;
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<fb:MultiColumnForm id="form" width="90%" label="基本信息">
+			<fb:MultiColumnFormItem label="编号：" required="true" >
+				<s:TextInput id="code" text="@{vo.code}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="名称：" required="true" >
+				<s:TextInput id="nameCn" text="@{vo.name}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="简称："  >
+				<s:TextInput id="shortName" text="@{vo.shortName}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="GPS："  >
+				<s:TextInput id="gps" text="@{vo.gps}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="组织：" required="true">
+				<fb:SelectableTextInput  id="organizationName" textInputEditable="false" searchButtonClick="getOrg" clearButtonClick="cleaeOrg" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="网点类型：" required="true">
+			  <dropDownList:DropDownList id="type"  dataProvider="{posType}" prompt="{resourceManager.getString('normalResource','select')}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="详细地址：" required="true">
+				<mx:HBox>
+					<s:ComboBox id="provice" width="94"  dataProvider="{proDb}"  labelField="name" change="refreshCity()"/>
+					<mx:Label text="省"/>
+					<s:ComboBox id="city" width="94" dataProvider="{cityDb}" labelField="name" change="refreshDist()" />
+					<mx:Label text="市"/>
+					<s:ComboBox id="district" width="94" dataProvider="{distDb}" labelField="name" />
+					<mx:Label text="区" />
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem width="100%">
+				<s:TextInput id="address" width="60%" text="@{vo.address}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="负责人："  >
+				<s:TextInput id="chargePerson"  text="@{vo.chargePerson}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="负责人手机："  >
+				<s:TextInput id="chargePhone"  text="@{vo.chargePhone}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系人："  >
+				<s:TextInput id="contactPerson" text="@{vo.contactPerson}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系人手机："  >
+				<s:TextInput id="contactPhone" text="@{vo.contactPhone}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="网点路书："  width="100%">
+				<s:TextArea id="roadmap" text="@{vo.roadMap}" width="60%"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="create()"/>
+		<mx:Button label="取消" id="cancel" click="cancel_clickHandler(event)"/>
+	</mx:HBox>
+</mx:Panel>

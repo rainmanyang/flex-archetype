@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml"
+		 width="100%" height="100%"
+	xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="init()" xmlns:tree="com.oasis.component.tree.*">
+	<fx:Declarations>
+		<mx:StringValidator id="nameValidator" source="{tname}" property="text" required="true"/>
+	</fx:Declarations>
+	<fx:Binding source="tname.text" destination="tVo.name"/>
+	<fx:Binding source="description.text" destination="tVo.description"/>
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.StringUtils;
+			import com.oasis.component.menu.MenuItem;
+			import com.oasis.component.tree.TreeNode;
+			import com.oasis.tmsv5.configurePage.ConfigurePageController;
+			import com.oasis.tmsv5.security.MenuItemController;
+			import com.oasis.tmsv5.vo.security.CheckedPremissionTree;
+			import com.oasis.tmsv5.vo.security.RolePremission;
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.wolfburg.vo.configurePage.ConfigurePage;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.validators.Validator;			 
+			
+			[Bindable] 
+			public var treeNode:TreeNode= new TreeNode();
+			
+			[Inject]
+			public var menuItemController:MenuItemController;
+			[Inject]
+			public var configurePageController:ConfigurePageController;
+
+			[Bindable]
+			public var vo:RolePremission;
+			
+			[Bindable]
+			public var tVo:RolePremission;
+			
+			[Bindable]
+			private var domainList:ArrayCollection = new ArrayCollection(
+				[ {label:"800best", data:60014}
+					]);
+			[Bindable]
+			public var allPages:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var checkedPages:ArrayCollection = new ArrayCollection();
+			/**
+			 * 选中的菜单节点keys
+			 */
+			[Bindable]
+			private var menuItems:ArrayCollection = new ArrayCollection();
+			
+			public function init():void{
+				if(vo == null){
+					vo = new RolePremission();
+				}
+				tVo = RolePremission(BeanUtils.clone(vo));
+				//加载权限菜单树
+				if(menuItemController != null){
+					menuItemController.getMenuItemTree4Premission(tVo.id,getPremissionNodeListCallBack);
+				}
+				
+				//加载首页信息
+				if(configurePage != null){
+					configurePageController.getAllPages(allPages);
+					configurePageController.getCheckedPages(tVo.id,checkedPages);
+				}
+			}
+			
+			private function getPremissionNodeListCallBack(checkedPremissionTree:CheckedPremissionTree):void{
+				treeNode=checkedPremissionTree.premissionTree as TreeNode;
+				menuItems = new ArrayCollection;
+				for each(var premission:MenuItem in checkedPremissionTree.checkedPremission){
+					menuItems.addItem(premission.id);
+				}
+				premissions.init();
+			}
+			
+			public function validate():Boolean{
+				Validator.validateAll([nameValidator]);
+				if(StringUtils.isBlank(tname.text)){
+					Alert.show("请输入名称!");
+					return false;
+				}
+				
+				if(tVo.netAuthority != '000' 
+					&& tVo.netAuthority != '001'
+					&& tVo.netAuthority != '010'
+					&& tVo.netAuthority != '011'
+					&& tVo.netAuthority != '100'
+					&& tVo.netAuthority != '101'
+					&& tVo.netAuthority != '110'
+					&& tVo.netAuthority != '111'){
+					netAuthority.errorString = '网络访问权限信息不合法，请填写三位信息，' +
+						'分别代表内网访问权限（0或者1），VPN访问权限（0或者1），外网访问权限（0或者1）';
+					return false;
+				}
+				return true;
+			}
+			
+			/**
+			 * 
+			 *父窗口调用 
+			 */
+			public function collectData():void{
+				tVo.domainId = domain.selectedItem.data;
+				setMenu();
+				tVo.configurePages = configurePage.selectedItems;
+				BeanUtils.copyProperties(vo,tVo);
+			}
+			
+			private function setMenu():void{
+				var checkNodes:ArrayCollection = new ArrayCollection();
+				for each(var node:TreeNode in premissions.checkedNodes){
+					 var item:MenuItem = MenuItem(node.data) ;
+					 //item.id = node.data["id"];
+					 checkNodes.addItem(item);
+				}
+				tVo.premission = checkNodes;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:HBox horizontalAlign="right" width="100%">
+		<fb:MultiColumnForm width="100%" height="100%" numColumns="2">
+			<fb:MultiColumnFormItem label="角色名称："  required="true" colspan="2">
+				<s:TextInput id="tname" text="{tVo.name}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="角色描述：" colspan="2">
+				<s:TextInput id="description" text="{tVo.description}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="域名称："  required="true" colspan="2">
+				<s:ComboBox id="domain" dataProvider="{domainList}" selectedIndex="0"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="网络访问权限："  required="true" colspan="2">
+				<s:TextInput id="netAuthority" text="@{tVo.netAuthority}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="权限：" height="100%">
+				<tree:CheckTree id="premissions"  showRoot="true"
+							  dataProvider="{treeNode}" 
+							  labelField="value" height="300" width="240"
+							  isComputeAllCheckedNodeDescendants="true"
+							  checkBoxCascadeOnCheck="false"
+							  checkedNodeKeys="{menuItems}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="首页信息：" height="100%">
+				<fb:SearchableList id="configurePage"
+								   dataProvider="{allPages}"
+								   searchButtonStyle="searchButton2"
+								   dataField="description"	
+								   selectedItems="{checkedPages}"
+								   width="240"
+								   height="300"/>
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+</mx:VBox>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml" width="100%" height="100%" creationComplete="init()"
+		 xmlns:security="com.oasis.tmsv5.view.security.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.OrgReloadEvent;
+			import com.oasis.tmsv5.security.OrganizationController;
+			import com.oasis.tmsv5.vo.organization.Organization;
+			
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+			
+			[Inject]
+			public var organizationController:OrganizationController;
+			
+			[Bindable]
+			public var parentId:Number;
+			
+			[Dispatcher]
+			public var dispatcher:IEventDispatcher;
+			
+			public function init():void{
+				if(parentId == 0)
+					return;
+				organizationController.view(parentId,findOrgCallBack);
+			}
+				
+			protected function findOrgCallBack(org:Organization):void{
+				form.vo=org;
+			}
+			
+			public function submit():void{
+				
+				if(!form.validate()){
+					return;
+				}
+				organizationController.updateOrg(form.vo,submit_callBack,validationCallBack);
+			}
+			
+			private function submit_callBack():void{
+				/**
+				 *重新加载组织树 
+				 */
+				dispatcher.dispatchEvent(new OrgReloadEvent(OrgReloadEvent.REOLAD_ORG_EVENT));
+				Alert.show("更新成功!");
+			}
+			
+			public function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,form,true);
+			}
+		]]>
+	</fx:Script>
+	
+	<security:OrganizationForm id="form" width="100%" height="100%"/>
+	<mx:HBox horizontalAlign="right" width="146">
+		<mx:Button label="提交" click="submit();" />
+	</mx:HBox>
+</mx:VBox>

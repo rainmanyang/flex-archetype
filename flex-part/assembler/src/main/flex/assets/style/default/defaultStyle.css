@@ -1,0 +1,627 @@
+/* CSS file */
+@namespace "library://ns.adobe.com/flex/mx";
+@namespace fb "http://flexbase.800best.com/mxml";
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace fx "http://ns.adobe.com/mxml/2009" ;
+@namespace flexlib "http://code.google.com/p/flexlib/";
+
+
+
+
+
+
+List
+{
+	alternating-item-colors: #F7F7F7, #FFFFFF;
+	rollOver-color: #E8F9FF;
+	selectionColor: #9CDCFF;
+}
+
+fb|BestSuperTabNavigator{
+	selectedTabTextStyleName: superTabNavigatorSelectedTabText;
+	tabStyleName: superTabNavigatorTab;
+	tabCloseButtonStyleName: superTabNavigatorTabCloseButton;
+	
+	/* 	color: #FFFFFF;
+	text-selected-color: #FFFFFF;
+	text-roll-over-color: #FFFFFF; */
+	horizontalGap: 0; 
+}
+.editableHeaderStyle{
+	color: 370181;
+}
+.superTabNavigatorTabCloseButton {
+/*	upSkin: Embed(source="images/dummy.png");
+	overSkin: Embed(source="images/tab_close.png");
+	downSkin: Embed(source="images/tab_close.png");*/
+	upSkin: Embed(source='/assets/style/default/assets.swf', symbol='firefox_close_up');
+	overSkin: Embed(source='/assets/style/default/assets.swf', symbol='firefox_close_over');
+	downSkin: Embed(source='/assets/style/default/assets.swf', symbol='firefox_close_down');
+	disabled-skin: Embed(source='/assets/style/default/assets.swf', symbol='firefox_close_disabled');
+	horizontalGap: 0;
+	paddingTop: 0;
+	paddingLeft: 0;
+	paddingRight: 0;
+	paddingBottom: 0;
+}
+
+.linkButtonWindowShade {
+	headerClass:ClassReference('mx.controls.LinkButton');
+	header-style-name: linkButtonStyle;
+	
+	drop-shadow-enabled:true;
+	
+	corner-radius:5;
+	border-style:solid;
+	
+    background-color:#efefef;
+	background-alpha:.7;
+	
+	openIcon:Embed(source="/assets/style/default/images/unfold.gif");
+    closeIcon:Embed(source="/assets/style/default/images/fold.gif");
+	headerTextAlign:left;
+}      
+
+.linkButtonStyle {
+	skin:Embed(source="/assets/style/default/images/table_header_bg.png");
+	corner-radius:5;	
+	fill-alphas:1,1;
+	padding-left:10;
+	color:#000000;
+	textRollOverColor:#ffffff;
+}
+		
+s|Application {
+	background-color: #FFFFFF;
+	padding-left: 0;
+	padding-right: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+	backgroundGradientAlphas: 1.0, 1.0;
+	backgroundGradientColors: #FFFFFF, #323232;
+}
+Alert {
+	color : #124332;
+	background-color: #ffffff;
+	header-colors : #226FB7, #226FB7;
+	header-height:19;
+	drop-shadow-enabled: true;
+	drop-shadow-color :#226FB7;
+	borderAlpha: 0.55;
+	corner-radius :6;
+	border-style :solid;
+	border-thickness: 1;
+	border-color : #226FB7;
+	footer-colors : #226FB7, #ffffff;
+	titleStyleName: "myAlertTitle";
+}
+
+.myAlertTitle {
+	color: #000000;
+	fontSize: 12;
+	fontFamily: Arial;
+	fontWeight: nomal;
+}
+global
+{
+	fontSize: 12px;
+}
+
+
+Button.showHide {
+	upSkin: Embed(source="images/show_hide_button_.png");
+	overSkin: Embed(source="images/show_hide_button_.png");
+	downSkin: Embed(source="images/show_hide_button_.png");
+	
+	selected-up-skin: Embed(source="images/show_hide_button_.png");
+	selected-over-skin: Embed(source="images/show_hide_button_.png");
+	selected-down-skin: Embed(source="images/show_hide_button_.png");
+}
+Button.leftButtonShow {
+	upSkin: Embed(source="images/right-control.gif");
+	overSkin: Embed(source="images/right-control-on.gif");
+	downSkin: Embed(source="images/right-control.gif");
+	
+	selected-up-skin: Embed(source="images/right-control.gif");
+	selected-over-skin: Embed(source="images/right-control.gif");
+	selected-down-skin: Embed(source="images/right-control.gif");
+	
+	height: 70;
+	width: 10;
+}
+Button.leftButtonHide {
+	upSkin: Embed(source="images/left-control.gif");
+	overSkin: Embed(source="images/left-control-on.gif");
+	downSkin: Embed(source="images/left-control.gif");
+	
+	selected-up-skin: Embed(source="images/left-control.gif");
+	selected-over-skin: Embed(source="images/left-control.gif");
+	selected-down-skin: Embed(source="images/left-control.gif");
+	
+	height: 70;
+	width: 10;
+}
+Button.imageButton
+{
+	upSkin: Embed(source="images/dummy.png");
+	paddingTop: 0;
+	paddingLeft: 0;
+	paddingBottom: 0;
+	paddingRight: 0;
+}
+Button.searchButton
+{
+	upSkin: Embed(source="images/dummy.png");
+	paddingTop: 0;
+	paddingLeft: 0;
+	paddingBottom: 0;
+	paddingRight: 0;
+	icon:Embed(source="images/search2.png");
+}
+
+
+Box.accordionBox {
+	border-skin: Embed(source="images/accordion_box_bg.png");
+}
+
+LinkButton.menuItem
+{
+	textAlign: right;
+}
+
+FormItem
+{
+	fontSize: 12px;
+	indicator-gap:10;	
+}
+fb|MultiColumnFormItem
+{
+	fontSize: 12px;
+	indicator-gap:10;	
+}
+TextInput.generic
+{
+	fontSize: 12px;
+	radius: 4;
+	cornerRadius: 4;
+	borderStyle: solid;
+}
+
+Form
+{
+	padding-top: 5;
+	padding-bottom: 0;
+	vertical-gap: 3;
+	indicator-gap: 0;
+	color: #000000;
+}
+
+.dataGridHeader
+{
+	font-size: 12px;
+	font-weight: normal;
+	color: #226FB7;
+	height: 26;
+	border-thickness-bottom: 1;
+	border-color: #3d7fb3;
+}
+
+.barcode {
+	font-size: 14;
+	color: #0000FF;
+}
+
+DataGrid
+{
+	fontSize: 12px;
+	color: #000000;
+	header-style-name: dataGridHeader;
+	header-height: 26;
+	horizontal-grid-lines: true;
+	vertical-grid-lines: false;
+	alternating-item-colors: #F7F7F7, #FFFFFF;
+	rollOver-color: #E8F9FF;
+	headerBackgroundSkin: Embed(source="images/table_header_bg.png");
+	selectionColor: #9CDCFF;
+	verticalScrollBarStyleName: dataGridVerticalScrollBar;
+	horizontal-scroll-bar-style-name: dataGridHorizontalScrollBar;
+	horizontalGridLineColor: #EDEDED;
+	borderStyle: solid;
+	
+}
+
+
+ViewStack.mainContainer
+{
+	backgroundColor: #EFEFEF;
+}
+CheckBox
+{
+	horizontalGap: 0;
+	cornerRadius: 0;
+}
+
+Button.navigator
+{
+	color: #000000;
+	cornerRadius: 16;
+	fontFamily: Verdana;
+	fontSize: 18;
+	fontStyle: normal;
+	fontWeight: bold;
+	textAlign: center;
+	textDecoration: none;
+	paddingLeft: 0;
+	paddingTop: 0;
+	paddingRight: 0;
+	paddingBottom: 0;
+}
+Label.hugeCityLabel
+{
+	fontFamily: "??1??71??1??771??1??71??1??7771??1??71??1??771??1??71??1??7777??1??71??1??771??1??71??1??7771??1??71??1??771??1??71??1??7777??1??71??1??771??1??71??1??7771??1??71??1??771??1??71??1??7777??1??71??1??771??1??71??1??7771??1??71??1??771??1??71??1??7777";
+	fontSize: 28;
+	fontWeight: bold;
+	color: #0018FF;
+}
+TitleWindow
+{
+	fontSize: 12px;
+	borderColor: #232323;
+	roundedBottomCorners: true;
+	borderThicknessTop: 0;
+	borderThicknessLeft: 0;
+	borderThicknessRight: 0;
+	cornerRadius: 7;
+	borderThicknessBottom: 12;
+	borderStyle: solid;
+	borderAlpha: 0.54;
+	highlightAlphas: 0.38, 0.14;
+	headerColors: #000000, #000000;
+	footerColors: #333333, #000000;
+	title-style-name:"titleWindowTitle";
+	close-button-skin:Embed(source="images/panel/up.png");
+	close-button-up-skin:Embed(source="images/panel/up.png");
+	close-button-down-skin:Embed(source="images/panel/up.png");
+	close-button-disabled-skin:Embed(source="images/panel/up.png");
+	close-button-over-skin:Embed(source="images/panel/over.png");
+
+}
+.titleWindowTitle{
+	fontWeight: bold;
+	color: #FFFFFF;
+}
+.advancedDataGridHeader
+{
+	font-size: 12px;
+	font-weight: normal;
+	color: #226FB7;
+	height: 26;
+	border-thickness-bottom: 1;
+	border-color: #3d7fb3;
+}
+.dataGridVerticalScrollBar
+{
+	/* 每个图片要做四套 */
+	upArrowUpSkin: Embed(source="images/scroll-bar-up.png");
+	downArrowUpSkin: Embed(source="images/scroll-bar-down.png");
+	fillAlphas: 0.0, 0.0, 0.0, 0.0;
+	borderColor: #FFFFFF;
+	cornerRadius: 0;
+	thumbOffset: 0;
+	background-alpha: 0.0;
+	thumbUpSkin: Embed(source="images/scroll-bar-thumb.png");
+	trackSkin: Embed(source="images/scroll-bar-track.png");
+	thumbOverSkin: Embed(source="images/scroll-bar-thumb.png");
+	thumbDownSkin: Embed(source="images/scroll-bar-thumb.png");
+	downArrowOverSkin: Embed(source="images/scroll-bar-down.png");
+	downArrowDownSkin: Embed(source="images/scroll-bar-down.png");
+	downArrowDisabledSkin: Embed(source="images/scroll-bar-down.png");
+	upArrowOverSkin: Embed(source="images/scroll-bar-up.png");
+	upArrowDownSkin: Embed(source="images/scroll-bar-up.png");
+	upArrowDisabledSkin: Embed(source="images/scroll-bar-up.png");
+}
+.dataGridHorizontalScrollBar {
+	/* 每个图片要做四套 */
+	upArrowUpSkin: Embed(source="images/hscroll-bar-up.png");
+	downArrowUpSkin: Embed(source="images/hscroll-bar-down.png");
+	fillAlphas: 0.0, 0.0, 0.0, 0.0;
+	borderColor: #FFFFFF;
+	cornerRadius: 0;
+	thumbOffset: 0;
+	background-alpha: 0.0;
+	thumbUpSkin: Embed(source="images/scroll-bar-thumb.png");
+	trackSkin: Embed(source="images/scroll-bar-track.png");
+	thumbOverSkin: Embed(source="images/scroll-bar-thumb.png");
+	thumbDownSkin: Embed(source="images/scroll-bar-thumb.png");
+	downArrowOverSkin: Embed(source="images/hscroll-bar-down.png");
+	downArrowDownSkin: Embed(source="images/hscroll-bar-down.png");
+	downArrowDisabledSkin: Embed(source="images/hscroll-bar-down.png");
+	upArrowOverSkin: Embed(source="images/hscroll-bar-up.png");
+	upArrowDownSkin: Embed(source="images/hscroll-bar-up.png");
+	upArrowDisabledSkin: Embed(source="images/hscroll-bar-up.png");
+}
+LinkButton.topMenuButton
+{
+	color: #66CBFF;
+	themeColor: #C6DAE6;
+}
+.superTabNavigatorSelectedTabText
+{
+	font-weight: normal;
+	color: #FFFFFF;
+}
+
+
+/**
+  FIXME: 最好用Flash做skin，用图片模拟效果很差
+*/
+.superTabNavigatorTab
+{
+	/* fillAlphas: 1.0, 1.0;
+	fillColors: #E3F4FC, #A6D9F4; */
+	tabCloseButtonStyleName: superTabNavigatorTabCloseButton;
+	up-skin: Embed(source="images/tab_up.png");
+	over-skin: Embed(source="images/tab_hover.png");
+	down-skin: Embed(source="images/tab_selected_up.png");
+    
+	selected-up-skin: Embed(source="images/tab_selected_up.png");
+	selected-over-skin: Embed(source="images/tab_selected_up.png");
+	selected-down-skin: Embed(source="images/tab_selected_up.png");
+	tab-height: 25;
+	
+	selector-color: #FFFFFF;
+	color: #FFFFFF;
+	font-weight: normal;
+	
+}
+
+ComboBox
+{
+	arrowButtonWidth: 22;
+	cornerRadius: 5;
+	disabledIconColor: #919999;	
+	disabledSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	downSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	dropDownStyleName: "comboDropDown";
+	editableDisabledSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	editableDownSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	editableOverSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	editableUpSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	fontSize: 12;
+	fontWeight: bold;
+	leading: 0;
+	overSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+	paddingLeft: 5;
+	paddingRight: 5;
+	upSkin: ClassReference("mx.skins.halo.ComboBoxArrowSkin");
+}
+.listBaseVerticalScrollBar
+{
+	cornerRadius: 4;
+	borderColor: #B7BABC;
+}
+
+PopUpButton
+{
+	arrowButtonWidth: 18;
+	disabledSkin: ClassReference(null);
+	downSkin: ClassReference(null); 
+	paddingLeft: 3;
+	paddingRight: 3;
+	overSkin: ClassReference(null);
+	popUpDownSkin: ClassReference(null);
+	popUpIcon: ClassReference("mx.skins.halo.PopUpIcon");
+	popUpGap: 0;
+	popUpOverSkin: ClassReference(null);
+	skin: ClassReference("mx.skins.halo.PopUpButtonSkin");
+	upSkin: ClassReference(null);
+}
+.header{ 
+	backgroundImage:Embed(source="images/header_bg.png"); 
+	backgroundSize: "100%"; 
+}
+
+
+Panel {
+	borderColor: #000000;
+	borderAlpha: 0.15;
+	borderThicknessLeft: 1;
+	borderThicknessTop: 1;
+	borderThicknessBottom: 1;
+	borderThicknessRight: 1;
+	roundedBottomCorners: true;
+	cornerRadius: 6;
+    headerColors: #000000, #666666;
+	footerColors: #000000, #666666;
+	titleBackgroundSkin:Embed(source="/assets/style/default/images/table_header_bg.png"); 
+	titleStyleName: "mypanelTitle";
+	headerHeight:24;
+	background-color:#efefef;
+	background-alpha:.7;
+}
+
+.mypanelTitle {
+	cornerRadius:120 ; 
+	borderStyle:solid;
+	fontWeight: bold;
+}
+.printView{
+    backgroundColor: #FFFFFF;
+	fontFamily: Consolas;
+}
+.errorTip { 
+	fontSize:12px;
+}
+
+DateChooser {
+	cornerRadius: 11;
+	borderThickness: 1;
+	horizontalGap: 10;
+	verticalGap: 6;
+	headerColors: #ebe9e1, #f7f4f7;
+	highlightAlphas: 0.42, 0;
+	fillAlphas: 0.63, 0.52, 0.79, 0.17;
+	todayColor: #1861bf;
+	backgroundAlpha: 1;
+	dropShadowEnabled: true;
+	shadowDistance: 4;
+	fontWeight: normal;
+	headerStyleName: "mydateChooserHeaderStyle";
+	weekDayStyleName: "mydateChooserWeekDayStyle";
+	todayStyleName: "mydateChooserTodayStyle";
+	
+}
+
+.mydateChooserHeaderStyle {
+	color: #231b01;
+	fontWeight: bold;
+	fontSize: 11;
+	fontStyle: normal;
+	textDecoration: none;
+	
+}
+
+.mydateChooserWeekDayStyle {
+	color: #cc0033;
+	fontWeight: bold;
+	fontStyle: normal;
+	textDecoration: none;
+	
+}
+
+.mydateChooserTodayStyle {
+	color: #e4a10a;
+}
+.linedNumericAxis
+{
+	tick-length:3;
+	minor-tick-placement:none;
+}
+.styledColumnChart {
+	chartSeriesStyles: "column1", "column2", "column3", "column4";
+}
+.column1 {
+	fill: #00cccc;
+}
+.column2 {
+	fill: #f9a5a1;
+}
+.column3 {
+	fill: #FF9900;
+}
+.column4 {
+	fill: #6f8aa5;
+}
+
+TextArea {
+	borderStyle: solid;
+	cornerRadius: 7;
+}
+
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+.searchButton1
+{
+	upSkin: Embed(source="images/searchButton1_upskin.gif");
+	overSkin: Embed(source="images/searchButton1_over.gif");
+	downSkin: Embed(source="images/searchButton1_down.gif");
+	disabledSkin: Embed(source="images/searchButton1_down.gif");	
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+.clearButton1
+{
+	upSkin: Embed(source="images/clearButton1_upskin.gif");
+	overSkin: Embed(source="images/clearButton1_over.gif");
+	downSkin: Embed(source="images/clearButton1_down.gif");
+	disabledSkin: Embed(source="images/clearButton1_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+.searchButton2
+{
+	upSkin: Embed(source="images/searchButton2_upskin.gif");
+	overSkin: Embed(source="images/searchButton2_over.gif");
+	downSkin: Embed(source="images/searchButton2_down.gif");
+	disabledSkin: Embed(source="images/searchButton2_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+.clearButton2
+{
+	upSkin: Embed(source="images/clearButton2_upskin.gif");
+	overSkin: Embed(source="images/clearButton2_over.gif");
+	downSkin: Embed(source="images/clearButton2_down.gif");
+	disabledSkin: Embed(source="images/clearButton2_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+.searchButton3
+{
+	upSkin: Embed(source="images/searchButton3_upskin.gif");
+	overSkin: Embed(source="images/searchButton3_over.gif");
+	downSkin: Embed(source="images/searchButton3_down.gif");
+	disabledSkin: Embed(source="images/searchButton3_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+
+.clearButton3
+{
+	upSkin: Embed(source="images/clearButton3_upskin.gif");
+	overSkin: Embed(source="images/clearButton3_over.gif");
+	downSkin: Embed(source="images/clearButton3_down.gif");
+	disabledSkin: Embed(source="images/clearButton3_down.gif");
+	paddingTop: 1;
+	paddingLeft: 1;
+	paddingBottom: 1;
+	paddingRight: 1;
+}
+
+.deleteButton{
+	upSkin: Embed(source="images/delete.gif");
+	skin: Embed(source="images/delete.gif");
+	downSkin: Embed(source="images/delete.gif");
+	
+	/* pause button skins */
+	selectedUpSkin: Embed(source="images/delete.gif");
+	selectedOverSkin: Embed(source="images/delete.gif");
+	selectedDownSkin: Embed(source="images/delete.gif");
+}
+
+.Timeline {
+   calendarLabelWidth: 150;
+   calendarRowHeight: 200;
+}
+
+.CalendarEvent {
+   headerHeight: 16;
+   cornerRadius: 8;
+   borderThickness: 2;
+}
+
+.DayChrome {
+	backgroundColor: #AAAAAA;
+}
+
+.ThisMonth {
+	backgroundColor: #8E8E8E;
+}
+
+.NotThisMonth {
+	backgroundColor: #EEEEEE;
+}

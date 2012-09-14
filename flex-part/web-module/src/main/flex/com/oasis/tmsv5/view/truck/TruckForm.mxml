@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:fb="http://flexbase.800best.com/mxml" 
+		 width="100%" horizontalScrollPolicy="auto"  
+		 xmlns:flexlib="http://code.google.com/p/flexlib/">
+	<mx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.tmsv5.event.TruckEvent;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.truck.ContractRoute;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.view.popup.CarrierDialog;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var vehicleTypeD:ArrayCollection = new ArrayCollection(
+				[   {label:"高栏车6吨", data:'GL'}, 
+					{label:"平板车6吨", data:'PB'}, 
+					{label:"面包车", data:'MB'},
+					{label:"全封闭箱车1.5吨", data:'QF'}
+				]);
+			
+			[Bindable]
+			public var vehicleLevelD:ArrayCollection = new ArrayCollection(
+				[   {label:"高级车", data:'G'}, 
+					{label:"中级车", data:'Z'}, 
+					{label:"低级车", data:'D'},
+					{label:"相当下流", data:'X'}
+				]);
+			
+			[Bindable]
+			public var certType:ArrayCollection = new ArrayCollection(
+				[   {label:"行驶证", data:'1'}, 
+					{label:"道路运输许可证", data:'2'},
+					{label:"挂靠协议", data:'3'},
+					{label:"保险单", data:'4'},
+				    {label:"车辆购置税证", data:'4'}
+				]);
+			
+			
+			[Bindable]
+			public var route:ArrayCollection = new ArrayCollection();
+			
+			protected function addRoute():void
+			{
+				var dialog:RouteDialog = 
+					RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				    dialog.passFun = localFun1;
+				    PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFun1(item:Object):void{
+				var vo : Route = Route(item);
+				if (truckRouteName.text.length<=0) {
+					truckRouteName.text = truckRouteName.text +" "
+					truckRouteName.text+= vo.name;
+				}
+				
+			}
+			
+			[Bindable]
+			public var carrier:ArrayCollection = new ArrayCollection();
+			
+			protected function addCarrier():void
+			{
+				var dialog:CarrierDialog = 
+					CarrierDialog(PopUpManager.createPopUp(root, CarrierDialog , true));
+				    dialog.passFun = localFun2;
+				    PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFun2(item:Object):void{
+				var vo : Carrier = Carrier(item);
+				//trace(vo.name);
+				truckCarrierName.text = vo.carrierName;
+//				owner.data=vo.carrierName;
+				ownerAddress.text=vo.contactAddress;
+				ownerPhone.text=vo.contactPhone;
+			}
+		]]>
+	</mx:Script>
+		<flexlib:WindowShade id="ws1"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="基本信息: " 
+							 width="99%" >
+			<fb:MultiColumnForm numColumns="3" >
+				
+			
+		<fb:MultiColumnFormItem label="车牌号：" required="true" >
+			<mx:TextInput  id="lisencePlate" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车型：" >
+			<fb:AdvancedComboBox id="vehicleType" dataProvider="{vehicleTypeD}" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车辆档次：" >
+			<fb:AdvancedComboBox id="vehicleLevel" dataProvider="{vehicleLevelD}" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车长：" >
+			<mx:TextInput  id="vehicleLength" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车宽：" >
+			<mx:TextInput  id="vehicleWidth" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车高：" >
+			<mx:TextInput  id="vehicleHeight" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="可装容积：" >
+			<mx:TextInput  id="loadVolume" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="载重量：" >
+			<mx:TextInput  id="loadWeight" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="联系人：" >
+			<mx:TextInput  id="contractPerson" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="联系电话：" >
+			<mx:TextInput id="contractPhone" width="100"/>
+		</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="卡号：" >
+					<mx:TextInput  id="cardCode" width="100"/>
+				</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="GPS号：" >
+			<mx:TextInput  id="gpsCode" width="100"/>
+		</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+	<flexlib:WindowShade id="ws2"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="车辆信息: "
+						 width="99%">
+		<fb:MultiColumnForm numColumns="3">
+		<fb:MultiColumnFormItem label="品牌型号：" >
+			<mx:TextInput id="brand" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车辆识别号(VIN)：" >
+			<mx:TextInput id="vin" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车架号：" >
+			<mx:TextInput id="vehicleCode" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="发动机号：" >
+			<mx:TextInput id="engineCode" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="挂车车架号：" >
+			<mx:TextInput id="trailerCode" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="核定载质量：" >
+			<mx:TextInput id="maxWeight" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="整备质量：" >
+			<mx:TextInput id="emptyWeight" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="总质量：" >
+			<mx:TextInput id="totalWeight" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="年检有效期限：" >
+			<mx:NumericStepper value="1" id="inspectionDur" />
+		</fb:MultiColumnFormItem>
+	
+		<fb:MultiColumnFormItem label="发证机关：" >
+			<mx:TextInput id="permissionOrg" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="上牌日期：" >
+			<mx:DateField id="licenceDate" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="最近年检日期：" >
+			<mx:DateField id="inspectionDate" />
+		</fb:MultiColumnFormItem>
+		
+		
+		<fb:MultiColumnFormItem label="报废日期：" >
+			<mx:DateField id="discardDate" />
+		</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+	
+	
+	<flexlib:WindowShade id="ws6"
+	tabChildren="{ws1.opened}"
+	styleName="linkButtonWindowShade"
+	label="合同线路: "
+	width="99%">
+	<fb:MultiColumnForm numColumns="1" width="99%" >	
+	<fb:MultiColumnFormItem label="合同线路：" width="70%" >
+		<fb:SelectableTextInput textInputEditable="true" width="70%" searchButtonClick="addRoute" text="请选择线路" id="truckRouteName"/>
+	</fb:MultiColumnFormItem>
+	</fb:MultiColumnForm>
+	</flexlib:WindowShade>
+	
+	<flexlib:WindowShade id="ws3"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="车主信息"
+						 width="99%">
+		<fb:MultiColumnForm numColumns="2" >	
+			
+		<fb:MultiColumnFormItem label="所属承运商："  >
+			<fb:SelectableTextInput textInputEditable="true" searchButtonClick="addCarrier" text="请选择承运商"  id="truckCarrierName"/>
+		</fb:MultiColumnFormItem>
+		<!--
+		<fb:MultiColumnFormItem label="车主：" >
+			<mx:TextInput id="owner" />
+		</fb:MultiColumnFormItem>-->
+		<fb:MultiColumnFormItem label="车主联系电话：" >
+			<mx:TextInput id="ownerPhone" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="车主住址：" >
+			<mx:TextInput id="ownerAddress" />
+		</fb:MultiColumnFormItem>
+		
+		</fb:MultiColumnForm>
+	</flexlib:WindowShade>
+		
+	<flexlib:WindowShade id="ws4"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="司机信息: "
+						 width="99%">
+		<fb:MultiColumnForm numColumns="2">		
+		<fb:MultiColumnFormItem label="司机1：" >
+			<mx:TextInput id="driver1" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="联系电话：" >
+			<mx:TextInput id="driver1Phone" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="司机2：" >
+			<mx:TextInput id="driver2" width="100"/>
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="联系电话：" >
+			<mx:TextInput id="driver2Phone" width="100"/>
+		</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</flexlib:WindowShade>
+		
+	<flexlib:WindowShade id="ws5"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="保险信息"
+						 width="99%">
+		<fb:MultiColumnForm numColumns="2" >	
+		<fb:MultiColumnFormItem label="保险公司：" >
+			<mx:TextInput id="insurer" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="保险单号1：" >
+			<mx:TextInput id="insureCode1" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="保险单号2：" >
+			<mx:TextInput id="insureCode2" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="保险生效时间：" >
+			<mx:DateField id="insureFrom" />
+		</fb:MultiColumnFormItem>
+		
+		<fb:MultiColumnFormItem label="保险截止时间：" >
+			<mx:DateField id="insureTill" />
+		</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</flexlib:WindowShade>
+	
+	<flexlib:WindowShade id="ws7"
+						 tabChildren="{ws1.opened}"
+						 styleName="linkButtonWindowShade"
+						 label="资质文件: "
+						 width="99%" >	
+		<fb:MultiColumnForm  numColumns="2" >	
+			<s:HGroup>
+				<fb:MultiColumnFormItem label="证件类型：" >
+					<s:ComboBox dataProvider="{certType}" />
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="相关附件上传：" >
+					<s:TextInput/>
+				</fb:MultiColumnFormItem>
+			</s:HGroup>
+		</fb:MultiColumnForm>
+	</flexlib:WindowShade>
+</mx:VBox>
+

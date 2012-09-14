@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx" 
+				width="400" height="150"
+				title="文件下载提示" creationComplete="init()"
+				verticalAlign="middle" >
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.util.StringUtils;
+			import com.oasis.tmsv5.base.DownloadInfoController;
+			import com.oasis.tmsv5.bill.FeeItemController;
+			import com.oasis.tmsv5.bill.PaymentItemController;
+			import com.oasis.tmsv5.price.PriceController;
+			import com.oasis.tmsv5.report.OperationStateController;
+			import com.oasis.tmsv5.route.PosController;
+			import com.oasis.tmsv5.so.bill.FeeItemSO;
+			import com.oasis.tmsv5.so.bill.PaymentItemSO;
+			import com.oasis.tmsv5.so.price.PriceSO;
+			import com.oasis.tmsv5.so.route.PosSO;
+			import com.oasis.tmsv5.so.truckAttence.TruckAttenceSO;
+			import com.oasis.tmsv5.truckAttence.TruckAttenceController;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobTimeRecordController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.wolfburg.so.carrier.CarrierSO;
+			import com.oasis.wolfburg.so.report.OperationStateSO;
+			import com.oasis.wolfburg.so.route.RouteSO;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSJobTimeRecordSO;
+			import com.oasis.wolfburg.so.truckRSSchedule.TruckRSScheduleSO;
+			
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+
+			[Bindable]
+			public var truckRSJobTimeRecordSO:TruckRSJobTimeRecordSO = new TruckRSJobTimeRecordSO();
+			
+			[Bindable]
+			public var paymentItemSO:PaymentItemSO = new PaymentItemSO();
+			
+			[Bindable]
+			public var feeItemSO:FeeItemSO = new FeeItemSO();
+			[Bindable]
+			public var truckAttenceSO:TruckAttenceSO = new TruckAttenceSO();
+			[Bindable]
+			public var priceSO:PriceSO = new PriceSO();
+			[Bindable]
+			public var operationStateSO:OperationStateSO = new OperationStateSO();
+			[Bindable]
+			public var posSO:PosSO = new PosSO();
+			[Bindable]
+			public var routeSO:RouteSO = new RouteSO();
+			[Bindable]
+			public var truckRSScheduleSO:TruckRSScheduleSO = new TruckRSScheduleSO();
+			[Bindable]
+			public var carrierSO:CarrierSO = new CarrierSO();
+			[Bindable]
+			public var truckSO:TruckSO = new TruckSO();
+			
+			[Bindable]
+			public var reportType:String;
+			
+			private var downloadURL:String;
+			
+			[Inject]
+			public var truckRSJobTimeRecordController:TruckRSJobTimeRecordController;
+			
+			[Inject]
+			public var paymentItemController:PaymentItemController;
+			
+			[Inject]
+			public var feeItemController:FeeItemController;
+			
+			[Inject]
+			public var truckAttenceController:TruckAttenceController;
+			
+			[Inject]
+			public var priceController:PriceController;
+			[Inject]
+			public var operationStateController:OperationStateController;
+			[Inject]
+			public var downloadInfoController:DownloadInfoController;
+			
+			[Bindable]
+			public var fileName:String;
+			
+			[Bindable]
+			public var yearMonth:String;
+			
+			public function init():void{
+				prog.indeterminate = true;
+				if(StringUtils.isNotBlank(reportType)){
+					//运营时效报表导出
+					if(reportType == Constants.TRUCK_RSJOB_TIME_RECORD_EXPORT){
+						truckRSJobTimeRecordController.exportExcel(truckRSJobTimeRecordSO,reportDownloadCallback);
+						fileName = "运营时效报表.xls";
+					}else if(reportType == Constants.FEE_EXPORT){
+						feeItemController.exportToExcel(feeItemSO,reportDownloadCallback);
+						fileName = yearMonth + "申请付款报表.xls";
+					}else if(reportType == Constants.PAYMENTITEM_EXPORT){
+						paymentItemController.exportToExcel(paymentItemSO,reportDownloadCallback);
+						fileName = yearMonth + "关账报表.xls";
+					}else if(reportType == Constants.FEE_ITEM_FOR_EXPORT){
+						feeItemController.export(feeItemSO,reportDownloadCallback);
+						fileName = "应收应付班车费报表.xls";
+					}else if(reportType == Constants.PAYMENTITEM_FOR_EXPORT){
+						paymentItemController.export(paymentItemSO,reportDownloadCallback);
+						fileName = "应付班车费报表.xls";
+					}else if(reportType == Constants.FEE_ITEM_FOR_COMPARE){
+						feeItemController.export4FeeCompare(feeItemSO,reportDownloadCallback);
+						fileName = yearMonth + "费用对比报表.xls";
+					}else if(reportType == Constants.TRUCK_ATTENCE){
+						truckAttenceController.export(truckAttenceSO,reportDownloadCallback);
+						fileName = "日考核报表.xls";
+					} else if(reportType == Constants.Price){
+						priceController.export(priceSO, reportDownloadCallback);
+						fileName = "费率本导出.xls";
+					}else if(reportType == Constants.OperationState){
+						operationStateController.export(operationStateSO, reportDownloadCallback);
+						fileName = "网络班车运营情况（仓位）表.xls";
+					}else if(reportType == Constants.POS){
+						downloadInfoController.exportPos(posSO, reportDownloadCallback);
+						fileName = "网点.xls";	
+					}else if(reportType == Constants.ROUTE){
+						downloadInfoController.exportRoute(routeSO, reportDownloadCallback);
+						fileName = "线路.xls";	
+					}else if(reportType == Constants.TRUCKRS_SCHEDULE){
+						downloadInfoController.exportTruckrsSchedule(truckRSScheduleSO, reportDownloadCallback);
+						fileName = "班车时刻表.xls";	
+					}else if(reportType == Constants.CARRIER){
+						downloadInfoController.exportCarrier(carrierSO, reportDownloadCallback);
+						fileName = "承运商.xls";	
+					}else if(reportType == Constants.TRUCK){
+						downloadInfoController.exportTruck(truckSO, reportDownloadCallback);
+						fileName = "车辆.xls";	
+					}else if(reportType == Constants.TRUCK_EXPIRATION){
+						downloadInfoController.exportTruckExpiration(truckSO, reportDownloadCallback);
+						fileName = "到期车辆数据.xls";	
+					}
+				}
+			}
+			
+			private function reportDownloadCallback(url:String):void{
+				//if(successFlg){
+					downloadURL=url;
+					prog.label = "文件数据已生成完成，请下载！";
+					prog.indeterminate = false;
+					btnDownload.enabled=true;
+			}
+			/**
+			 * 报表下载
+			 */
+			private function download():void{
+				try {
+					var fileRef:FileReference = new FileReference();  
+					var downloadURL:URLRequest = new URLRequest(downloadURL); 
+					configureListeners(fileRef);
+					if(fileName != ""){
+						fileRef.download(downloadURL,fileName);
+					}else{
+						fileRef.download(downloadURL);
+					}
+				}catch(errObject:Error) {
+					Alert.show("文件下载失败！\n 原因："+errObject.message);
+					return;
+				}
+				
+			}
+			private function configureListeners(dispatcher:IEventDispatcher):void {
+				dispatcher.addEventListener(Event.CANCEL, cancelHandler);
+				dispatcher.addEventListener(Event.COMPLETE, completeHandler);
+				dispatcher.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				dispatcher.addEventListener(ProgressEvent.PROGRESS, progressHandler);
+			}
+			private function cancelHandler(event:Event):void {
+				var file:FileReference = FileReference(event.target);
+				file.cancel();
+				prog.indeterminate = false;				
+				prog.label = "下载取消";		
+			}
+			private function progressHandler(event:ProgressEvent):void {
+				var file:FileReference = FileReference(event.target);
+				prog.indeterminate = true;
+				prog.label = "下载进度"+ int(event.bytesLoaded / event.bytesTotal * 100) +"%";
+				prog.setProgress(event.bytesLoaded, event.bytesTotal);			
+			}
+			public function completeHandler(event:Event):void 
+			{
+				prog.label = "文件下载完成！";
+				prog.indeterminate = false;
+				btnDownload.enabled=false;
+			}
+			public function ioErrorHandler(event:IOErrorEvent):void 
+			{
+				prog.label = "文件下载失败！请确认是否有同名的文件处于打开状态。";
+				btnDownload.enabled=false;
+				prog.indeterminate = false;
+				//Alert.show("文件下载失败！"+event.text);
+			}
+		]]>
+	</fx:Script>
+	<mx:ProgressBar id="prog" labelPlacement="center"  indeterminate="true" width="100%" label="正在生成报表文件数据......"/>
+	<mx:HBox width="100%" horizontalAlign="right">
+		<mx:Button id="btnDownload" click="download();" label="下载"  enabled="false"/>
+		<mx:Button id="close" click="PopUpManager.removePopUp(this);" label="关闭" />		
+	</mx:HBox>
+	
+</fb:PopupDialog>
+

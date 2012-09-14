@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				width="450" height="200"
+				creationComplete="init()"
+				title="手动调整打卡记录" xmlns:grid="com.oasis.component.grid.*">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobTimeRecordController;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.vo.truckRSSchedule.TRSJobTimeRecordMaintainView;
+			
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var jtrController:TruckRSJobTimeRecordController;
+			[Bindable]
+			public var rsJobId:Number;
+			[Bindable]
+			public var passFun:Function;
+			[Bindable]
+			public var vo:TRSJobTimeRecordMaintainView = new TRSJobTimeRecordMaintainView();
+			
+			public function init():void{
+					adjustDate.date = vo.scanedTime;
+			}
+			
+			private function getScanType(scanType:Number):String {
+					return vo.scanedType;
+			}
+			
+			private function create():void{
+				if(adjustDate.date != null){
+					vo.scanedTime = adjustDate.date;
+					jtrController.updateManualScanedTime(vo,vo.stopSeq ,successCallBack);
+				}else{
+					Alert.show("请录入调整时间!")
+				}
+			}
+			
+			private function successCallBack():void{
+				if(passFun!=null){
+					passFun();
+				}
+				Alert.show("时间调整成功!");
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function cancel_clickHandler(event:MouseEvent):void{
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</mx:Script>
+	<mx:HBox width="100%" height="100%">
+		<fb:MultiColumnForm  width="100%" label="信息">
+			<fb:MultiColumnFormItem label="站点名称：">
+				<s:Label text="{vo.thisStop}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="进出港：">
+				<s:Label id="bound"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="原扫描时间：">
+				<s:Label text="{DateFormatterUtil.format6(vo.scanedTime)}"/>
+			</fb:MultiColumnFormItem>
+			
+			<fb:MultiColumnFormItem label="调整后时间：">
+				<fb:DateTimeInput id="adjustDate" allowDatePick="true" />
+			</fb:MultiColumnFormItem>
+		</fb:MultiColumnForm>
+	</mx:HBox>
+	<mx:HBox width="100%" paddingLeft="50">
+		<mx:Button label="保存" id="save" click="create()"/>
+		<mx:Button label="取消" id="cancel" click="cancel_clickHandler(event)"/>
+	</mx:HBox>
+</fb:PopupDialog>
+

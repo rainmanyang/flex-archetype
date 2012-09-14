@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" >
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.wolfburg.enum.EnumManage;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import com.oasis.wolfburg.vo.attachment.Attachment;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			public var attachmentType:ArrayCollection;
+			
+			//做为当前操作行所代表的对象(attachments[i])的引用
+			private var fwData:Object;
+			
+			override public function set data(value:Object):void{
+				fwData = value;
+				var fw:Attachment = value as Attachment;
+				var index:int = EnumManage.getSelectedIndex(fw.type,attachmentType);
+				if(index != -1){
+					type.selectedIndex = index;
+				}else{
+					type.selectedIndex = -1;
+				}
+			}
+			
+			protected function changeHandler(event:IndexChangeEvent):void{
+				var obj:Object = event.target;
+				fwData.type = obj.selectedItem.data;
+			}
+		]]>
+	</fx:Script>
+	<s:DropDownList id="type" labelField="label" dataProvider="{attachmentType}" prompt="请选择" change="changeHandler(event)"/>
+</mx:HBox>

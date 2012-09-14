@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.wolfburg.dao.trackRecord.TrackRecordDAO">
+
+	<insert id="insert" parameterType="map">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<select id="selectListByFKId" parameterType="long" resultType="TrackRecordView">
+		select t.*,j.code as truckRsJobName,a.loginname as opName from wl_trackrecord t,wl_truckrs_job j,gt_accounts a 
+			where t.truck_rsjob_id = #{fkid} and t.truck_rsjob_id = j.id and t.creator_id = a.id order by t.createdtime desc
+	</select>
+	
+	
+	
+	<select id="find" resultType="TrackRecord">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+	
+	<delete id="deleteByIds" parameterType="map">
+		<include refid="sqlmap.common.model.deleteByIds"/>
+	</delete>
+
+	<update id="update" statementType="PREPARED" timeout="20000" parameterType="map">
+		<include refid="sqlmap.common.model.update" />
+	</update>
+	
+</mapper>

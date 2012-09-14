@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 xmlns:grid="com.oasis.component.grid.*"
+		 initialize="init()">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			
+			import mx.controls.Alert;
+			
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobController;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truckRSSchedule.StopRSJobSO;
+			import com.oasis.wolfburg.vo.truckRSSchedule.StopTruckRSJobVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			
+			
+			
+			[Bindable]  
+			public var so:StopRSJobSO = new StopRSJobSO();	
+			
+			[Inject]
+			public var truckRSJobController:TruckRSJobController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var rsJobArray:ArrayCollection = EnumManage.getRSJobStatus();
+			
+			[Bindable]
+			public var truckTypeArray:ArrayCollection = EnumManage.getTruckType4list();
+			
+			[Bindable]
+			public var jobTypeArray:ArrayCollection = EnumManage.getRsjobType();
+			
+			[Bindable]
+			public var inOutList:ArrayCollection = EnumManage.getBooelanInOutType();
+			
+			public function init():void{
+				
+				(this.parent.parent.parent.parent.parent as StopRSJobList).validate();
+				so = (this.parent.parent.parent.parent.parent as StopRSJobList).so;
+				search();
+			}
+			
+			public function search():void{
+				so.inOut=true;
+				truckRSJobController.getStopTruckJobView(so, pageList);
+			}
+			
+			private function getInPlanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).inPlanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getInScanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).inScanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getRSStatus(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String
+				return EnumManage.getDisplayText(status,rsJobArray);
+			}
+			
+			private function getTruckType(item:Object,column:DataGridColumn):String{
+				var truckType:String = item.truckType as String
+				return EnumManage.getDisplayText(truckType,truckTypeArray);
+			}
+			
+			private function getJobType(item:Object,column:DataGridColumn):String{
+				var jobType:String = item.jobType as String
+				return EnumManage.getDisplayText(jobType,jobTypeArray);
+			}
+			
+			private function getOutPlanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).outPlanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getOutScanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).outScanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<grid:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%" horizontalScrollPolicy="auto"
+						   getPageData="search"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+						   pageSize="{so.objectsPerPage}"
+						   height="100%" allowMultipleSelection="false"  showControlColumn="false">
+		<grid:columns>
+			<grid:DataGridColumnNested headerText="本站站点" dataField="outStop"  width="100"/>
+			<grid:DataGridColumnNested headerText="下站站点" dataField="inStop" width="100"/>
+			<grid:DataGridColumnNested headerText="线路"  dataField="routeName" width="200"/>
+			<grid:DataGridColumnNested headerText="计划出发时间" dataField="outPlanTime" labelFunction="getOutPlanDateString" width="130"/>
+			<grid:DataGridColumnNested headerText="考勤出发时间" dataField="outScanTime" labelFunction="getOutScanDateString" width="130"/>
+			<grid:DataGridColumnNested headerText="计划到达下站时间" dataField="inPlanTime" labelFunction="getInPlanDateString" width="130"/>
+			<grid:DataGridColumnNested headerText="任务号" dataField="code" width="120"/>
+			<grid:DataGridColumnNested headerText="车牌号" dataField="licensePlate" width="80"/>
+			<grid:DataGridColumnNested headerText="车卡号" dataField="idCard" width="120"/>
+			<grid:DataGridColumnNested headerText="车型" dataField="truckType" width="80" labelFunction="getTruckType"/>
+			<grid:DataGridColumnNested headerText="车载方数" dataField="loadVolume" width="100"/>
+			<grid:DataGridColumnNested headerText="本站出发方数" dataField="outVolume" width="60"/>
+			<grid:DataGridColumnNested headerText="本站出发重量" dataField="outWeight" width="60"/>
+			<grid:DataGridColumnNested headerText="本站出发封签" dataField="outSeal" width="100"/>
+			<grid:DataGridColumnNested headerText="本站出发扫描人" dataField="outScanner" width="100"/>
+			<grid:DataGridColumnNested headerText="本站出发备注" dataField="outRemark" width="100"/>
+			<grid:DataGridColumnNested headerText="任务类型" dataField="jobType" width="120" labelFunction="getJobType"/>
+			<grid:DataGridColumnNested headerText="任务状态" dataField="status" width="60" labelFunction="getRSStatus"/>
+		</grid:columns>
+	</grid:PageableDataGrid>
+</mx:VBox>

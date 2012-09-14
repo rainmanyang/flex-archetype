@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:popup="popup.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:StopTruckRSJob="com.oasis.tmsv5.view.truckRSSchedule.*" xmlns:grid="com.oasis.component.grid.*" xmlns:dropDownList="com.oasis.component.dropDownList.*">
+	<fx:Declarations>
+		<mx:WipeDown id="myWD" duration="200" />
+		<mx:WipeUp id="myWU" duration="200" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.truckRSSchedule.TruckRSJobController;
+			import com.oasis.tmsv5.view.popup.POSDialog;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truckRSSchedule.StopRSJobSO;
+			import com.oasis.wolfburg.vo.truckRSSchedule.StopTruckRSJobVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var truckRSJobController:TruckRSJobController;
+			
+			[Bindable]  
+			public var so:StopRSJobSO = new StopRSJobSO();	
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var rsJobArray:ArrayCollection = EnumManage.getRSJobStatus();
+			
+			[Bindable]
+			public var truckTypeArray:ArrayCollection = EnumManage.getTruckType4list();
+			
+			[Bindable]
+			public var jobTypeArray:ArrayCollection = EnumManage.getRsjobType();
+			
+			[Bindable]
+			public var inOutList:ArrayCollection = EnumManage.getBooelanInOutType();
+			
+			public function init():void{
+				interval();
+				
+				if(stopRSJobOutForm != null){
+					stopRSJobOutForm.init();
+				}
+				
+				search();
+			}
+			private function interval():void{
+				var current:Date = new Date();
+				so.fromDate =current;
+				so.toDate = new Date(current.getFullYear(), current.getMonth(), current.getDate() +1, 18,0,0,0);
+			}
+			
+			public function search():void{
+				validate();
+				if(stopRSJobInForm != null){
+					so.inOut=false;
+					stopRSJobInForm.search();
+				}
+				if(stopRSJobOutForm != null){
+					so.inOut=true;
+					stopRSJobOutForm.search();
+				}
+			}
+			
+			public function validate():void{
+				so.pageNumber=1;
+				so.fromDate = fromDate.date;
+				so.toDate = toDate.date;
+			}
+			
+			public function clear():void{
+				so = new StopRSJobSO();
+				interval();
+				pos.text = "";
+				search();
+			}
+			
+			private function getInPlanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).inPlanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getInScanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).inScanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getRSStatus(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String
+			    return EnumManage.getDisplayText(status,rsJobArray);
+			}
+			
+			private function getTruckType(item:Object,column:DataGridColumn):String{
+				var truckType:String = item.truckType as String
+				return EnumManage.getDisplayText(truckType,truckTypeArray);
+			}
+			
+			private function getJobType(item:Object,column:DataGridColumn):String{
+				var jobType:String = item.jobType as String
+				return EnumManage.getDisplayText(jobType,jobTypeArray);
+			}
+			
+			private function getOutPlanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).outPlanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			private function getOutScanDateString(item:Object,column:DataGridColumn):String{
+				var date:Date = (item as StopTruckRSJobVO).outScanTime;
+				return DateFormatterUtil.format3(date);
+			}
+			
+			protected function addPOSStart():void
+			{
+				var dialog:POSDialog = 
+					POSDialog(PopUpManager.createPopUp(root, POSDialog , true));
+				dialog.passFun = localFunPos;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function localFunPos(item:Object):void{
+				pos.text = item.name;
+				so.posId=item.id;
+				so.posName=	item.name;
+			}
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="30%" height="100%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<mx:VBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm  width="100%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="网点:">
+								<fb:SelectableTextInput id="pos" textInputEditable="false" searchButtonClick="addPOSStart" width="120"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="起止时间:">
+							<mx:HBox>
+								<fb:DateTimeInput date="{so.fromDate}" allowDatePick="true" id="fromDate"/>
+								<mx:Label htmlText="--"/>
+								<fb:DateTimeInput date="{so.toDate}" allowDatePick="true" id="toDate"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem>
+							<mx:HBox>
+								<mx:Button label="查询" click="search()" id="searchBtn"/>
+								<mx:Button label="清空查询" click="clear()" id="clearBtn"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+					</fb:MultiColumnForm>
+				</mx:VBox>
+			</flexlib:WindowShade>
+			
+			<mx:TabNavigator height="100%" width="100%" >
+				<mx:VBox  width="100%" height="100%" label="进港" paddingLeft="3" paddingRight="3">
+					<StopTruckRSJob:StopRSJobInForm width="100%" so="{so}" id="stopRSJobInForm" />
+				</mx:VBox>
+				<mx:VBox  width="100%" height="100%" label="出港" paddingLeft="3" paddingRight="3">
+					<StopTruckRSJob:StopRSJobOutForm width="100%" so="{so}" id="stopRSJobOutForm"/>
+				</mx:VBox>
+			</mx:TabNavigator>
+			
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>

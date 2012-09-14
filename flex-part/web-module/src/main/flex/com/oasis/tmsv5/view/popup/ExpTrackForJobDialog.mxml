@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				width="630" height="500"
+				creationComplete="init()"
+				title="异常查看" xmlns:grid="com.oasis.component.grid.*">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.component.grid.SelectableDataGrid;
+			import com.oasis.tmsv5.track.ExpTrackController;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var expTrackController:ExpTrackController;
+			[Bindable]
+			public var rsJobId:Number;
+			[Bindable]
+			public var expTrackData:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var expDealStatus:ArrayCollection = EnumManage.getExpDealStatus();
+			[Bindable]
+			public var expGrades:ArrayCollection = EnumManage.getExpGrade4list();
+			[Bindable]
+			public var expTypes:ArrayCollection = EnumManage.getExpType4list();
+			
+			public function init():void{
+				expTrackController.findRsJobListByRsJobId(expTrackData, rsJobId);
+			}
+			
+			private function getExpTypeLabel(item:Object,column:DataGridColumn):String{
+				var expType:String = item.expType as String;
+				return EnumManage.getDisplayText(expType,expTypes);
+			}
+			
+			private function getExpGradeLabel(item:Object,column:DataGridColumn):String{
+				var expGrade:String = item.expGrade as String;
+				return EnumManage.getDisplayText(expGrade,expGrades);
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,expDealStatus);
+			}
+			
+			private function getDate(item:Object,column:DataGridColumn):String {
+				return DateFormatterUtil.format1(item.createdTime);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<grid:SelectableDataGrid id="grid" dataProvider="{expTrackData}" 
+									 height="100%" allowMultipleSelection="false" showControlColumn="false">
+				<grid:columns>
+					<mx:DataGridColumn headerText="车牌号码" dataField="licensePlate"/>
+					<mx:DataGridColumn headerText="任务单号" dataField="rssJobCode"/>
+					<mx:DataGridColumn headerText="异常级别" labelFunction="getExpGradeLabel" width="60"/>
+					<mx:DataGridColumn headerText="异常类型" labelFunction="getExpTypeLabel" width="110"/>
+					<mx:DataGridColumn headerText="联系电话" dataField="contactPhone"/>
+					<mx:DataGridColumn headerText="记录时间" labelFunction="getDate" width="80"/>
+					<mx:DataGridColumn headerText="状态" labelFunction="getStatusLabel" width="50"/>
+				</grid:columns>
+			</grid:SelectableDataGrid>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="关闭" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>
+

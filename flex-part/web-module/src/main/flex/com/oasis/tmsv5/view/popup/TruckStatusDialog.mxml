@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:mx="http://www.adobe.com/2006/mxml"
+				xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:dropDownList="com.oasis.component.dropDownList.*"
+				width="400" height="300"
+				title="状态列表" xmlns:s="library://ns.adobe.com/flex/spark">
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			[Bindable]
+			public var truckStatusType:ArrayCollection = EnumManage.getTruckStatus();
+			
+			[Bindable]
+			public var runningStatusType:ArrayCollection = EnumManage.getTruckRunningStatus();
+			
+			[Bindable]
+			public var truckVO:Truck;
+			
+			public var flag:String;
+			
+			public var openType:String;
+			
+			public var passFun:Function;
+			
+			public var callBack:Function;
+			
+			public var faultCallBack:Function;
+			
+			public function init():void{
+				if(openType == "RUNNING"){
+//					runningStatus.value=truckVO.runningStatus;
+//					runningBar.visible=true;
+					statusBar.visible=false;
+				} else if(openType == "STATUS") {
+					truckStatus.value =truckVO.status;
+					statusBar.visible=true;
+//					runningBar.visible=false;
+				} else if(openType == "DISABLED" || openType == "TEMP" || openType == "REGULAR") {
+					//runningBar.visible=false;
+					//runningBar.visible=false;
+				}
+			}
+			
+			
+			protected function btnOK():void{
+				if (desc.text == null || desc.text.length == 0) {
+					Alert.show("原因备注必填!");
+					return;
+				}
+				if(openType == "RUNNING" || openType == "STATUS"){
+					if (truckStatus.selectedItem.data == truckVO.status) {
+						Alert.show("请选择状态");
+						return;
+					} else {
+						truckVO.status = truckStatus.selectedItem.data;
+					}
+				}
+				if(openType == "RUNNING"){
+					truckController.updateRunningStatus(truckVO,desc.text,callBack,faultCallBack);
+				} else if(openType == "STATUS" || openType == "DISABLED"){
+					if(flag == "DISABLED"){
+						truckVO.status = "DISABLED";
+					}
+				   truckController.updateTruckStatus(truckVO,desc.text,callBack,faultCallBack);
+				} else if(openType == "TEMP" || openType == "REGULAR") {
+					truckVO.resourceType=openType;
+					truckController.updateResourceType(truckVO,desc.text,callBack,faultCallBack);
+				}
+				if (passFun != null) {
+					passFun();
+				}
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<mx:FormItem label="状态：" id="statusBar" required="true" visible="false">
+				<dropDownList:DropDownList id="truckStatus" dataProvider="{truckStatusType}" searchKey="data" value="{truckVO.status}" />
+			</mx:FormItem>
+			
+			<!--<mx:FormItem label="运行状态：" id="runningBar" required="true" visible="false">
+				<dropDownList:DropDownList id="runningStatus" dataProvider="{runningStatusType}" searchKey="data" value="{truckVO.runningStatus}"/>
+			</mx:FormItem>-->
+			
+			<mx:FormItem label="原因/备注：" required="true" height="80">
+				<mx:TextArea id="desc" />
+			</mx:FormItem>
+		</mx:VBox>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button label="确定" click="btnOK()" />
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

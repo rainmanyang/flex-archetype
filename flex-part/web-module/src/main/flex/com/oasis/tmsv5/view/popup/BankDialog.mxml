@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fb:PopupDialog xmlns:fb="http://flexbase.800best.com/mxml"
+				xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"  
+				xmlns:grid="com.oasis.component.grid.*"
+				width="800" height="600"
+				title="查找银行信息" xmlns:s="library://ns.adobe.com/flex/spark"  creationComplete="init()">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.bank.BankController;
+			import com.oasis.wolfburg.so.bank.BankSO;
+			import com.oasis.wolfburg.vo.bank.Bank;
+			
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			
+			
+			[Bindable]
+			private var pageList:PageList = new PageList;
+			
+			[Bindable]
+			private var bankSO:BankSO;
+			
+			[Bindable]
+			public var item:Bank = new Bank();
+			
+			public var getBankCallBack:Function;
+			
+			[Bindable]
+			public var checkedCus:Array = new Array();
+			
+			[Inject]
+			public var bankController:BankController;
+			
+			public function init():void{
+				if(bankSO == null){
+					bankSO = new BankSO();
+				}
+				getPageData(1, bankSO.objectsPerPage);
+			}
+
+			protected function search_clickHandler(event:MouseEvent):void
+			{
+				getPageData(1, bankSO.objectsPerPage);
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int):void{
+				bankSO.pageNumber = pageNum;
+				bankSO.objectsPerPage = pageSize;
+				bankController.getPageList(bankSO, pageList);
+			}
+
+
+			protected function reset_clickHandler(event:MouseEvent):void
+			{
+				bankSO.bankName = "";
+				bankSO.branchName = "";
+				getPageData(1, bankSO.objectsPerPage);
+			}
+
+			protected function btnOK(event:MouseEvent=null):void
+			{
+				var obj:Object = grid.selectedItem;
+				if(obj == null){
+					Alert.show("请选择银行!");
+				}else{
+					item = Bank(grid.selectedItem);
+					if(getBankCallBack != null){
+						getBankCallBack(item);
+					}
+					PopUpManager.removePopUp(this);
+				}
+				
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="90%">
+		<s:HGroup>
+			<fb:MultiColumnForm numColumns="4" defaultButton="{searchBtn}">
+				<fb:MultiColumnFormItem label="银行">
+					<s:TextInput id="bankName" text="@{bankSO.bankName}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem label="支行">
+					<s:TextInput id="branchName" text="@{bankSO.branchName}"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem >
+					<mx:Button label="查询" id="searchBtn" click="search_clickHandler(event)"/>
+				</fb:MultiColumnFormItem>
+				<fb:MultiColumnFormItem >
+					<mx:Button label="重置" id="reset" click="reset_clickHandler(event)"/>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</s:HGroup>
+		<grid:PageableDataGrid id="grid"  horizontalScrollPolicy="auto"
+							 width="100%" height="100%" allowMultipleSelection="false" dataProvider="{pageList.list}"
+							 getPageData="getPageData"  currentPageNum="{bankSO.pageNumber}" totalItemNum="{pageList.fullListSize}"
+							 pageSize="{bankSO.objectsPerPage}" showControlColumn="false"
+							 doubleClickEnabled="true" doubleClick="btnOK(event)">
+			
+			<grid:columns >
+				<grid:DataGridColumnNested headerText="银行" dataField="bankName" />
+				<grid:DataGridColumnNested headerText="支行" dataField="branchName"/>
+			</grid:columns>
+		</grid:PageableDataGrid>
+		<mx:HBox horizontalAlign="right" width="100%">
+			<mx:Button id="ok" click="btnOK()" label="确定"/>
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</fb:PopupDialog>

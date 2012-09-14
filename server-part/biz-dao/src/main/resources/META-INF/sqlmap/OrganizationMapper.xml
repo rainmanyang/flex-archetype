@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oasis.tmsv5.dao.organization.OrganizationDAO">
+	
+	<resultMap type="Organization" id="OrgMap">
+		<result property="domainId" column="domain_id"/>
+		<result property="creatorId" column="CREATOR_ID"/>
+		<result property="updatorId" column="UPDATOR_ID"/>
+		<result property="addressId" column="address_id"/>
+		<result property="desc" column="description"/>
+		<result property="contactPersonName" column="CONNACT_PERSON"/>
+		<result property="contactPhone" column="CONNACT_PHONE"/>
+		<result property="parentId" column="PARENT_ID"/>
+	</resultMap>
+
+	<insert id="insert" parameterType="Organization">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			<include refid="sqlmap.common.model.getSequence" />
+		</selectKey>
+		<include refid="sqlmap.common.model.insert" />
+	</insert>
+	
+	<update id="update" parameterType="Organization">
+		<include refid="sqlmap.common.model.update"/>
+	</update>
+	
+	<select id="find" resultMap="OrgMap">
+		<include refid="sqlmap.common.model.find" />
+	</select>
+	
+	<delete id="delete">
+		<include refid="sqlmap.common.model.delete" />
+	</delete>
+	
+	<sql id="pageListClause">
+		<where>
+			<if test="name!=null and name!='' ">
+			and t.name like '%'||#{name}||'%'
+			</if>
+		</where>
+	</sql>
+	
+	<select id="selectPageList" resultMap="OrgMap" parameterType="com.oasis.tmsv5.common.so.security.OrganizationSO">
+		select * from gt_organization t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="selectCount" resultType="int" parameterType="com.oasis.tmsv5.common.so.security.OrganizationSO">
+		select count(1) from gt_organization t
+		<include refid="pageListClause"/>
+	</select>
+	
+	<select id="getAllOrg" resultMap="OrgMap">
+		select *
+  			from gt_organization o
+ 				where o.domain_id = #{domainId}
+ 				<if test="condition != null and condition !='' ">
+ 					and (o.name like '%'||#{condition}||'%' or o.code like '%'||#{condition}||'%')
+ 				</if>
+	</select>
+	
+	<select id="getRootOrg" resultMap="OrgMap" >
+		select *
+  			from gt_organization o
+ 				where o.domain_id = #{domainId}
+   			and o.parent_id = 0
+	</select>
+	
+	<select id="getAsocOrgByAccount" resultMap="OrgMap">
+		select r.*
+			  from gt_organization r, gt_account_org_assoc ar
+			 	where ar.org_id = r.id
+			   	and ar.account_id = #{id}
+	</select>
+	
+	<select id="checkDuplication" resultMap="OrgMap" parameterType="map">
+		select * from gt_organization o where (o.name = #{name} or o.code = #{code})
+		<if test="id!=null and id!=0">
+				and id != #{id}
+		</if>
+	</select>
+</mapper>

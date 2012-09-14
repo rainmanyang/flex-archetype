@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		  xmlns:fb="http://flexbase.800best.com/mxml"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:grid="com.oasis.component.grid.*"
+		  xmlns:flexlib="http://code.google.com/p/flexlib/"
+		  width="100%" height="100%" xmlns:track="track.*" title="详细信息">
+	
+	<mx:Script>
+		<![CDATA[
+			import com.oasis.utils.BeanUtils;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.track.ExpTrack;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			[Bindable]
+			public var expDealStatus:ArrayCollection = EnumManage.getExpDealStatus();
+			[Bindable]
+			public var expGrades:ArrayCollection = EnumManage.getExpGrade();
+			[Bindable]
+			public var expTypes:ArrayCollection = EnumManage.getExpType();
+			
+			[Bindable]
+			public var vo:ExpTrack = new ExpTrack();
+			
+			public function displayText():void{
+				expType.text = EnumManage.getDisplayText(vo.expType,expTypes);
+				expGrade.text = EnumManage.getDisplayText(vo.expGrade,expGrades);
+				reportTime.text = DateFormatterUtil.format2(vo.reportTime);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		
+		<fb:MultiColumnForm  width="100%" label="基本信息">
+			<fb:MultiColumnFormItem label="车牌号码：">
+				<s:Label text="{vo.licensePlate}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="任务单号：">
+				<s:Label text="{vo.rssJobCode}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="班次：">
+				<s:Label text="{vo.rsScheduleName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="运营线路：">
+				<s:Label text="{vo.routeName}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="异常类型：">
+				<s:Label id="expType"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="异常级别：">
+				<s:Label id="expGrade"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="异常内容：">
+				<s:Label text="{vo.expContent}" />
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="预计延误：">
+				<mx:HBox>
+					<s:Label text="{vo.delayTime}"/>
+					<s:Label text="分钟"/>
+				</mx:HBox>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="报告人：">
+				<s:Label text="{vo.reporter}"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="报告时间：">
+				<s:Label id="reportTime"/>
+			</fb:MultiColumnFormItem>
+			<fb:MultiColumnFormItem label="联系电话：">
+				<s:Label text="{vo.contactPhone}"/>
+			</fb:MultiColumnFormItem>
+			<flexlib:WindowShade id="ws"
+								 tabChildren="{ws.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="历史异常处理记录"
+								 width="99%" >	
+				<grid:SelectableDataGrid id="grid" dataProvider="{vo.suggestList}" allowMultipleSelection="false" height="100%" showControlColumn="false">
+					<grid:columns>
+						<mx:DataGridColumn headerText="异常处理内容" dataField="expDealContent" width="250"/>
+						<mx:DataGridColumn headerText="异常处理人员" dataField="expDealer"/>
+					</grid:columns>
+				</grid:SelectableDataGrid>
+			</flexlib:WindowShade>
+		</fb:MultiColumnForm>
+	</mx:VBox>
+</mx:Panel>

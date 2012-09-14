@@ -1,0 +1,787 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"      
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:dropDownList="com.oasis.component.dropDownList.*"
+	xmlns:grid="com.oasis.component.grid.*"
+	xmlns:upload="com.oasis.tmsv5.view.util.*"
+	xmlns:nv="com.oasis.wolfburg.validator.*"
+	width="100%" height="100%" title="编辑" xmlns:truck="com.oasis.tmsv5.view.truck.*" creationComplete="init()" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	
+	<fx:Declarations>
+		<mx:StringValidator id="validator1" source="{licensePlate}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<mx:StringValidator id="validator2" source="{truckLevel}" property="text" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}"/>
+		<!--
+		<mx:NumberValidator id="validator2" source="{truckLevel}" property="selectedIndex" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}" minValue="0"/>
+		<mx:NumberValidator id="validator3" source="{truckType}" property="selectedIndex" required="true" requiredFieldError="{resourceManager.getString('errorResource','require')}" minValue="0"/>
+		-->
+		<mx:NumberValidator id="truckLengthlValidator" source="{truckLength}" property="text" domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="truckWidthValidator" source="{truckWidth}" property="text" domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="truckHeightValidator" source="{truckHeight}" property="text" domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="loadVolumeValidator" source="{loadVolume}" property="text" domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="loadWeightValidator" source="{loadWeight}" property="text" domain="real" minValue="1" required="true"/>
+		
+		<mx:StringValidator id="cardCodeValidator" source="{cardCode}" property="text" required="true"/>
+		
+		<mx:NumberValidator id="guaranteeValidator" source="{guarantee}" property="text"  domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="depositValidator" source="{deposit}" property="text"  domain="real" minValue="1" required="true"/>
+		
+		<mx:StringValidator id="gpsValidator" source="{gps}" property="text" required="true"/>
+		<mx:StringValidator id="contactPhone1Validator" source="{contactPhone1}" property="text" required="true"/>
+		<mx:StringValidator id="contactPersonValidator" source="{contactPerson}" property="text" required="true"/>
+		
+		
+		<mx:StringValidator id="brandValidator" source="{brand}" property="text" required="true"/>
+		<mx:StringValidator id="vinValidator" source="{vin}" property="text" required="true"/>
+		<mx:StringValidator id="truckCodeValidator" source="{truckCode}" property="text" required="true"/>
+		
+		<mx:StringValidator id="engineCodeValidator" source="{engineCode}" property="text" required="true"/>
+		<mx:NumberValidator id="maxWeightValidator" source="{maxWeight}" property="text" domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="emptyWeightValidator" source="{emptyWeight}" property="text" domain="real" minValue="1" required="true"/>
+		<mx:NumberValidator id="totalWeightValidator" source="{totalWeight}" property="text" domain="real" minValue="1" required="true"/>
+		
+		<mx:NumberValidator id="inspectionDurValidator" source="{inspectionDur}" property="value" domain="int" minValue="1" required="true"/>
+		
+		<mx:StringValidator id="permissionOrgValidator" source="{permissionOrg}" property="text" required="true"/>
+		
+		<mx:StringValidator id="licenseDateValidator" source="{licenseDate}" property="text" required="true"/>
+		<mx:StringValidator id="inspectionDateValidator" source="{inspectionDate}" property="text" required="true"/>
+		<mx:StringValidator id="discardDateValidator" source="{discardDate}" property="text" required="true"/>
+		<mx:StringValidator id="truckCarrierNameValidator" source="{truckCarrierName}" property="text" required="true"/>
+		
+		<mx:StringValidator id="insurerValidator" source="{insurer}" property="text" required="true"/>
+		<mx:StringValidator id="insureCode1Validator" source="{insureCode1}" property="text" required="true"/>
+		<mx:StringValidator id="insureFrom1Validator" source="{insureFrom1}" property="text" required="true"/>
+		<mx:StringValidator id="insureTo1Validator" source="{insureTo1}" property="text" required="true"/>
+		
+		<mx:StringValidator id="insureCode2Validator" source="{insureCode2}" property="text" required="true"/>
+		<mx:StringValidator id="insureFrom2Validator" source="{insureFrom2}" property="text" required="true"/>
+		<mx:StringValidator id="insureTo2Validator" source="{insureTo2}" property="text" required="true"/>
+		
+		<mx:StringValidator id="contractNumValidator" source="{contractNumber}" property="text" required="true"/>
+		<mx:StringValidator id="contractDateValidator" source="{contractDate}" property="text" required="true"/>
+		<mx:StringValidator id="contractDate4Validator" source="{contractDateFrom}" property="text" required="true"/>
+		<mx:StringValidator id="contractDate2Validator" source="{contractDateTo}" property="text" required="true"/>
+		
+		<nv:SelectValidator id="validator8" source="{depositType}" property="selectedIndex" required="true" fieldError="{resourceManager.getString('errorResource','requireSelect')}"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			import com.best.oasis.flexbase.util.BeanUtils;
+			import com.best.oasis.flexbase.util.ValidationUtils;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.driver.DriverController;
+			import com.oasis.tmsv5.event.TruckEvent;
+			import com.oasis.tmsv5.so.driver.DriverSO;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.tmsv5.utils.Constants;
+			import com.oasis.tmsv5.view.popup.CarrierDialog;
+			import com.oasis.tmsv5.view.popup.DriverCreateDialog;
+			import com.oasis.tmsv5.view.popup.DriverDialog;
+			import com.oasis.tmsv5.view.popup.DriverEditDialog;
+			import com.oasis.tmsv5.view.popup.PredefinedCodeCreateDialog;
+			import com.oasis.tmsv5.view.popup.PredefinedCodeDialog;
+			import com.oasis.tmsv5.view.popup.RouteDialog;
+			import com.oasis.tmsv5.vo.base.PredefinedCode;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.vo.carrier.Carrier;
+			import com.oasis.wolfburg.vo.driver.Driver;
+			import com.oasis.wolfburg.vo.insure.Insure;
+			import com.oasis.wolfburg.vo.route.Route;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.validators.Validator;
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			[Inject]
+			public var driverController:DriverController;
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			[Bindable]
+			public var driverPageList:PageList = new PageList();
+			
+			[Bindable]
+			public var driverSO:DriverSO = new DriverSO();
+			
+			[Bindable]
+			public var routeData:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var driverData:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var vehicleTypeD:ArrayCollection = EnumManage.getTruckType();
+			
+			[Bindable]
+			public var truckProList:ArrayCollection = EnumManage.getTruckPro();
+			
+			[Bindable]
+			public var vehicleLevelD:ArrayCollection = EnumManage.getTruckLevel();
+			
+			[Bindable]
+			public var certType:ArrayCollection = EnumManage.getTruckCertType();
+			
+			[Bindable]
+			public var depositTypeList:ArrayCollection = EnumManage.getDepositType();
+			
+			[Bindable]
+			public var vo:Truck= new Truck();
+			
+			[Bindable]
+			public var insureVO1:Insure= new Insure();
+			
+			[Bindable]
+			public var insureVO2:Insure= new Insure();
+			
+			[Bindable]
+			public var temp:Boolean = true;
+			
+			public function freshForm():void{
+				if(this.initialized){
+					truckController.findTruck(vo,freshCallback);
+				}
+				upload.clearPageForEdit();
+			}
+			
+			private function init():void{
+				//truckLevel.value = vo.truckLevel;
+				truckType.value = vo.truckType;
+				truckPro.value = vo.truckPro;
+				inspectionDur.value = vo.inspectionDur;
+			}
+			
+			private function freshCallback():void{
+				routeData = vo.contractRouteList;
+				driverData = vo.driverList;
+				var arrs:ArrayCollection = vo.insureList;
+				for(var i:int=0;i<2&&i<arrs.length;i++){
+					if(i == 0){
+						insureVO1 = arrs[0] as Insure;
+					}else{
+						insureVO2 = arrs[1] as Insure;
+					}
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			public function setId(id:Number):void {
+				vo.id=id;
+			}
+			
+			protected function createFresh():void{
+				
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				vo = new Truck();
+				//				provice.selectedIndex = 0;
+				//				city.selectedIndex = 0;
+				//				district.selectedIndex = 0;
+				var parent:ViewStack = this.parent as ViewStack;
+				parent.selectedIndex = 0;
+			}
+			
+			/**
+			 * 创建成功回调，弹出提示信息，清空表单
+			 */ 
+			private function successCallBack():void{
+				
+				//upload.clearPage();
+				Alert.show("车辆修改成功!");
+				dispatch.dispatchEvent(new TruckEvent(TruckEvent.TRUCK_LIST_EVENT));
+				createFresh();
+			}
+			
+			/**
+			 * 创建失败回调，显示校验信息，后台方法见PosComponent.validatIfCanCreate
+			 */ 
+			private function validationCallBack(event:FaultEvent):void{
+				var error:Object = JSON.decode(event.fault.faultString);
+				ValidationUtils.showAllFieldErrors(error,this,true);
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validate():Boolean{
+				var errors:Array = Validator.validateAll([validator1,validator2,
+					loadWeightValidator,
+					cardCodeValidator,
+					guaranteeValidator,
+					depositValidator,
+					truckLengthlValidator,
+					truckWidthValidator  ,
+					truckHeightValidator ,
+					loadVolumeValidator  ,
+					loadWeightValidator  ,
+					gpsValidator,
+					contactPersonValidator,
+					contactPhone1Validator,
+					brandValidator,
+					vinValidator,
+					truckCodeValidator,
+					engineCodeValidator,
+					maxWeightValidator,
+					emptyWeightValidator,
+					totalWeightValidator,
+					inspectionDurValidator,
+					permissionOrgValidator,
+					licenseDateValidator,
+					inspectionDateValidator,
+					contractNumValidator,
+					contractDateValidator,
+					contractDate4Validator,
+					contractDate2Validator,
+					discardDateValidator,
+					truckCarrierNameValidator,
+					insurerValidator,
+					insureCode1Validator,
+					insureFrom1Validator,
+					insureTo1Validator,
+					insureCode2Validator,
+					insureFrom2Validator,
+					insureTo2Validator,
+					validator8]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			/**
+			 * 表单前台校验
+			 */ 
+			private function validateTemp():Boolean{
+				var errors:Array = Validator.validateAll([validator1,
+					cardCodeValidator,
+					contactPersonValidator,
+					contactPhone1Validator]);
+				if(errors.length > 0 ){
+					return false;
+				}
+				return true;
+			}
+			
+			private function collectData():void {
+			}
+			
+			protected function addRoute():void
+			{
+				var dialog:RouteDialog = RouteDialog(PopUpManager.createPopUp(root, RouteDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.allowMultiple = true;
+				dialog.passFun = getRouteCallBack;
+			}
+			
+			public function getRouteCallBack(item:Object):void{
+				var routes:ArrayCollection = item as ArrayCollection;
+				routeData.addAll(routes);
+			}
+			
+			private function removeRoute():void{
+				if(routeGrid.selectedIndices.length == 0){
+					Alert.show("请选择要删除的线路!");
+					return;
+				}
+				var dataProvider:ArrayCollection = new ArrayCollection();
+				dataProvider = routeGrid.dataProvider as ArrayCollection;
+				var arrs:Array = routeGrid.selectedIndices;
+				arrs = arrs.sort(Array.DESCENDING);
+				for each(var index:int in arrs){
+					dataProvider.removeItemAt(index);
+				}
+			}
+			
+			protected function addCarrier():void
+			{
+				var dialog:CarrierDialog = CarrierDialog(PopUpManager.createPopUp(root, CarrierDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.passFun = getCarrierCallBack;
+			}
+			
+			protected function cleanOwner():void {
+				vo.carrierId = 0;
+				vo.ownerName = null;
+				vo.ownerPhone = null;
+				vo.ownerAddress = null;
+			}
+			
+			public function getCarrierCallBack(item:Object):void{
+				var carrier:Carrier = Carrier(item);
+				vo.carrierId = carrier.id;
+				vo.ownerName = carrier.carrierName;
+				if (carrier.contactPhone != null) {
+					vo.ownerPhone = carrier.contactPhone;
+				} else if (carrier.contactMobile != null) {
+					vo.ownerPhone = carrier.contactMobile;
+				}
+				vo.ownerAddress = carrier.contactAddress;
+			}
+			
+			public function createDriver():void{
+				var dialog:DriverCreateDialog = DriverCreateDialog(PopUpManager.createPopUp(root, DriverCreateDialog , true));
+				PopUpManager.centerPopUp(dialog);
+				dialog.getDriverCallBack = getDriverCallBack;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				driverSO.pageNumber = 1;
+				driverSO.objectsPerPage = 2;
+				driverSO.status='NORMAL';
+				driverController.getPageList(driverSO, driverPageList,callBack);
+			}		
+			
+			protected function doubleClickHandle(event:MouseEvent=null):void{
+				var driver:Driver = driverGrid.selectedItem as Driver;
+				if(driver == null){
+					return;
+				}
+				var dialog:DriverEditDialog = DriverEditDialog(PopUpManager.createPopUp(root, DriverEditDialog , true));
+				driverController.find(driver,function():void{
+					dialog.vo = driver;
+					PopUpManager.centerPopUp(dialog);
+					dialog.getDriverCallBack = editDriverCallBack;
+				});
+			} 
+			private function editDriverCallBack(item:Object):void{
+				driverGrid.selectedItem = item;
+			}
+			
+			private function getDriverCallBack(item:Object):void{
+				var drivers:ArrayCollection = item as ArrayCollection;
+				for each (var elm:Driver in driverGrid.dataProvider) {
+					for each(var elm_:Driver in item){
+						if(elm.id == elm_.id){
+							Alert.show("司机已存在!");
+							return ;
+						}
+					}
+				}
+				if (drivers == null) {
+					var driver :Driver = item as Driver;
+					if(driverData.length>1){
+						Alert.show("选择的司机不能超过两个!");
+						return;
+					}
+					driverData.addItem(driver);
+				} else {
+					if((driverData.length+drivers.length)>2){
+						Alert.show("选择的司机不能超过两个!");
+						return;
+					}
+				    driverData.addAll(drivers);
+				}
+			}
+			
+			protected function addDriver():void
+			{
+				var dialog:DriverDialog = DriverDialog(PopUpManager.createPopUp(root, DriverDialog , true));
+				dialog.passFun = getDriverCallBack;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			private function removeDriver():void{
+				if(driverGrid.selectedIndices.length == 0){
+					Alert.show("请选择要删除被关联的司机!");
+					return;
+				}
+				var dataProvider:ArrayCollection = new ArrayCollection();
+				dataProvider = driverGrid.dataProvider as ArrayCollection;
+				var arrs:Array = driverGrid.selectedIndices;
+				arrs = arrs.sort(Array.DESCENDING);
+				for each(var index:int in arrs){
+					dataProvider.removeItemAt(index);
+				}
+			}
+			
+			private function add2Inure2():void{
+				insureVO2.insurer = insurer.text;
+			}
+			
+			private function normalUpdate():void {
+				if(!validate()){
+					return;
+				}
+				//创建方法需要传两个回调函数
+				vo.contractRouteList = routeData;
+				
+				vo.insureList = new ArrayCollection();
+				if (insureVO1.insureCode != null) {
+					vo.insureList.addItem(insureVO1);
+				}
+				if (insureVO2.insureCode != null) {
+					vo.insureList.addItem(insureVO2);
+				}
+				
+				
+				vo.driverList = driverGrid.dataProvider as ArrayCollection;
+				if(vo.driverList.length > 2){
+					Alert.show("车辆上最多只能添加两个司机");
+					return;
+				}
+				vo.dirver1Id = -1;
+				vo.driver1Name = "";
+				vo.driver1Phone = "";
+				vo.dirver2Id = -1;
+				vo.driver2Name = "";
+				vo.driver2Phone = "";
+				for each(var driver:Driver in vo.driverList){
+					driver.attachmentList = null;
+				}
+				
+				//vo.truckLevel = truckLevel.selectedItem.data;
+				vo.truckType = truckType.selectedItem.data;
+				vo.truckPro = truckPro.selectedItem.data;
+				vo.depositType = depositType.selectedItem.data;
+				vo.inspectionDur =inspectionDur.value;
+				vo.attachmentList = upload.attachments;
+				truckController.updateTruck(vo,successCallBack,validationCallBack);
+			}
+			
+			private function update():void{
+				
+				if (vo.resourceType == 'OUT') {
+					outUpdate();
+				} else {
+					normalUpdate()
+				}
+			}
+			
+			private function outUpdate():void{
+				if(!validateTemp()){
+					return;
+				}
+				vo.truckType = truckType.selectedItem.data;
+				vo.truckPro = truckPro.selectedItem.data;
+				vo.depositType = depositType.selectedItem.data;
+				vo.inspectionDur =inspectionDur.value;
+				truckController.updateTempTruck(vo,successCallBack,validationCallBack);
+			}
+			
+			private function changeType() :void{
+				vo.resourceType="REGULAR";
+				ws1.opened=true;
+				ws3.opened=true;
+				
+				ws2.opened=true;
+				ws5.opened=true;
+				ws6.opened=true;
+				ws7.opened=true;
+				normalUpdate();
+			}
+			
+			protected function getBrand():void {
+				var dialog:PredefinedCodeDialog = 
+					PredefinedCodeDialog(PopUpManager.createPopUp(root, PredefinedCodeDialog , true));
+				dialog.passFun = brandFun;
+				dialog.type = Constants.TRUCK_BRAND;
+				PopUpManager.centerPopUp(dialog);
+			}
+			
+			public function brandFun(item:Object):void{
+				var pfc:PredefinedCode = item as PredefinedCode;
+				vo.truckLevel = pfc.value;
+			}
+			
+			public function createBrand():void{
+				var dialog:PredefinedCodeCreateDialog = PredefinedCodeCreateDialog(PopUpManager.createPopUp(root, PredefinedCodeCreateDialog , true));
+				dialog.type = Constants.TRUCK_BRAND;
+				PopUpManager.centerPopUp(dialog);
+				dialog.passFun = brandFun;
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<flexlib:WindowShade id="ws1"
+							 tabChildren="{ws1.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="基本信息" 
+							 width="99%">
+			<fb:MultiColumnForm numColumns="3"  width="100%">
+				
+				
+				<fb:MultiColumnFormItem label="车牌号：" required="true" >
+					<mx:Text id="licensePlate" width="80" text="@{vo.licensePlate}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车型："  required="true">
+					<dropDownList:DropDownList dataProvider="{vehicleTypeD}" id="truckType" searchKey="data" value="{vo.truckType}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="卡号："  required="true">
+					<mx:TextInput  id="cardCode" width="80" text="@{vo.cardCode}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="GPS号："  required="true">
+					<mx:TextInput  id="gps" width="80" text="@{vo.gps}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="运输性质：" >
+					<dropDownList:DropDownList dataProvider="{truckProList}" id="truckPro" selectedIndex="0" searchKey="data" value="{vo.truckPro}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车辆品牌："  required="true">
+					<mx:HBox width="222">
+						<fb:SelectableTextInput id="truckLevel" width="122" textInputEditable="false" text="@{vo.truckLevel}" searchButtonClick="getBrand"/>
+						<mx:Button label="添加品牌" click="createBrand()"/>
+					</mx:HBox>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="联系人："  required="true">
+					<mx:TextInput  id="contactPerson" width="80" text="@{vo.contactPerson}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="联系电话1："  required="true">
+					<mx:TextInput id="contactPhone1" width="80" text="@{vo.contactPhone1}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="联系电话2："  >
+					<mx:TextInput id="contactPhone2" width="80" text="@{vo.contactPhone2}"/>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		<flexlib:WindowShade id="ws3"
+							 tabChildren="{ws3.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="合约信息"
+							 width="99%">
+			<fb:MultiColumnForm numColumns="3" >	
+				
+				<fb:MultiColumnFormItem label="所属承运商："  required="true">
+					<fb:SelectableTextInput searchButtonClick="addCarrier" id="truckCarrierName"
+											text="@{vo.ownerName}" width="180" clearButtonClick="cleanOwner"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车主联系电话：" >
+					<mx:TextInput id="ownerPhone" width="100" text="@{vo.ownerPhone}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车主住址：" >
+					<mx:TextInput id="ownerAddress" text="@{vo.ownerAddress}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="合同号：" required="true">
+					<mx:TextInput id="contractNumber" width="100" text="@{vo.contractNumber}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="签署时间：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="contractDate" width="100" selectedDate="@{vo.contractDate}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="合同时间起：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="contractDateFrom" width="100" selectedDate="@{vo.contractDateFrom}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="合同时间止：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="contractDateTo" width="100" selectedDate="@{vo.contractDateTo}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="安全保证金（元）：" required="true" >
+					<mx:TextInput id="guarantee"  text="@{vo.guarantee}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="合同押金（元）：" required="true" >
+					<mx:TextInput id="deposit"  text="@{vo.deposit}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="押金类型：" required="true" >
+					<dropDownList:DropDownList dataProvider="{depositTypeList}" id="depositType"  searchKey="data" value="{vo.depositType}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		<flexlib:WindowShade id="ws2"
+							 tabChildren="{ws2.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="车辆信息"
+							 width="99%" >
+			<fb:MultiColumnForm numColumns="3">
+				<fb:MultiColumnFormItem label="品牌型号："  required="true">
+					<mx:TextInput id="brand" width="100" text="@{vo.brand}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车辆识别号(VIN)："  required="true">
+					<mx:TextInput id="vin" width="100" text="@{vo.vin}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车架号："  required="true">
+					<mx:TextInput id="truckCode" width="100" text="@{vo.truckCode}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="发动机号："  required="true">
+					<mx:TextInput id="engineCode" width="100" text="@{vo.engineCode}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="挂车车架号：" >
+					<mx:TextInput id="trailerCode" width="100" text="@{vo.trailerCode}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车长："  required="true">
+					<mx:TextInput  id="truckLength" width="100" text="@{vo.truckLength}" />
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车宽：" required="true" >
+					<mx:TextInput  id="truckWidth" width="100" text="@{vo.truckWidth}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="车高："  required="true">
+					<mx:TextInput  id="truckHeight" width="100" text="@{vo.truckHeight}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="可装容积："  required="true">
+					<mx:TextInput  id="loadVolume" width="100" text="@{vo.loadVolume}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="载重量："  required="true">
+					<mx:TextInput  id="loadWeight" width="100" text="@{vo.loadWeight}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="核定载质量："  required="true">
+					<mx:TextInput id="maxWeight" width="100" text="@{vo.maxWeight}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="整备质量："  required="true">
+					<mx:TextInput id="emptyWeight" width="100" text="@{vo.emptyWeight}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="总质量："  required="true">
+					<mx:TextInput id="totalWeight" width="100" text="@{vo.totalWeight}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="年检有效期限（年）："  required="true">
+					<mx:NumericStepper value="{vo.inspectionDur}" id="inspectionDur" />
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="发证机关："  required="true">
+					<mx:TextInput id="permissionOrg" text="@{vo.permissionOrg}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="上牌日期："  required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="licenseDate" selectedDate="@{vo.licenseDate}" />
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="最近年检日期："  required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="inspectionDate" selectedDate="@{vo.inspectionDate}"/>
+				</fb:MultiColumnFormItem>
+				
+				
+				<fb:MultiColumnFormItem label="报废日期："  required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="discardDate" selectedDate="@{vo.discardDate}"/>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		
+		<flexlib:WindowShade id="ws5"
+							 tabChildren="{ws5.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="保险信息"
+							 width="99%">
+			<fb:MultiColumnForm numColumns="3" >	
+				<fb:MultiColumnFormItem label="保险公司：" required="true" colspan="3">
+					<mx:TextInput id="insurer" text="@{insureVO1.insurer}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="保险单号1：" required="true" >
+					<mx:TextInput id="insureCode1" text="@{insureVO1.insureCode}" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="保险生效时间：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="insureFrom1" selectedDate="@{insureVO1.insureFrom}" />
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="保险截止时间：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="insureTo1" selectedDate="@{insureVO1.insureTo}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="保险单号2：" required="true" >
+					<mx:TextInput id="insureCode2" text="@{insureVO2.insureCode}" mouseOut="add2Inure2()" width="100"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="保险生效时间：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="insureFrom2" selectedDate="@{insureVO2.insureFrom}"/>
+				</fb:MultiColumnFormItem>
+				
+				<fb:MultiColumnFormItem label="保险截止时间：" required="true">
+					<mx:DateField formatString="YYYY-MM-DD" id="insureTo2" selectedDate="@{insureVO2.insureTo}"/>
+				</fb:MultiColumnFormItem>
+			</fb:MultiColumnForm>
+		</flexlib:WindowShade>
+		
+		
+		<flexlib:WindowShade id="ws6"
+							 tabChildren="{ws6.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="合同线路/司机信息"
+							 width="99%">
+			<mx:HBox height="100%" width="100%">
+				<mx:VBox height="140" width="50%" paddingLeft="50">
+					<mx:HBox>
+						<mx:Button label="选择线路" click="addRoute()"/>
+						<mx:Button label="删除线路" click="removeRoute()"/>
+					</mx:HBox>
+					<grid:SelectableDataGrid id="routeGrid" dataProvider="{routeData}" allowMultipleSelection="true" height="100%" showControlColumn="false">
+						<grid:columns>
+							<mx:DataGridColumn headerText="线路名称" dataField="name" />
+						</grid:columns>
+					</grid:SelectableDataGrid>
+				</mx:VBox>
+				<mx:VBox height="140" width="50%" paddingRight="100">
+					<mx:HBox >		
+						<mx:Button label="选择司机" click="addDriver()"/> 
+						<mx:Button label="创建司机" click="createDriver()"/>
+						<mx:Button label="删除司机" id="remove" click="removeDriver()"/>
+					</mx:HBox>
+					<grid:SelectableDataGrid id="driverGrid" dataProvider="{driverData}" 
+											 height="100%" allowMultipleSelection="true" 
+											 doubleClick="doubleClickHandle(event)" doubleClickEnabled="true" showControlColumn="false">
+						<grid:columns>
+							<mx:DataGridColumn headerText="司机名称" dataField="name"/>
+							<mx:DataGridColumn headerText="司机电话" dataField="mobilePhone" />
+						</grid:columns>
+					</grid:SelectableDataGrid>
+					
+				</mx:VBox>
+			</mx:HBox>
+		</flexlib:WindowShade>
+		
+		<flexlib:WindowShade id="ws7"
+							 tabChildren="{ws7.opened}"
+							 styleName="linkButtonWindowShade"
+							 label="资质文件"
+							 width="99%" >	
+			<upload:upload id="upload" attachmentType="{certType}" attachments="{vo.attachmentList}" width="100%" height="300"/>
+		</flexlib:WindowShade>
+		<mx:HBox width="100%" paddingLeft="66">
+			<mx:Button label="保存" click="update()"/>
+			<mx:Button label="临时车转正" click="changeType()" id="changeResourceType"/>
+		</mx:HBox>
+		
+	</mx:VBox>
+</mx:Panel>

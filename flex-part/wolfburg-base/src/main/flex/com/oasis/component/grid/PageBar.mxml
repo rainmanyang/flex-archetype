@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	width="90%" height="36">
+	<fx:Style>
+		.LinkButton {
+			paddingLeft:2px;
+			paddingRight:2px;
+			paddingTop:0px;
+			paddingBottom:0px;
+		}
+		.firstPage {
+			icon:Embed(source="/assets/default/page/page-first.gif");
+			disabledIcon:Embed(source="/assets/default/page/page-first-disabled.gif");
+		}
+		.previousPage {
+			icon:Embed(source="/assets/default/page/page-prev.gif");
+			disabledIcon:Embed(source="/assets/default/page/page-prev-disabled.gif");
+		}
+		.nextPage {
+			icon:Embed(source="/assets/default/page/page-next.gif");
+			disabledIcon:Embed(source="/assets/default/page/page-next-disabled.gif");
+		}
+		.lastPage {
+			icon:Embed(source="/assets/default/page/page-last.gif");
+			disabledIcon:Embed(source="/assets/default/page/page-last-disabled.gif");
+		}
+		.refreshPage {
+			icon:Embed(source="/assets/default/page/refresh.gif");
+			disabledIcon:Embed(source="/assets/default/page/refresh.gif");
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.controls.DataGrid;
+			import mx.controls.LinkButton;
+			import mx.events.FlexEvent;
+			import flash.events.TimerEvent;
+			import flash.utils.Timer;
+			
+			[Bindable]
+			public var currentPageNum:int;
+			[Bindable]
+			public var totalItemNum:int;
+			[Bindable]
+			public var pageSize:int;
+			[Bindable]
+			private var totalPageNum:int = 1;
+			[Bindable]
+			public var pageLinkNum:int = 10;
+			
+			public var getPageData:Function;
+			
+			/**
+			 * 延迟计算新的页面数据timer
+			 */
+			private var timer:Timer;
+			
+			public function init():void{
+				updateTotalPageNum(totalItemNum);
+			}
+			public function goToPage(pageNum:int):void{
+				if( isNaN(totalPageNum) || totalPageNum<1 ){
+					totalPageNum = 1;
+				}
+				if( isNaN(pageNum) || pageNum<1 ){
+					pageNum = 1;
+				}
+				if(pageNum >= 1 && pageNum <= totalPageNum){
+					currentPageNum = pageNum;
+					//兼容旧版本不传pageSize参数的情况
+					try{
+						getPageData.call(this, pageNum, pageSize);
+					}catch(e:Error){
+						getPageData.call(this, pageNum);
+					}
+					//generatePageLinks();
+				}else{
+					Alert.show("页码不在可用页码范围内！");
+				}
+			}
+			private function updateButtonStatus():void{
+				if(currentPageNum == 1){
+					firstPage.enabled = false;
+					previousPage.enabled = false;
+				}else{
+					firstPage.enabled = true;
+					previousPage.enabled = true;
+				}
+				if(currentPageNum == totalPageNum){
+					nextPage.enabled = false;
+					lastPage.enabled = false;
+				}else{
+					nextPage.enabled = true;
+					lastPage.enabled = true;
+				}
+			}
+			public function updatePageSize(pageSize:int):void{
+				this.pageSize = pageSize;
+				this.init();
+				//trace("pageSize:" + pageSize);
+			}
+			public function updateCurrentPageNum(currentPageNum:int):void{
+				this.currentPageNum = currentPageNum;
+				this.init();
+				//trace("currentPageNum:" + currentPageNum);
+			}
+			public function updateTotalItemNum(totalItemNum:int):void{
+				this.totalItemNum = totalItemNum;
+				this.init();
+				//trace("totalItemNum:" + totalItemNum);
+			}
+			public function updateTotalPageNum(totalItemNum:int):void{
+				this.totalItemNum = totalItemNum;
+				totalPageNum = getTotalPageNum();
+				//generatePageLinks();
+			}
+			public function getTotalPageNum():int{
+				return Math.ceil(totalItemNum/pageSize);
+			}
+			public function generatePageLinks():void{
+				if(pageLinks == null){
+					return;
+				}
+				//当页码到达三位数时，每次只显示5个页码链接，不然太宽了
+				if(currentPageNum > 8){
+					pageLinkNum = 5;
+				}else{
+					pageLinkNum = 10;
+				}
+				pageLinks.removeAllChildren();
+				var halfPageLinkNum:int = Math.floor(pageLinkNum/2);
+				var firstPageLinkPageNum:int = currentPageNum - halfPageLinkNum;
+				if(firstPageLinkPageNum < 1){
+					firstPageLinkPageNum = 1;
+				}
+				
+				var lastPageLinkPageNum:int = firstPageLinkPageNum + pageLinkNum;
+				if(lastPageLinkPageNum > totalPageNum){
+					lastPageLinkPageNum = totalPageNum + 1;
+					firstPageLinkPageNum = totalPageNum - pageLinkNum;
+					if(firstPageLinkPageNum < 1){
+						firstPageLinkPageNum = 1;
+					}
+				}
+				var pageLinkButton:LinkButton;
+				for(var i:int = firstPageLinkPageNum; i<lastPageLinkPageNum; i++){
+					pageLinkButton = new LinkButton();
+					pageLinkButton.label = "" + i;
+					if(i == currentPageNum){
+						pageLinkButton.setStyle("color", "red");
+					}
+					pageLinkButton.styleName = "LinkButton";
+					pageLinkButton.addEventListener(MouseEvent.CLICK,
+						function(event:MouseEvent):void{
+							var target:LinkButton = LinkButton(event.target);
+							goToPage(int(target.label));
+						});
+					pageLinks.addChild(pageLinkButton);
+					
+				}
+				updateButtonStatus();
+			}
+			/**
+			 * 当用户改变pageSize（每页显示数据条数）的时候，要重新更新布局，并重新去数据 
+			 * 运用延时器，在用户输入的pageSize确定之后，再进行数据的搜索
+			 */
+			protected function onPageSizeChange():void{
+				if( timer == null ){
+					timer = new Timer(500,1);
+					timer.addEventListener("timer", getCurrentPageData);
+					timer.start();
+				}else{
+					timer.reset();
+					timer.start();
+				}
+				
+			}
+			private function getCurrentPageData(event:TimerEvent):void{
+				pageSize = new Number(pageSizeTextInput.text);
+				if( pageSize <= 0 || isNaN(pageSize) ){
+					pageSize = 1;
+				}
+				this.init();
+				goToPage(1);
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox horizontalGap="1" width="100%" height="100%">
+		<mx:LinkButton id="firstPage" toolTip="第一页" click="goToPage(1)" 
+					   styleName="firstPage" width="20"/>
+		<mx:LinkButton id="previousPage" toolTip="上一页" click="goToPage(currentPageNum - 1)" 
+					   styleName="previousPage" width="20"/>
+		<mx:HBox id="pageLinks" horizontalGap="1">
+			
+		</mx:HBox>
+		<mx:LinkButton id="nextPage" toolTip="下一页" click="goToPage(currentPageNum + 1)" 
+					   styleName="nextPage" width="20"/>
+		<mx:LinkButton id="lastPage" toolTip="最后一页" click="goToPage(totalPageNum)" 
+					   styleName="lastPage" width="20"/>
+		<mx:Spacer width="100%"/>
+		<mx:HBox height="100%">
+			<mx:Text text="页数:"/>
+			<mx:Text text="{currentPageNum}/{totalPageNum}({totalItemNum})"/>
+			<mx:Text text="每页:"/>
+			<mx:TextInput id="pageSizeTextInput" text="{pageSize}" change="onPageSizeChange();" width="30" restrict="0-9"/>
+		</mx:HBox>
+		
+	</mx:HBox>
+</mx:Canvas>

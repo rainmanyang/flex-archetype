@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	xmlns:fb="http://flexbase.800best.com/mxml"
+	xmlns:flexlib="http://code.google.com/p/flexlib/"
+	xmlns:controls="flexlib.controls.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:input="com.best.oasis.flexbase.components.selectableTextInput.*"
+	xmlns:popup="popup.*"
+	xmlns:grid="com.oasis.component.grid.*"
+	width="100%" height="100%"  creationComplete="init()" xmlns:track="com.oasis.tmsv5.view.track.*" xmlns:PremissionButton="com.oasis.component.PremissionButton.*">
+	<fx:Declarations>
+		<mx:WipeDown id="myWD" duration="200" />
+		<mx:WipeUp id="myWU" duration="200" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.best.oasis.flexbase.components.grid.columnRender.CopyableDataGridItemRenderer;
+			import com.oasis.component.page.PageList;
+			import com.oasis.tmsv5.so.track.ExpTrackSO;
+			import com.oasis.tmsv5.track.ExpTrackController;
+			import com.oasis.tmsv5.truck.TruckController;
+			import com.oasis.tmsv5.utils.DateSearchUtils;
+			import com.oasis.utils.DateFormatterUtil;
+			import com.oasis.wolfburg.enum.EnumManage;
+			import com.oasis.wolfburg.so.truck.TruckSO;
+			import com.oasis.wolfburg.vo.track.ExpTrack;
+			import com.oasis.wolfburg.vo.truck.Truck;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.ListEvent;
+			
+			[Bindable]
+			public var truckPageList:PageList = new PageList();
+			
+			[Inject]
+			public var truckController:TruckController;
+			
+			[Inject]
+			public var expTrackController:ExpTrackController;
+			
+			[Bindable]
+			public var pageList:PageList = new PageList();
+			
+			[Bindable]
+			public var expDealStatus:ArrayCollection = EnumManage.getExpDealStatus();
+			[Bindable]
+			public var expGrades:ArrayCollection = EnumManage.getExpGrade4list();
+			[Bindable]
+			public var expTypes:ArrayCollection = EnumManage.getExpType4list();
+			
+			[Bindable]
+			public var so:ExpTrackSO = new ExpTrackSO();
+			
+			[Dispatcher]
+			public var dispatch:IEventDispatcher;
+			
+			private function init():void{
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			private function interval(start:Date,end:Date):void{
+				so.timeStart = start;
+				so.timeEnd = end;
+			}
+			
+			private function getPageData(pageNum:int, pageSize:int,callBack:Function=null):void{
+				so.expType = expType.selectedItem.data;
+				so.expGrade = expGrade.selectedItem.data;
+				so.pageNumber = pageNum;
+				so.objectsPerPage = pageSize;
+				expTrackController.getPageList(so, pageList,callBack);
+			}
+			
+			[EventHandler( event="ExpTrackEvent.EXPTRACK_LIST_EVENT" )]
+			public function search():void{
+				so.pageNumber=1;
+				expTrackController.getPageList(so, pageList);
+			}
+			
+			protected function create_clickHandler():void{
+				rightPanel.selectedIndex = 1;
+			}
+			
+			protected function deal_clickHandler():void{
+				var vo:ExpTrack = grid.selectedItem as ExpTrack;
+				if(vo == null){
+					Alert.show("请选择一条异常进行处理");
+					return;
+				}
+				
+				deal.vo.id = vo.id;
+				expTrackController.find(deal.vo,function():void{
+					deal.displayText();
+					rightPanel.selectedIndex = 2;
+				});
+				
+				/**if(vo.status == 'PROCESSED'){
+					Alert.show("此异常已处理过");
+					return;
+				}
+				BeanUtils.copyProperties(deal.vo,vo);
+				deal.displayText();
+				rightPanel.selectedIndex = 2;*/
+			}
+			
+			protected function itemClickHandle(event:ListEvent):void{
+				var itemRenderer:CopyableDataGridItemRenderer = event.itemRenderer as CopyableDataGridItemRenderer;
+				var vo:ExpTrack = itemRenderer.data as ExpTrack;
+				
+				view.vo.id = vo.id;
+				expTrackController.find(view.vo,function():void{
+					view.displayText();
+					rightPanel.selectedIndex = 0;
+				});
+			}
+			
+			private function getStatusLabel(item:Object,column:DataGridColumn):String{
+				var status:String = item.status as String;
+				return EnumManage.getDisplayText(status,expDealStatus);
+			}
+			
+			private function getExpTypeLabel(item:Object,column:DataGridColumn):String{
+				var expType:String = item.expType as String;
+				return EnumManage.getDisplayText(expType,expTypes);
+			}
+			
+			private function getExpGradeLabel(item:Object,column:DataGridColumn):String{
+				var expGrade:String = item.expGrade as String;
+				return EnumManage.getDisplayText(expGrade,expGrades);
+			}
+			
+			private function getCreatedTimeLabel(item:Object,column:DataGridColumn):String{
+				var time:Date = item.createdTime as Date;
+				return DateFormatterUtil.format2(time);
+			}
+			private function getReportTimeLabel(item:Object,column:DataGridColumn):String{
+				var time:Date = item.reportTime as Date;
+				return DateFormatterUtil.format2(time);
+			}
+			
+			public function clear():void{
+				so = new ExpTrackSO();
+				expType.selectedIndex = 0;
+				expGrade.selectedIndex = 0;
+				truck_.clear();
+				DateSearchUtils.initDateInterval(interval);
+				getPageData(so.pageNumber, so.objectsPerPage);
+			}
+			
+			public function changeTruckSelect ():void {
+				if (truck_.selectedItem != null) {
+					var input:Truck = truck_.selectedItem as Truck;
+					so.licensePlate = truck_.selectedItem.licensePlate
+				}  else {
+					so.licensePlate = null;
+				}
+			}
+			
+			private function searchTruck(keyword:String):void {
+				var truckSO:TruckSO = new TruckSO();
+				truckSO.licensePlate =keyword;
+				getTruckPageData(truckSO);
+			}
+			
+			private function getTruckPageData(truckSO:TruckSO ,callBack:Function=null):void{
+				truckSO.pageNumber = 1;
+				truckSO.objectsPerPage = 10;
+				truckController.getPageList(truckSO, truckPageList,callBack);
+			}
+		]]>
+	</fx:Script>
+	<mx:HDividedBox width="100%" height="100%" liveDragging="true" id="hdivide">
+		<mx:VBox width="60%" height="100%"  >
+			<flexlib:WindowShade id="ws1"
+								 tabChildren="{ws1.opened}"
+								 styleName="linkButtonWindowShade"
+								 label="搜索"
+								 width="100%"
+								 opened="true">
+				<mx:VBox  width="100%" borderStyle="solid">
+					<fb:MultiColumnForm width="100%" height="100%" defaultButton="{searchBtn}">
+						<fb:MultiColumnFormItem label="车辆号码 ：" >
+							<input:PopUpAutoComplete id="truck_" selectedItemChanged="changeTruckSelect()"
+													 enabled="true"
+													 width="120"
+													 searchButtonVisible="false"
+													 clearButtonVisible="false"
+													 searchButtonEnabled="false"
+													 clearButtonEnabled="true"
+													 textInputEnabled="true"
+													 textInputEditable="true"
+													 dataProvider="{truckPageList.list}"
+													 labelField="licensePlate,ownerName"
+													 displayLabelField="licensePlate"
+													 searchFunction="searchTruck"
+													 allowNewValues="false"
+													 focusOut="changeTruckSelect()" dropDownWidth="200"/>
+						</fb:MultiColumnFormItem >
+						<fb:MultiColumnFormItem label="异常级别：">
+							<mx:ComboBox dataProvider="{expGrades}" id="expGrade"/>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="异常时间：">
+							<mx:HBox>
+								<mx:DateField selectedDate="@{so.timeStart}"  formatString="YYYY-MM-DD"/>
+								<mx:Label htmlText="--"/>
+								<mx:DateField selectedDate="@{so.timeEnd}" formatString="YYYY-MM-DD"/>
+							</mx:HBox>
+						</fb:MultiColumnFormItem>
+						<fb:MultiColumnFormItem label="异常类型：">
+							<mx:ComboBox dataProvider="{expTypes}" id="expType"/>
+						</fb:MultiColumnFormItem>
+						<mx:HBox width="100%">  
+							<mx:Spacer width="100%"/>
+							<fb:MultiColumnFormItem>
+								<mx:HBox>
+									<mx:Button label="查询" click="getPageData(1, so.objectsPerPage)" id="searchBtn"/>
+									<mx:Button label="清空查询" click="clear()"/>
+								</mx:HBox>
+							</fb:MultiColumnFormItem>
+						</mx:HBox>
+					</fb:MultiColumnForm>
+				</mx:VBox>
+			</flexlib:WindowShade>
+			<mx:HBox paddingLeft="30" width="100%">
+				<PremissionButton:PremissionButton label="新建异常" click="create_clickHandler()" module="Exp" premission="create"/>
+				<PremissionButton:PremissionButton label="处理异常" click="deal_clickHandler()" module="Exp" premission="process"/>
+			</mx:HBox>
+			<grid:PageableDataGrid id="grid" dataProvider="{pageList.list}" width="100%"
+								   getPageData="getPageData"  currentPageNum="{so.pageNumber}" totalItemNum="{pageList.fullListSize}"
+								   pageSize="{so.objectsPerPage}"
+								   height="100%" allowMultipleSelection="false" itemClick="itemClickHandle(event)" showControlColumn="false">
+				<grid:columns >
+					<grid:DataGridColumnNested headerText="级别" dataField="expGrade" labelFunction="getExpGradeLabel" width="60"/>
+					<grid:DataGridColumnNested headerText="类型" dataField="expType" labelFunction="getExpTypeLabel" width="80"/>
+					<grid:DataGridColumnNested headerText="车牌号码" dataField="licensePlate" width="80"/>
+					<grid:DataGridColumnNested headerText="运营线路" dataField="routeName" width="100"/>
+					<grid:DataGridColumnNested headerText="报告时间" dataField="reportTime" labelFunction="getReportTimeLabel" width="120"/>
+					<grid:DataGridColumnNested headerText="登记时间" dataField="createdTime" labelFunction="getCreatedTimeLabel" width="120"/>
+					<grid:DataGridColumnNested headerText="预计延误" dataField="delayTime" width="80"/>
+					<grid:DataGridColumnNested headerText="处理状态" dataField="status" labelFunction="getStatusLabel" width="80"/>
+				</grid:columns>
+			</grid:PageableDataGrid>
+		</mx:VBox>
+		<mx:ViewStack id="rightPanel" selectedIndex="1" width="40%" height="100%" creationPolicy="all">
+			<track:ExpTrackView id="view"/>
+			<track:ExpTrackCreate id="create"/>
+			<track:ExpTrackDeal id="deal"/>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+</mx:VBox>

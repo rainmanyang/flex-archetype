@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:fb="http://flexbase.800best.com/mxml" width="100%" height="100%"
+		 creationComplete="init()">
+	<fx:Script>
+		<![CDATA[
+			import com.oasis.tmsv5.utils.message.MessageConfig;
+			
+			import mx.messaging.ChannelSet;
+			import mx.messaging.messages.AsyncMessage;		
+			
+			
+			public function init():void{
+				//var config:MessageConfig =new MessageConfig();				
+				
+				//var channelSet:ChannelSet = MessageConfig.getChannelSet();
+				
+				
+				//producer.channelSet=channelSet;	
+			}	
+		
+			
+			private function sendMessage():void { 					
+				
+				var message:AsyncMessage = new AsyncMessage(); 
+				message.body = new Object(); 
+				message.body.uMessage = messageText.text; 				
+				message.body.theCollection = ['b','a',3,new Date()]; 
+				producer.send(message); 
+			} 
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>		
+		<mx:Producer id="producer" 					
+					 destination="TestDestination"/> 
+	
+		
+	</fx:Declarations>
+	<mx:TextArea id="messageText" width="30%" height="15%"/> 
+	<mx:Button label="Send"    click="sendMessage();"/> 
+	
+	
+	
+</mx:VBox>
